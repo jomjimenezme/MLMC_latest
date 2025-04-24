@@ -547,6 +547,10 @@ void method_finalize( level_struct *l ) {
   FREE( g.block_iter, int, ls );
   FREE( g.setup_iter, int, ls );
   FREE( g.num_eig_vect, int, ls );
+
+  FREE( g.trace_max_iters, int, ls );
+  FREE( g.trace_min_iters, int, ls );
+
 #ifdef CUDA_OPT
   FREE( g.CUDA_threads_per_CUDA_block_type1, int, ls );
   FREE( g.CUDA_threads_per_lattice_site_type1, int, ls );
@@ -934,6 +938,14 @@ void read_geometry_data( FILE *in, int ls ) {
     else if ( i>1 ) g.setup_iter[i] = 2;
     read_parameter( &save_pt, inputstr, "%d", 1, in, _DEFAULT_SET );
 
+    sprintf( inputstr, "d%d trace max iters:", i );
+    save_pt = &(g.trace_max_iters[i]); g.trace_max_iters[i] = 100;
+    read_parameter( &save_pt, inputstr, "%d", 1, in, _DEFAULT_SET );
+
+    sprintf( inputstr, "d%d trace min iters:", i );
+    save_pt = &(g.trace_min_iters[i]); g.trace_min_iters[i] = 100;
+    read_parameter( &save_pt, inputstr, "%d", 1, in, _DEFAULT_SET );
+
 #ifdef CUDA_OPT
     sprintf( inputstr, "d%d CUDA threads per CUDA block type1:", i );
     save_pt = &(g.CUDA_threads_per_CUDA_block_type1[i]);
@@ -1307,6 +1319,8 @@ void allocate_for_global_struct_after_read_global_info( int ls ) {
   MALLOC( g.block_iter, int, ls );
   MALLOC( g.setup_iter, int, ls );
   MALLOC( g.num_eig_vect, int, ls );
+  MALLOC( g.trace_max_iters, int, ls );
+  MALLOC( g.trace_min_iters, int, ls );
 #ifdef CUDA_OPT
   MALLOC( g.CUDA_threads_per_CUDA_block_type1, int, ls );
   MALLOC( g.CUDA_threads_per_lattice_site_type1, int, ls );

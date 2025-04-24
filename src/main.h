@@ -173,6 +173,10 @@
   #include "main_post_def_float.h"
   #include "main_post_def_double.h"
 #endif
+
+#include "hutchinson_float.h"
+#include "hutchinson_double.h"
+
 #ifdef HAVE_LIME
 #include <lime.h>
 #include <lime_config.h>

@@ -96,6 +96,10 @@ typedef struct level_struct
   int dup_H;
 #endif
 
+ //hutchinson
+
+ hutchinson_float_struct h_float;
+ hutchinson_double_struct h_double;
 } level_struct;
 
 #endif // LEVEL_STRUCT_H
