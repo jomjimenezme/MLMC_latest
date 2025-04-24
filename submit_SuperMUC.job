@@ -1,0 +1,25 @@
+#!/bin/bash
+#SBATCH --job-name=test_ddamg
+#SBATCH --nodes=72
+#SBATCH --ntasks-per-node=48
+#SBATCH --ntasks=3456
+#SBATCH --cpus-per-task=1
+#SBATCH --time=15:00:00
+#SBATCH --output=mpi-out_%j.txt
+#SBATCH --error=mpi-err_%j.txt
+#SBATCH --partition=general
+#SBATCH --account=pn29se
+#SBATCH --export=ALL
+
+# Environment modules
+module unload intel-mpi/2019-intel
+module load spack/22.2.1
+module load gcc/11
+module load mpi.intel/2019.12_gcc
+
+# Set OpenMP (even if unused)
+export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK}
+date
+# Run
+srun --cpu-bind=cores  dd_alpha_amg sample_E250_CPU.ini
+date
