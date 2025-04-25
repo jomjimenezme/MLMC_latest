@@ -4,7 +4,7 @@
 #SBATCH --ntasks-per-node=48
 #SBATCH --ntasks=3456
 #SBATCH --cpus-per-task=1
-#SBATCH --time=15:00:00
+#SBATCH --time=17:00:00
 #SBATCH --output=mpi-out_%j.txt
 #SBATCH --error=mpi-err_%j.txt
 #SBATCH --partition=general
