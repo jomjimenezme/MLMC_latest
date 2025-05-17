@@ -196,8 +196,21 @@ complex_PRECISION hutchinson_plain_PRECISION( int type_appl, level_struct *l, hu
     int start, end;
     gmres_PRECISION_struct* p = get_p_struct_PRECISION( l );
     compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
-  
-   // if ( type_appl==-1 ) {
+
+    vector_PRECISION_define( p->b, 1.0, start, end, l );
+
+
+    apply_solver_PRECISION( l, threading );
+
+    PRECISION norm = global_norm_PRECISION( p->x, 0, l->inner_vector_size, l, threading );
+
+    if(g.my_rank==0)
+      printf("\n\t norm = %f\n", norm);
+
+  }
+
+  complex_PRECISION aux = 0.0;
+   /*// if ( type_appl==-1 ) {
       vector_PRECISION_copy( p->b, h->rademacher_vector, start, end, l );
     //} else {
      // vector_PRECISION_copy( p->b, l->powerit_PRECISION.vecs[type_appl], start, end, l );
@@ -239,8 +252,8 @@ complex_PRECISION hutchinson_plain_PRECISION( int type_appl, level_struct *l, hu
 //      vector_PRECISION_copy(l->powerit_PRECISION.vecs_buff1, p->x, start, end, l);  
 //      aux = global_inner_product_PRECISION( l->powerit_PRECISION.vecs[type_appl], l->powerit_PRECISION.vecs_buff1, p->v_start, p->v_end, l, threading );
 //    }
-
+  */
     return aux;  
-  }
+
 }
 
