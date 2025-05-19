@@ -26,5 +26,5 @@
   void vector_PRECISION_define_random( vector_PRECISION phi, int start, int end, level_struct *l );
 
   void vector_PRECISION_define_random_rademacher( vector_PRECISION phi, int start, int end, level_struct *l ); 
-  
+  void vector_PRECISION_define_spin_color( vector_PRECISION phi, int start, int end, level_struct *l );  
 #endif
