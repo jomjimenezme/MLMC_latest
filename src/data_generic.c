@@ -166,9 +166,9 @@ void vector_PRECISION_define_spin_color( vector_PRECISION phi, int start, int en
                   i_global < dof_per_site * site_index + dof_per_site;
                   i_global++) {
                   
-                  if(color == 3){ 
-                    color = 0;
-                    spin ++;
+                  if(spin == 3){ 
+                    spin = 0;
+                    color ++;
                   }
                   // Compute owner of the entry and local index 
                   owner = i_global / chunk;
@@ -180,11 +180,11 @@ void vector_PRECISION_define_spin_color( vector_PRECISION phi, int start, int en
                      PRECISION non_re = 1.0 / (1.2345 + re);
                      phi[i_local ] = re + I* non_re;
                     // debug print
-                   // printf("[%d, %d, %d, %d]\t c = %d s= %d \t\t %d\n",
+                    //printf("[%d, %d, %d, %d]\t c = %d s= %d \t\t %d\n",
                      //     t,z,y,x,color,spin,counter);
                   }
                   
-                  color++;
+                  spin++;
                   counter++;
                 
               }
