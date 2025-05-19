@@ -201,14 +201,14 @@ complex_PRECISION hutchinson_plain_PRECISION( int type_appl, level_struct *l, hu
     vector_PRECISION_define( p->b, 1.0, start, end, l );
     norm = global_norm_PRECISION( p->b, 0, l->inner_vector_size, l, threading );
     if(g.my_rank==0)
-      printf("\n\t  Test 1: ||b|| = = %e\n", norm);
+      printf("\n\t  Test 1: ||b|| = %e\n", norm);
 
     apply_solver_PRECISION( l, threading );
 
     norm = global_norm_PRECISION( p->x, 0, l->inner_vector_size, l, threading );
 
     if(g.my_rank==0)
-      printf("\n\t  Test 1: ||x|| = = %e\n", norm);
+      printf("\n\t  Test 1: ||x|| = %e\n", norm);
     
     //------------------------------------------------------
     vector_PRECISION_define_spin_color( p->b, start, end, l );
@@ -235,7 +235,7 @@ complex_PRECISION hutchinson_plain_PRECISION( int type_appl, level_struct *l, hu
     apply_solver_PRECISION( l, threading );
     norm = global_norm_PRECISION( p->x, 0, l->inner_vector_size, l, threading );
     if(g.my_rank==0)
-      printf("\n\t  Test 3: ||x|| = = %e\n", norm);
+      printf("\n\t  Test 3: ||x|| = %e\n", norm);
     
     vector_PRECISION_minus(p->b , p->x, h->rademacher_vector, start, end, l );
     PRECISION error = global_norm_PRECISION( p->b, 0, l->inner_vector_size, l, threading );
