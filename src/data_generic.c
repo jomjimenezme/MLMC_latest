@@ -138,7 +138,6 @@ void vector_PRECISION_define_spin_color( vector_PRECISION phi, int start, int en
     if ( phi != NULL ) {
       int i_global, i_local, site_index, owner;
       int dof_per_site = l->num_lattice_site_var; // variables per site
-      int time_slice = g.time_slice;    // TODO: set from .ini file
       
       int depth = l->depth;
       int global_sites = g.global_lattice[depth][0] *
