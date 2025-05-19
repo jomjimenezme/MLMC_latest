@@ -177,11 +177,11 @@ void vector_PRECISION_define_spin_color( vector_PRECISION phi, int start, int en
                   // Only the owner assigns the value
                   if(owner == g.my_rank){
                      PRECISION re = t + z*3.14 - y*2.72 + z*0.58 - color*1.41 + spin*1.20;
-                     PRECISION non_re = 1.0 / (1.12345 + re);
+                     PRECISION non_re = 1.0 / (1.2345 + re);
                      phi[i_local ] = re + I* non_re;
                     // debug print
-                    //printf("[%d, %d, %d, %d]\t c = %d s= %d \t\t %d\n",
-                    //      t,z,y,x,color,spin,counter);
+                   // printf("[%d, %d, %d, %d]\t c = %d s= %d \t\t %d\n",
+                     //     t,z,y,x,color,spin,counter);
                   }
                   
                   color++;
