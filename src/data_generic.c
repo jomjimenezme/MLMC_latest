@@ -166,7 +166,7 @@ void vector_PRECISION_define_spin_color( vector_PRECISION phi, int start, int en
                   i_global < dof_per_site * site_index + dof_per_site;
                   i_global++) {
                   
-                  if(color == 4){ 
+                  if(color == 3){ 
                     color = 0;
                     spin ++;
                   }
