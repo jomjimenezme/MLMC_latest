@@ -762,6 +762,11 @@ int fgmres_PRECISION( gmres_PRECISION_struct *p, level_struct *l, struct Thread 
 #if defined(TRACK_RES) && !defined(WILSON_BENCHMARK)
     if ( g.print > 0 ) printf0("+----------------------------------------------------------+\n\n");
 #endif
+    
+    PRECISION xnorm = global_norm_PRECISION( p->x, p->v_start, p->v_end, l, threading );
+    printf0("---- XNORM %e\n", xnorm);
+
+
     printf0("+----------------------------------------------------------+\n");
     printf0("|       FGMRES iterations: %-6d coarse average: %-6.2lf   |\n", iter,
             ((double)g.coarse_iter_count)/((double)iter) );

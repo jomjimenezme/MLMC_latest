@@ -58,6 +58,10 @@ void rhs_define( vector_double rhs, level_struct *l, struct Thread *threading ) 
   } else {
     ASSERT( g.rhs >= 0 && g.rhs <= 4 );
   }
+  
+  double bnorm = global_norm_double( rhs, start, end, l, threading );
+  printf0("---- BNORM %e\n", bnorm);
+
 }
 
 

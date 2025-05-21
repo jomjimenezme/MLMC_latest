@@ -198,7 +198,7 @@ complex_PRECISION hutchinson_plain_PRECISION( int type_appl, level_struct *l, hu
     compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
 
     PRECISION norm = 0.0;
-    vector_PRECISION_define( p->b, 1.0, start, end, l );
+    vector_PRECISION_define( p->b, 1.0, 0, l->inner_vector_size, l );
     norm = global_norm_PRECISION( p->b, 0, l->inner_vector_size, l, threading );
     if(g.my_rank==0)
       printf("\n\t  Test 1: ||b|| = %e\n", norm);

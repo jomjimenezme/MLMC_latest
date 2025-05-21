@@ -130,12 +130,14 @@ int main( int argc, char **argv ) {
     rangeHandle = startProfilingRange("Solve");
     g.on_solve=1;
 
-    //solve_driver( &l, &threading );
+    solve_driver( &l, &threading );
+    
+    
     // pre-setting some values for the Hutchinson struct
     struct Thread *threadingx = &threading;  
     complex_double trace;
     int rnd_seed = 1234;
-    srand( time( 0 ) + rnd_seed*g.my_rank );
+    /*srand( time( 0 ) + rnd_seed*g.my_rank );
     {  
       hutchinson_diver_double_init( &l, &threading );  
       hutchinson_diver_double_alloc( &l, &threading ); 
@@ -158,7 +160,7 @@ int main( int argc, char **argv ) {
     }
     
     hutchinson_diver_double_free( &l, &threading );  
-    
+*/    
     endProfilingRange(rangeHandle);
   }
 
