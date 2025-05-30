@@ -125,16 +125,12 @@ void vector_PRECISION_define_random_rademacher( vector_PRECISION phi, int start,
 }
 
 
-void vector_PRECISION_define_spin_color( vector_PRECISION phi, int start, int end, level_struct *l ) {
+void vector_PRECISION_define_spin_color( vector_PRECISION phi, int start, int end, level_struct *l, struct Thread *threading) {
   
   int thread = omp_get_thread_num();
   if(thread == 0 && start != end)
     PROF_PRECISION_START( _SET );
-  for (int i = start; i < end; i++) {
-    phi[i] = 0.0;
-  }
-
-  if(thread == 0){
+   if(thread == 0){
     if ( phi != NULL ) {
       int i_global, i_local, site_index, owner;
       int dof_per_site = l->num_lattice_site_var; // variables per site
@@ -152,12 +148,12 @@ void vector_PRECISION_define_spin_color( vector_PRECISION phi, int start, int en
       int chunk = total_dof / g.num_processes;
       
       for (int t = 0; t < g.global_lattice[0][0]; t++) {
-        for (int z = 0; z < g.global_lattice[0][1]; z++) {
+        for (int x = 0; x < g.global_lattice[0][3]; x++) {
           for (int y = 0; y < g.global_lattice[0][2]; y++) {
-            for (int x = 0; x < g.global_lattice[0][3]; x++) {
+            for (int z = 0; z < g.global_lattice[0][1]; z++) {
               
               // Get the global site index at (t_slice, z, y, x)
-              site_index = lex_index(t, z, y, x, g.global_lattice[0]);
+              site_index = lex_index(t, x, y, z, g.global_lattice[0]);
               
               // Loop over the dof of that site
               int counter = 0; int color = 0; int spin = 0;
@@ -175,12 +171,15 @@ void vector_PRECISION_define_spin_color( vector_PRECISION phi, int start, int en
                   
                   // Only the owner assigns the value
                   if(owner == g.my_rank){
+//START_LOCKED_MASTER(threading);
                      PRECISION re = t + x*3.14 - y*2.72 + z*0.58 - color*1.41 + spin*1.20;
                      PRECISION non_re = 1.0 / (1.2345 + re);
                      phi[i_local ] = re + I* non_re;
                     // debug print
                     printf("[%d, %d, %d, %d]\t c = %d s= %d \t\t %d\n",
                           t,z,y,x,color,spin,counter);
+//END_LOCKED_MASTER(threading);
+//SYNC_MASTER_TO_ALL(threading);
                   }
                   
                   color++;

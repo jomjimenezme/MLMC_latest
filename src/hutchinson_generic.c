@@ -198,7 +198,7 @@ complex_PRECISION hutchinson_plain_PRECISION( int type_appl, level_struct *l, hu
     compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
 
     PRECISION norm = 0.0;
-    vector_PRECISION_define( p->b, 1.0, start, end, l );
+   /* vector_PRECISION_define( p->b, 1.0, start, end, l );
     norm = global_norm_PRECISION( p->b, 0, l->inner_vector_size, l, threading );
     if(g.my_rank==0)
       printf("\n\t  Test 1: ||b|| = %e\n", norm);
@@ -209,38 +209,60 @@ complex_PRECISION hutchinson_plain_PRECISION( int type_appl, level_struct *l, hu
 
     if(g.my_rank==0)
       printf("\n\t  Test 1: ||x|| = %e\n", norm);
-    
+    */
     //------------------------------------------------------
-    vector_PRECISION_define_spin_color( p->b, start, end, l );
+    vector_PRECISION_define_spin_color( p->b, 0, l->inner_vector_size, l , threading);
     norm = global_norm_PRECISION( p->b, 0, l->inner_vector_size, l, threading );
-    if(g.my_rank==0)
+    if(g.my_rank==0){
+	 START_LOCKED_MASTER(threading)
       printf("\n\t  Test 2: ||b|| = %e\n", norm);
-    
+    END_LOCKED_MASTER(threading)
+    SYNC_MASTER_TO_ALL(threading)
+   }
+
     apply_solver_PRECISION( l, threading );
     norm = global_norm_PRECISION( p->x, 0, l->inner_vector_size, l, threading );
-    if(g.my_rank==0)
-      printf("\n\t  Test 2: ||x|| = %e\n", norm);
+    if(g.my_rank==0){
+      START_LOCKED_MASTER(threading)
 
+      printf("\n\t  Test 2: ||x|| = %e\n", norm);
+      END_LOCKED_MASTER(threading)
+     SYNC_MASTER_TO_ALL(threading)
+    }
     
     
     //------------------------------------------------------
-    vector_PRECISION_define_spin_color( h->rademacher_vector, start, end, l );
+    vector_PRECISION_define_spin_color( h->rademacher_vector, start, end, l, threading );
     apply_operator_PRECISION(  p->b, h->rademacher_vector, p, l, threading );
     //vector_PRECISION_copy( p->b, h->rademacher_vector, start, end, l );
     
     norm = global_norm_PRECISION( p->b, 0, l->inner_vector_size, l, threading );
-    if(g.my_rank==0)
+    if(g.my_rank==0){
+      START_LOCKED_MASTER(threading)
+
       printf("\n\t  Test 3: ||b|| = %e\n", norm);
+      END_LOCKED_MASTER(threading)
+      SYNC_MASTER_TO_ALL(threading)
+    }
     
     apply_solver_PRECISION( l, threading );
     norm = global_norm_PRECISION( p->x, 0, l->inner_vector_size, l, threading );
-    if(g.my_rank==0)
+    if(g.my_rank==0){
+      START_LOCKED_MASTER(threading)
+
       printf("\n\t  Test 3: ||x|| = %e\n", norm);
-    
+        END_LOCKED_MASTER(threading)
+      SYNC_MASTER_TO_ALL(threading)
+    }
+
     vector_PRECISION_minus(p->b , p->x, h->rademacher_vector, start, end, l );
     PRECISION error = global_norm_PRECISION( p->b, 0, l->inner_vector_size, l, threading );
-    if(g.my_rank==0)
+    if(g.my_rank==0){
+      START_LOCKED_MASTER(threading)
       printf("\n\t  Test 3:  ||error||/||x|| = %e\n", error/norm);
+      END_LOCKED_MASTER(threading)
+      SYNC_MASTER_TO_ALL(threading)
+    }
     
     
 
