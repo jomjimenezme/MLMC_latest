@@ -124,8 +124,80 @@ void vector_PRECISION_define_random_rademacher( vector_PRECISION phi, int start,
   //exit(0);
 }
 
-
 void vector_PRECISION_define_spin_color( vector_PRECISION phi, int start, int end, level_struct *l, struct Thread *threading) {
+  
+  int thread = omp_get_thread_num();
+  if(thread == 0 && start != end)
+    PROF_PRECISION_START( _SET );
+   if(thread == 0){
+    if ( phi != NULL ) {
+      int depth = l->depth;
+      int r_t = g.my_coords[T];
+      int r_z = g.my_coords[Z];
+      int r_y = g.my_coords[Y];
+      int r_x = g.my_coords[X];
+      //printf("rank= %d \t %d %d %d %d \n",g.my_rank, r_t, r_z, r_y, r_x);
+      
+      /* global_splitting: Num Procs in each dim
+       * Nt_loc: Local Lattice sites per direcction*/
+      
+      int Nt_loc = g.global_lattice[depth][T]/l->global_splitting[T]; 
+      int Nz_loc = g.global_lattice[depth][Z]/l->global_splitting[Z];
+      int Ny_loc = g.global_lattice[depth][Y]/l->global_splitting[Y];
+      int Nx_loc = g.global_lattice[depth][X]/l->global_splitting[X];
+      
+      // Initial global coordinates based on cartesian coordinates
+      int t0 = r_t * Nt_loc;
+      int x0 = r_x * Nx_loc;
+      int y0 = r_y * Ny_loc;
+      int z0 = r_z * Nz_loc;    
+      
+      //printf("RANK = %d \t Nt= %d,  Nz = %d, Ny= %d, Nx = %d\n T = %d, Z = %d, Y = %d, X = %d\n", g.my_rank, Nt_loc, Nz_loc, Ny_loc, Nx_loc, T,Z,Y,X);
+      for (int lt=0; lt<Nt_loc; ++lt) {
+        int t = t0 + lt;               // global t
+        for (int lz=0; lz<Nz_loc; ++lz) {
+          int z = z0 + lz;
+            for (int ly=0; ly<Ny_loc; ++ly) {
+              int y = y0 + ly;           // global y
+                for (int lx=0; lx<Nx_loc; ++lx) {
+                  int x = x0 + lx;             // global x
+
+                  int loc_site  = ((lt * Nz_loc + lz) * Ny_loc + ly) * Nx_loc + lx;
+
+                  for (int d=0; d<4; ++d) {
+                    for (int c=0; c<3; ++c){
+                        PRECISION re =  t
+                                      + 3.14 * x
+                                      - 2.72 * y
+                                      + 0.58 * z
+                                      - 1.41 * c
+                                      + 1.20 * d;
+
+                        int i = loc_site*12    /* site base  */
+                                  + c * 4      /* colour stride 4  */
+                                  + d;         /* spin component   */
+                        PRECISION non_re = 1.0 / (1.2345 + re); 
+                        phi[i] = re + I* non_re;;
+                }
+              }
+            }
+          }
+        }
+      }
+
+
+    }else {
+      error0("Error in \"vector_PRECISION_define_random\": pointer is null\n");
+    }
+  }
+  if(thread == 0 && start != end)
+    PROF_PRECISION_STOP( _SET, 1 );
+  //exit(0);
+}
+
+
+
+/*void vector_PRECISION_define_spin_color( vector_PRECISION phi, int start, int end, level_struct *l, struct Thread *threading) {
   
   int thread = omp_get_thread_num();
   if(thread == 0 && start != end)
@@ -154,7 +226,8 @@ void vector_PRECISION_define_spin_color( vector_PRECISION phi, int start, int en
               
               // Get the global site index at (t_slice, z, y, x)
               site_index = lex_index(t, x, y, z, g.global_lattice[0]);
-              
+              if(g.my_rank==2)printf("[%d, %d, %d, %d]\t site_index \t\t %d\n",
+                          t,z,y,x, site_index);
               // Loop over the dof of that site
               int counter = 0; int color = 0; int spin = 0;
               for (i_global = dof_per_site * site_index;
@@ -176,8 +249,8 @@ void vector_PRECISION_define_spin_color( vector_PRECISION phi, int start, int en
                      PRECISION non_re = 1.0 / (1.2345 + re);
                      phi[i_local ] = re + I* non_re;
                     // debug print
-                    printf("[%d, %d, %d, %d]\t c = %d s= %d \t\t %d\n",
-                          t,z,y,x,color,spin,counter);
+                    //printf("[%d, %d, %d, %d]\t c = %d s= %d \t\t %d\n",
+                    //     t,z,y,x,color,spin,counter);
 //END_LOCKED_MASTER(threading);
 //SYNC_MASTER_TO_ALL(threading);
                   }
@@ -198,7 +271,7 @@ void vector_PRECISION_define_spin_color( vector_PRECISION phi, int start, int en
     PROF_PRECISION_STOP( _SET, 1 );
   //exit(0);
 }
-
+*/
 
 /*for (int i_global = 0; i_global < N; i_global++) {
   owner = i_global / chunk;
