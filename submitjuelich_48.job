@@ -1,0 +1,30 @@
+#!/bin/bash
+#SBATCH --account=mul-tra
+#SBATCH --job-name=test_solver
+#SBATCH --nodes=9
+#SBATCH --ntasks-per-node=48
+#SBATCH --ntasks=432
+#SBATCH --cpus-per-task=1
+#SBATCH --time=00:01:00
+#SBATCH --output=mpi-out_%j.txt
+#SBATCH --error=mpi-err_%j.txt
+#SBATCH --partition=batch
+#SBATCH --export=ALL
+#SBATCH --mail-user=jomjimenezme.work@gmail.com
+
+
+# when using GPUS
+#module load nano CUDA GCC OpenMPI MPI-settings/CUDA
+
+# CPU-only
+module load nano GCC OpenMPI
+
+#jutil env activate -p chwu29
+
+export SRUN_CPUS_PER_TASK=${SLURM_CPUS_PER_TASK}
+export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK}
+
+srun --distribution=block:cyclic:fcyclic --cpus-per-task=${SLURM_CPUS_PER_TASK} \
+    dd_alpha_amg 48x24to3.ini 
+
+
