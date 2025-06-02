@@ -139,8 +139,7 @@ void vector_PRECISION_define_spin_color( vector_PRECISION phi, int start, int en
       //printf("rank= %d \t %d %d %d %d \n",g.my_rank, r_t, r_z, r_y, r_x);
       
       /* global_splitting: Num Procs in each dim
-       * Nt_loc: Local Lattice sites per direcction*/
-      
+       * Nt_loc: Local Lattice sites per direcction*/      
       int Nt_loc = g.global_lattice[depth][T]/l->global_splitting[T]; 
       int Nz_loc = g.global_lattice[depth][Z]/l->global_splitting[Z];
       int Ny_loc = g.global_lattice[depth][Y]/l->global_splitting[Y];
@@ -167,15 +166,15 @@ void vector_PRECISION_define_spin_color( vector_PRECISION phi, int start, int en
                   for (int d=0; d<4; ++d) {
                     for (int c=0; c<3; ++c){
                         PRECISION re =  t
-                                      + 3.14 * x
+                                      + 3.14 * z
                                       - 2.72 * y
-                                      + 0.58 * z
+                                      + 0.58 * x
                                       - 1.41 * c
                                       + 1.20 * d;
 
                         int i = loc_site*12    /* site base  */
-                                  + c * 4      /* colour stride 4  */
-                                  + d;         /* spin component   */
+                                  + d * 3      /* stride is 3 colors  */
+                                  + c;         /* color component   */
                         PRECISION non_re = 1.0 / (1.2345 + re); 
                         phi[i] = re + I* non_re;;
                 }
