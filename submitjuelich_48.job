@@ -1,13 +1,14 @@
 #!/bin/bash
 #SBATCH --account=mul-tra
 #SBATCH --job-name=test_solver
-#SBATCH --nodes=1
-#SBATCH --ntasks=1
-#SBATCH --cpus-per-task=48
+#SBATCH --nodes=9
+#SBATCH --ntasks-per-node=48
+#SBATCH --ntasks=432
+#SBATCH --cpus-per-task=1
 #SBATCH --time=00:10:00
-#SBATCH --output=1mpi-out_%j.txt
-#SBATCH --error=1mpi-err_%j.txt
-#SBATCH --partition=devel
+#SBATCH --output=mpi-out_%j.txt
+#SBATCH --error=mpi-err_%j.txt
+#SBATCH --partition=batch
 #SBATCH --export=ALL
 #SBATCH --mail-user=jomjimenezme.work@gmail.com
 
