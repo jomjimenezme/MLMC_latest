@@ -20,6 +20,8 @@
  */
 
 #include "main.h"
+#include<unistd.h>
+
 
 // vector storage for PRECISION precision
 void vector_PRECISION_define( vector_PRECISION phi, complex_PRECISION value, int start, int end, level_struct *l ) {
@@ -72,6 +74,7 @@ void vector_PRECISION_define_random_rademacher(vector_PRECISION phi,
   if(thread == 0 && start != end)
     PROF_PRECISION_START( _SET );
    if(thread == 0){
+    for (int i = start; i < end; ++i) phi[i] = 0.0;
     if ( phi != NULL ) {
       int depth = l->depth;
       int r_t = g.my_coords[T];
@@ -96,7 +99,7 @@ void vector_PRECISION_define_random_rademacher(vector_PRECISION phi,
       //printf("RANK = %d \t Nt= %d,  Nz = %d, Ny= %d, Nx = %d\n T = %d, Z = %d, Y = %d, X = %d\n", g.my_rank, Nt_loc, Nz_loc, Ny_loc, Nx_loc, T,Z,Y,X);
       for (int lt=0; lt<Nt_loc; ++lt) {
         int t = t0 + lt;               // global t
-        bool ontimeslice = (t ==g.time_slice);
+        bool ontimeslice = (t == g.time_slice);
         for (int lz=0; lz<Nz_loc; ++lz) {
           int z = z0 + lz;
             for (int ly=0; ly<Ny_loc; ++ly) {
@@ -108,21 +111,23 @@ void vector_PRECISION_define_random_rademacher(vector_PRECISION phi,
 
                   for (int d=0; d<4; ++d) {
                     for (int c=0; c<3; ++c){
-                        PRECISION re =  t
-                                      + 3.14 * z
-                                      - 2.72 * y
-                                      + 0.58 * x
-                                      - 1.41 * c
-                                      + 1.20 * d;
-
+                        
                         int i = loc_site*12    /* site base  */
                                   + d * 3      /* stride is 3 colors  */
                                   + c;         /* color component   */
-                        PRECISION non_re = 1.0 / (1.2345 + re);
                         if (ontimeslice){
-                        	if(   (PRECISION)((double)rand()<(double)RAND_MAX/2.0)   ) phi[i ]=  (double) (-1);
-               						else phi[i ]= (PRECISION)(1);}
-                        else{phi[i]=0.0;}
+                          //printf("IN, g.time_slice = %d, t = %d, z %d, y %d, x %d,\t RANK %d\n", g.time_slice, t, z,y,x, g.my_rank); 
+                        	if(   (PRECISION)((double)rand()<(double)RAND_MAX/2.0)   ) {
+                        		phi[i ]=  (double) (-1);
+                        	}
+                        	else{
+                        	   phi[i ]= (PRECISION)(1);
+                        	}
+                        }
+                        else{
+                          phi[i]=0.0;
+                        }
+                        //fflush(0); MPI_Barrier(MPI_COMM_WORLD); sleep(0.01);
                 }
               }
             }
