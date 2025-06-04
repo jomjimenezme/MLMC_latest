@@ -287,7 +287,6 @@ complex_PRECISION hutchinson_mlmc_difference_PRECISION( int type_appl, level_str
     int d3 = 1;
     if(d3 == 1){
       vector_PRECISION_copy(h->mlmc_b1, h->rademacher_vector, start, end, l );  
-printf("I--AMH--ERE\n");fflush(0);
       if( l->depth==0 ){
         gamma5_PRECISION( h->rademacher_vector, h->rademacher_vector, l, threading );
       }
