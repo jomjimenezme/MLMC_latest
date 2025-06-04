@@ -937,6 +937,14 @@ void read_geometry_data( FILE *in, int ls ) {
     else if ( i==1 ) g.setup_iter[i] = 3;
     else if ( i>1 ) g.setup_iter[i] = 2;
     read_parameter( &save_pt, inputstr, "%d", 1, in, _DEFAULT_SET );
+    
+    // do this only for the finest level, as this is a global quantity
+    if ( i==0 ) {
+      sprintf( inputstr, "d%d trace op type:", i );
+      save_pt = &(g.trace_op_type); g.trace_op_type = 1;
+      read_parameter( &save_pt, inputstr, "%d", 1, in, _DEFAULT_SET );
+    }
+
 
     sprintf( inputstr, "d%d trace max iters:", i );
     save_pt = &(g.trace_max_iters[i]); g.trace_max_iters[i] = 100;

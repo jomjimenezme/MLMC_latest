@@ -144,16 +144,30 @@ int main( int argc, char **argv ) {
       
       if(g.my_rank==0) printf("\n\n Timeslice %d\n\n",  g.time_slice);
       
-      START_MASTER(threadingx)
-      if(g.my_rank==0) printf("Using plain Hutchinson for computing the trace\n");
-      END_MASTER(threadingx)
+     if( g.trace_op_type == 2){
+        START_MASTER(threadingx)
+        if(g.my_rank==0) printf("Using plain Hutchinson for computing the trace\n");
+        END_MASTER(threadingx)
+          
+        trace = hutchinson_driver_double( &l, &threading );
         
-      trace = hutchinson_driver_double( &l, &threading );
-        
-      START_MASTER(threadingx)
-      if(g.my_rank==0) printf("\n");
-      if(g.my_rank==0) printf("Resulting trace from plain Hutchinson = %f+i%f\n", CSPLIT(trace));
-      END_MASTER(threadingx)
+        START_MASTER(threadingx)
+        if(g.my_rank==0) printf("\nResulting trace from plain Hutchinson = %f+i%f\n", CSPLIT(trace)); fflush(0); 
+        END_MASTER(threadingx)
+      }
+      
+      if( g.trace_op_type == 1){
+
+        START_MASTER(threadingx)
+        if(g.my_rank==0) printf("Using MLMC for computing the trace\n");
+        END_MASTER(threadingx)
+          
+        trace = mlmc_hutchinson_g5_driver_double(&l, &threading);
+          
+        START_MASTER(threadingx)
+        if(g.my_rank==0) printf("\nResulting trace from MLMC  = %f+i%f\n", CSPLIT(trace)); fflush(0); 
+        END_MASTER(threadingx)
+      }
 
     }
     
