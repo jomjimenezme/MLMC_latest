@@ -140,7 +140,7 @@ int main( int argc, char **argv ) {
       hutchinson_diver_double_init( &l, &threading );  
       hutchinson_diver_double_alloc( &l, &threading ); 
     }
-    for(g.time_slice = 0; g.time_slice <10 ; g.time_slice++){//g.time_slice< g.global_lattice[0][0]; g.time_slice++){
+    for(g.time_slice = 0; g.time_slice <1 ; g.time_slice++){//g.time_slice< g.global_lattice[0][0]; g.time_slice++){
       
       if(g.my_rank==0) printf("\n\n Timeslice %d\n\n",  g.time_slice);
       
@@ -149,7 +149,8 @@ int main( int argc, char **argv ) {
         if(g.my_rank==0) printf("Using plain Hutchinson for computing the trace\n");
         END_MASTER(threadingx)
           
-        trace = hutchinson_driver_double( &l, &threading );
+        trace = g5_3D_hutchinson_driver_double( &l, &threading );
+        //trace = hutchinson_driver_double( &l, &threading );
         
         START_MASTER(threadingx)
         if(g.my_rank==0) printf("\nResulting trace from plain Hutchinson = %f+i%f\n", CSPLIT(trace)); fflush(0); 
