@@ -163,7 +163,7 @@ int main( int argc, char **argv ) {
         if(g.my_rank==0) printf("Using MLMC for computing the trace\n");
         END_MASTER(threadingx)
           
-        trace = mlmc_hutchinson_g5_driver_double(&l, &threading);
+        trace = g5_3D_mlmc_hutchinson_driver_double(&l, &threading);
           
         START_MASTER(threadingx)
         if(g.my_rank==0) printf("\nResulting trace from MLMC  = %f+i%f\n", CSPLIT(trace)); fflush(0); 

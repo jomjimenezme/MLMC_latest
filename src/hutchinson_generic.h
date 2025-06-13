@@ -21,6 +21,11 @@
 
   complex_PRECISION g5_3D_hutchinson_driver_PRECISION( level_struct *l, struct Thread *threading );
   complex_PRECISION g5_3D_hutchinson_plain_PRECISION( int type_appl, level_struct *l, hutchinson_PRECISION_struct* h, struct Thread *threading );
+  complex_PRECISION g5_3D_hutchinson_mlmc_difference_PRECISION( int type_appl, level_struct *l, hutchinson_PRECISION_struct* h, struct Thread *threading );
+  complex_PRECISION g5_3D_mlmc_hutchinson_driver_PRECISION( level_struct *l, struct Thread *threading );
+  complex_PRECISION g5_3D_hutchinson_mlmc_coarsest_PRECISION( int type_appl, level_struct *l, hutchinson_PRECISION_struct* h, struct Thread *threading );
+
+
 
   
   //-------------------- Jose’s code below -----------------------------------------
