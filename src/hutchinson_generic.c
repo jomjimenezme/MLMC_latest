@@ -65,6 +65,8 @@ void hutchinson_diver_PRECISION_free( level_struct *l, struct Thread *threading 
 }
 
 
+/*
+
 complex_PRECISION hutchinson_driver_PRECISION( level_struct *l, struct Thread *threading ){
   complex_PRECISION trace = 0.0;
   struct sample estimate;
@@ -78,6 +80,7 @@ complex_PRECISION hutchinson_driver_PRECISION( level_struct *l, struct Thread *t
 
   return trace;
 }
+*/
 
 
 void rademacher_create_PRECISION( level_struct *l, hutchinson_PRECISION_struct* h, int type, struct Thread *threading ){
@@ -107,7 +110,7 @@ gmres_PRECISION_struct* get_p_struct_PRECISION( level_struct* l ){
 
 
 int apply_solver_PRECISION( level_struct* l, struct Thread *threading ){
-  int nr_iters;
+  int nr_iters = 0;
   double buff1=0, buff2=0;
 
   gmres_PRECISION_struct* p = get_p_struct_PRECISION( l );
@@ -122,7 +125,47 @@ int apply_solver_PRECISION( level_struct* l, struct Thread *threading ){
   END_MASTER(threading);
   SYNC_MASTER_TO_ALL(threading);
 
-  nr_iters = fgmres_PRECISION( p, l, threading );
+  if ( l->level > 0 ) {
+    nr_iters = fgmres_PRECISION( p, l, threading );
+  } else {
+#ifdef GCRODR
+    // NOTE : something that shouldn't be happening here happens, namely the RHS is changed
+    //        by the function coarse_solve_odd_even_PRECISION(...). So, we back it up and restore
+    //        it as necessary
+
+    int start,end;
+    //compute_core_start_end( l->p_PRECISION.v_start, l->p_PRECISION.v_end, &start, &end, l, threading );
+    compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
+    vector_PRECISION_copy( l->p_PRECISION.rhs_bk, l->p_PRECISION.b, start, end, l );
+
+    START_MASTER(threading)
+    l->p_PRECISION.was_there_stagnation = 0;
+    END_MASTER(threading)
+    SYNC_MASTER_TO_ALL(threading)
+
+    while( 1 ) {
+      coarse_solve_odd_even_PRECISION( &(l->p_PRECISION), &(l->oe_op_PRECISION), l, threading );
+      if ( l->p_PRECISION.was_there_stagnation==0 ) { break; }
+      else if ( l->p_PRECISION.was_there_stagnation==1 && l->p_PRECISION.gcrodr_PRECISION.CU_usable==1 ) {
+        // in case there was stagnation, we need to rebuild the coarsest-level data
+        double time_bk = g.coarsest_time;
+        coarsest_level_resets_PRECISION( l, threading );
+        START_MASTER(threading)
+        l->p_PRECISION.was_there_stagnation = 0;
+        g.coarsest_time = time_bk;
+        END_MASTER(threading)
+        SYNC_MASTER_TO_ALL(threading)
+        vector_PRECISION_copy( l->p_PRECISION.b, l->p_PRECISION.rhs_bk, start, end, l );
+      }
+      else {
+        // in this case, there was stagnation but no deflation/recycling subspace is being used
+        break;
+      }
+    }
+#else
+    coarse_solve_odd_even_PRECISION( &(l->p_PRECISION), &(l->oe_op_PRECISION), l, threading );
+#endif
+  }
 
   START_MASTER(threading);
   p->tol = buff1;
@@ -182,7 +225,7 @@ struct sample hutchinson_blind_PRECISION( level_struct *l, hutchinson_PRECISION_
     }
   }
   double t1 = MPI_Wtime();
-  if(g.my_rank==0){
+  if(g.my_rank==0) {
     printf("\n");
     printf("Time for sample computation (Avg.): \t %f\n\n", (t1-t0)/h->max_iters[l->depth]);
   }
@@ -238,7 +281,7 @@ complex_PRECISION g5_3D_hutchinson_plain_PRECISION( int type_appl, level_struct 
   // subtract the results and perform dot product
   {
     int start, end;
-    complex_PRECISION aux;
+    complex_PRECISION aux = 0;
     gmres_PRECISION_struct* p = get_p_struct_PRECISION( l );
     compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
 
@@ -257,16 +300,41 @@ complex_PRECISION g5_3D_hutchinson_plain_PRECISION( int type_appl, level_struct 
 }
 
 
+// apply the interpolation
+void apply_P_PRECISION( vector_PRECISION out, vector_PRECISION in, level_struct* l, struct Thread *threading ){
+  if( l->depth==0 ){
+    interpolate3_PRECISION( l->sbuf_PRECISION[0], in, l, threading );
+    trans_back_PRECISION( (vector_double)out, l->sbuf_PRECISION[0], l->s_PRECISION.op.translation_table, l, threading );
+  }
+  else{
+    interpolate3_PRECISION( out, in, l, threading );
+  }
+}
+
+
+// apply the restriction
+void apply_R_PRECISION( vector_PRECISION out, vector_PRECISION in, level_struct* l, struct Thread *threading ){
+  if( l->depth==0 ){
+    trans_PRECISION( l->sbuf_PRECISION[0], (vector_double)in, l->s_PRECISION.op.translation_table, l, threading );
+    restrict_PRECISION( out, l->sbuf_PRECISION[0], l, threading );
+  }
+  else{
+    restrict_PRECISION( out, in, l, threading );
+  }
+}
+
+
 complex_PRECISION g5_3D_hutchinson_mlmc_difference_PRECISION( int type_appl, level_struct *l, hutchinson_PRECISION_struct* h, struct Thread *threading ){
   // store from fine to coarsest lvl in an array
   level_struct *finest_l = h->finest_level;
   level_struct *levels[g.num_levels];
   int lvl_nr = 0, l_index = -1;
 
-  complex_PRECISION aux;
+  complex_PRECISION aux = 0;
 
-  if(g.my_rank == 0)
+  if(g.my_rank == 0) {
     printf("\n\n------------------function at level %d ------------------\n\n", l->depth);fflush(0);
+  }
 
   for (level_struct *l_tmp = finest_l; l_tmp != NULL; l_tmp = l_tmp->next_level) {
     levels[lvl_nr] = l_tmp;
@@ -327,12 +395,12 @@ complex_PRECISION g5_3D_hutchinson_mlmc_difference_PRECISION( int type_appl, lev
       level_struct *fine   = levels[i - 1];  /* finer level (towards finest) */
 
       compute_core_start_end(0, fine->inner_vector_size, &start_tmp, &end_tmp, fine, threading);
-      // TODO : CHECK if coarse or fine !!
       apply_P_PRECISION(h->mlmc_b2, h->mlmc_b1, fine, threading);  /* prolongate from coarse to fine */
       vector_PRECISION_copy(h->mlmc_b1, h->mlmc_b2, start_tmp, end_tmp, fine);  /* copy result to fine level */
 
-      if(g.my_rank == 0)
-          printf("TERM 1: Prolongating from depth %d to %d, \tfunction called at depth %d\n\n", coarse->depth, fine->depth, l->depth);
+      if(g.my_rank == 0) {
+        printf("TERM 1: Prolongating from depth %d to %d, \tfunction called at depth %d\n\n", coarse->depth, fine->depth, l->depth);
+      }
 
     }
 
@@ -393,8 +461,9 @@ complex_PRECISION g5_3D_hutchinson_mlmc_difference_PRECISION( int type_appl, lev
       // copy result to fine level
       vector_PRECISION_copy(h->mlmc_b1, h->mlmc_b2, start_tmp, end_tmp, fine);
 
-      if(g.my_rank == 0)
-          printf("TERM 2: Prolongating from depth %d to %d, \tfunction called at depth %d\n\n", coarse->depth, fine->depth, l->depth);
+      if(g.my_rank == 0) {
+        printf("TERM 2: Prolongating from depth %d to %d, \tfunction called at depth %d\n\n", coarse->depth, fine->depth, l->depth);
+      }
     }
 
     // Copy result in second term vector
@@ -427,23 +496,17 @@ complex_PRECISION g5_3D_hutchinson_mlmc_difference_PRECISION( int type_appl, lev
 }
 
 
-
-
-
-
-
-
-
 complex_PRECISION g5_3D_hutchinson_mlmc_coarsest_PRECISION( int type_appl, level_struct *l, hutchinson_PRECISION_struct* h, struct Thread *threading ){
   // store from fine to coarsest lvl in an array
   level_struct *finest_l = h->finest_level;
   level_struct *levels[g.num_levels];
   int lvl_nr = 0, l_index = -1;
 
-  complex_PRECISION aux;
+  complex_PRECISION aux = 0;
 
-  if(g.my_rank == 0)
+  if(g.my_rank == 0) {
     printf("\n\n------------------function at level %d ------------------\n\n", l->depth);fflush(0);
+  }
 
   for (level_struct *l_tmp = finest_l; l_tmp != NULL; l_tmp = l_tmp->next_level) {
     levels[lvl_nr] = l_tmp;
@@ -508,9 +571,9 @@ complex_PRECISION g5_3D_hutchinson_mlmc_coarsest_PRECISION( int type_appl, level
       apply_P_PRECISION(h->mlmc_b2, h->mlmc_b1, fine, threading);  /* prolongate from coarse to fine */
       vector_PRECISION_copy(h->mlmc_b1, h->mlmc_b2, start_tmp, end_tmp, fine);  /* copy result to fine level */
 
-      if(g.my_rank == 0)
-          printf("TERM 1: Prolongating from depth %d to %d, \tfunction called at depth %d\n\n", coarse->depth, fine->depth, l->depth);
-
+      if(g.my_rank == 0) {
+        printf("TERM 1: Prolongating from depth %d to %d, \tfunction called at depth %d\n\n", coarse->depth, fine->depth, l->depth);
+      }
     }
 
     // Copy result in first term vector at finest
@@ -743,18 +806,7 @@ complex_PRECISION g5_3D_mlmc_hutchinson_driver_PRECISION( level_struct *l, struc
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
+/*
 
 //-------------------------------- Jose’s code below -------------------------------------------------//
 
@@ -967,10 +1019,6 @@ struct sample hutchinson_blind_g5_PRECISION( level_struct *l, int depth, hutchin
        apply_R_PRECISION( h->rademacher_vector, h->rademacher_vector, l_restrict, threading );
        l_restrict = l_restrict->next_level;
        //if(g.my_rank==0)printf("restricting = %d times\n", d+1);fflush(0);
-    /*  if(depth==1){
-  printf("%d d=%d\n",l_restrict->depth,d);fflush(0);
-     //exit(0);
-  }*/
     //compute_core_start_end( 0, lx->inner_vector_size, &start, &end, lx, threading );
     //vector_PRECISION_copy(  h->rademacher_vector, h->mlmc_testing, start, end, lx );
 
@@ -1018,27 +1066,4 @@ struct sample hutchinson_blind_g5_PRECISION( level_struct *l, int depth, hutchin
   return estimate;
 }
 
-
-
-// apply the interpolation
-void apply_P_PRECISION( vector_PRECISION out, vector_PRECISION in, level_struct* l, struct Thread *threading ){
-  if( l->depth==0 ){
-    interpolate3_PRECISION( l->sbuf_PRECISION[0], in, l, threading );
-    trans_back_PRECISION( (vector_double)out, l->sbuf_PRECISION[0], l->s_PRECISION.op.translation_table, l, threading );
-  }
-  else{
-    interpolate3_PRECISION( out, in, l, threading );
-  }
-}
-
-
-// apply the restriction
-void apply_R_PRECISION( vector_PRECISION out, vector_PRECISION in, level_struct* l, struct Thread *threading ){
-  if( l->depth==0 ){
-    trans_PRECISION( l->sbuf_PRECISION[0], (vector_double)in, l->s_PRECISION.op.translation_table, l, threading );
-    restrict_PRECISION( out, l->sbuf_PRECISION[0], l, threading );
-  }
-  else{
-    restrict_PRECISION( out, in, l, threading );
-  }
-}
+*/

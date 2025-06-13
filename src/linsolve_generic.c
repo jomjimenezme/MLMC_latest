@@ -832,6 +832,7 @@ int fgmres_PRECISION( gmres_PRECISION_struct *p, level_struct *l, struct Thread 
   }
   
   endProfilingRange(profilingRangeResFgmres);
+  if ( g.on_solve == 1 ) printf("SOLVER ITERS (depth=%d) : %d\n", l->depth, iter);
   return iter;
 }
 

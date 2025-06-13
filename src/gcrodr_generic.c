@@ -698,6 +698,7 @@ int flgcrodr_PRECISION( gmres_PRECISION_struct *p, level_struct *l, struct Threa
       p->initial_guess_zero = buff_init_guess;
       END_MASTER(threading)
       SYNC_MASTER_TO_ALL(threading)
+      if ( g.on_solve == 1 ) printf("SOLVER ITERS (depth=%d) : %d\n", l->depth, m);
       return m;
     }
 
@@ -761,6 +762,7 @@ int flgcrodr_PRECISION( gmres_PRECISION_struct *p, level_struct *l, struct Threa
       p->initial_guess_zero = buff_init_guess;
       END_MASTER(threading)
       SYNC_MASTER_TO_ALL(threading)
+      if ( g.on_solve == 1 ) printf("SOLVER ITERS (depth=%d) : %d\n", l->depth, m);
       return m;
     }
 
@@ -777,6 +779,7 @@ int flgcrodr_PRECISION( gmres_PRECISION_struct *p, level_struct *l, struct Threa
     p->initial_guess_zero = buff_init_guess;
     END_MASTER(threading)
     SYNC_MASTER_TO_ALL(threading)
+    if ( g.on_solve == 1 ) printf("SOLVER ITERS (depth=%d) : %d\n", l->depth, m);
     return m;
   }
 
@@ -930,6 +933,7 @@ int flgcrodr_PRECISION( gmres_PRECISION_struct *p, level_struct *l, struct Threa
       p->initial_guess_zero = buff_init_guess;
       END_MASTER(threading)
       SYNC_MASTER_TO_ALL(threading)
+      if ( g.on_solve == 1 ) printf("SOLVER ITERS (depth=%d) : %d\n", l->depth, fgmresx_iter);
       return fgmresx_iter;
     }
 
@@ -942,6 +946,7 @@ int flgcrodr_PRECISION( gmres_PRECISION_struct *p, level_struct *l, struct Threa
   p->initial_guess_zero = buff_init_guess;
   END_MASTER(threading)
   SYNC_MASTER_TO_ALL(threading)
+  if ( g.on_solve == 1 ) printf("SOLVER ITERS (depth=%d) : %d\n", l->depth, fgmresx_iter);
   return fgmresx_iter;
 }
 
