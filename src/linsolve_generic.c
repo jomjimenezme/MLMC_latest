@@ -109,6 +109,8 @@ void cpu_fgmres_PRECISION_struct_init( gmres_PRECISION_struct *p ) {
   p->gcr_buffer_dotprods = NULL;
   p->gcr_betas_dotprods  = NULL;
 #endif
+
+  p->print_iters = 0;
 }
 
 
@@ -832,7 +834,7 @@ int fgmres_PRECISION( gmres_PRECISION_struct *p, level_struct *l, struct Thread 
   }
   
   endProfilingRange(profilingRangeResFgmres);
-  if ( g.on_solve == 1 ) printf("SOLVER ITERS (depth=%d) : %d\n", l->depth, iter);
+  if ( g.my_rank == 0 && p->print_iters == 1 ) printf("SOLVER ITERS (depth=%d) : %d\n", l->depth, iter);
   return iter;
 }
 

@@ -266,6 +266,8 @@ typedef struct
     int syst_size;
     vector_PRECISION *Va, *Za;
 #endif
+
+    int print_iters;
 } gmres_PRECISION_struct;
 
 typedef struct {

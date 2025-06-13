@@ -115,6 +115,8 @@ int apply_solver_PRECISION( level_struct* l, struct Thread *threading ){
 
   gmres_PRECISION_struct* p = get_p_struct_PRECISION( l );
 
+  p->print_iters = 1;
+
   buff1 = p->tol;
   p->tol = g.tol;
   START_MASTER(threading);
@@ -174,6 +176,8 @@ int apply_solver_PRECISION( level_struct* l, struct Thread *threading ){
   }
   END_MASTER(threading);
   SYNC_MASTER_TO_ALL(threading);
+
+  p->print_iters = 0;
 
   return nr_iters;
 }
