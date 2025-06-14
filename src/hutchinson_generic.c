@@ -86,7 +86,11 @@ complex_PRECISION hutchinson_driver_PRECISION( level_struct *l, struct Thread *t
 void rademacher_create_PRECISION( level_struct *l, hutchinson_PRECISION_struct* h, int type, struct Thread *threading ){
   if( type==0 ){
     START_MASTER(threading)
-    vector_PRECISION_define_random_rademacher( h->rademacher_vector, 0, l->inner_vector_size, l );
+    if(h->hutch_compute_one_sample == g5_3D_hutchinson_mlmc_difference_PRECISION || h->hutch_compute_one_sample == g5_3D_hutchinson_mlmc_coarsest_PRECISION){
+      vector_PRECISION_define_random_rademacher( h->rademacher_vector, 0, h->finest_level->inner_vector_size, h->finest_level );
+    }else{
+      vector_PRECISION_define_random_rademacher( h->rademacher_vector, 0, l->inner_vector_size, l );
+    }
     END_MASTER(threading)
     SYNC_MASTER_TO_ALL(threading)
   }
