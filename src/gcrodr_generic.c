@@ -698,7 +698,7 @@ int flgcrodr_PRECISION( gmres_PRECISION_struct *p, level_struct *l, struct Threa
       p->initial_guess_zero = buff_init_guess;
       END_MASTER(threading)
       SYNC_MASTER_TO_ALL(threading)
-      if ( g.my_rank == 0 && p->print_iters == 1 ) printf("SOLVER ITERS (depth=%d) : %d\n", l->depth, m);
+      if ( g.my_rank == 0 && p->print_iters == 1 ) printf("SOLVER ITERS #1 (depth=%d) : %d\n", l->depth, m);
       return m;
     }
 
@@ -762,7 +762,7 @@ int flgcrodr_PRECISION( gmres_PRECISION_struct *p, level_struct *l, struct Threa
       p->initial_guess_zero = buff_init_guess;
       END_MASTER(threading)
       SYNC_MASTER_TO_ALL(threading)
-      if ( g.my_rank == 0 && p->print_iters == 1 ) printf("SOLVER ITERS (depth=%d) : %d\n", l->depth, m);
+      if ( g.my_rank == 0 && p->print_iters == 1 ) printf("SOLVER ITERS #2 (depth=%d) : %d\n", l->depth, m);
       return m;
     }
 
@@ -779,13 +779,15 @@ int flgcrodr_PRECISION( gmres_PRECISION_struct *p, level_struct *l, struct Threa
     p->initial_guess_zero = buff_init_guess;
     END_MASTER(threading)
     SYNC_MASTER_TO_ALL(threading)
-    if ( g.my_rank == 0 && p->print_iters == 1 ) printf("SOLVER ITERS (depth=%d) : %d\n", l->depth, m);
+    if ( g.my_rank == 0 && p->print_iters == 1 ) printf("SOLVER ITERS #3 (depth=%d) : %d\n", l->depth, m);
     return m;
   }
 
   for ( ol=0; ol < p->num_restart; ol++ )  {
 
     beta = global_norm_PRECISION( p->r, p->v_start, p->v_end, l, threading ); // gamma_0 = norm(r)
+
+    if ( g.my_rank == 0 && p->print_iters == 1 ) printf("relative residual = %e\n", beta/p->gcrodr_PRECISION.norm_r0);
 
     START_MASTER(threading)
     // setting the following line for the upcoming call to fgmresx_PRECISION(...)
@@ -933,7 +935,7 @@ int flgcrodr_PRECISION( gmres_PRECISION_struct *p, level_struct *l, struct Threa
       p->initial_guess_zero = buff_init_guess;
       END_MASTER(threading)
       SYNC_MASTER_TO_ALL(threading)
-      if ( g.my_rank == 0 && p->print_iters == 1 ) printf("SOLVER ITERS (depth=%d) : %d\n", l->depth, fgmresx_iter);
+      if ( g.my_rank == 0 && p->print_iters == 1 ) printf("SOLVER ITERS #4 (depth=%d) : %d\n", l->depth, fgmresx_iter);
       return fgmresx_iter;
     }
 
@@ -946,7 +948,7 @@ int flgcrodr_PRECISION( gmres_PRECISION_struct *p, level_struct *l, struct Threa
   p->initial_guess_zero = buff_init_guess;
   END_MASTER(threading)
   SYNC_MASTER_TO_ALL(threading)
-  if ( g.my_rank == 0 && p->print_iters == 1 ) printf("SOLVER ITERS (depth=%d) : %d\n", l->depth, fgmresx_iter);
+  if ( g.my_rank == 0 && p->print_iters == 1 ) printf("SOLVER ITERS #5 (depth=%d) : %d\n", l->depth, fgmresx_iter);
   return fgmresx_iter;
 }
 
@@ -1120,7 +1122,7 @@ int fgmresx_PRECISION( gmres_PRECISION_struct *p, level_struct *l, struct Thread
       gamma_jp1 = cabs( p->gamma[j+1] );
 
       START_MASTER(threading)
-      //printf0("g (proc=%d,j=%d) rel residual (gcro-dr) = %f\n\n", g.my_rank, j, gamma_jp1/norm_r0);
+      if ( p->print_iters == 1 ) printf0("g (proc=%d,j=%d) rel residual (gcro-dr) = %e\n", g.my_rank, j, gamma_jp1/norm_r0);
       END_MASTER(threading)
 
       //printf0("WITHIN INNER GMRES, inner rel res = %.8f ***\n", cabs( p->gamma[j+1] )/norm_r0);

@@ -262,6 +262,7 @@ void vcycle_PRECISION( vector_PRECISION phi, vector_PRECISION Dphi, vector_PRECI
               g.coarsest_time -= MPI_Wtime();
               END_MASTER(threading)
 
+/*
 #ifdef GCRODR
               // NOTE : something that shouldn't be happening here happens, namely the RHS is changed
               //        by the function coarse_solve_odd_even_PRECISION(...). So, we back it up and restore
@@ -299,6 +300,9 @@ void vcycle_PRECISION( vector_PRECISION phi, vector_PRECISION Dphi, vector_PRECI
 #else
               coarse_solve_odd_even_PRECISION( &(l->next_level->p_PRECISION), &(l->next_level->oe_op_PRECISION), l->next_level, threading );
 #endif
+*/
+
+              coarse_solve_odd_even_PRECISION( &(l->next_level->p_PRECISION), &(l->next_level->oe_op_PRECISION), l->next_level, threading );
 
               START_MASTER(threading)
               g.coarsest_time += MPI_Wtime();

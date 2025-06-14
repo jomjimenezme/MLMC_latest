@@ -130,7 +130,8 @@ int apply_solver_PRECISION( level_struct* l, struct Thread *threading ){
   if ( l->level > 0 ) {
     nr_iters = fgmres_PRECISION( p, l, threading );
   } else {
-#ifdef GCRODR
+    coarse_solve_odd_even_PRECISION( &(l->p_PRECISION), &(l->oe_op_PRECISION), l, threading );
+/*#ifdef GCRODR
     // NOTE : something that shouldn't be happening here happens, namely the RHS is changed
     //        by the function coarse_solve_odd_even_PRECISION(...). So, we back it up and restore
     //        it as necessary
@@ -167,6 +168,7 @@ int apply_solver_PRECISION( level_struct* l, struct Thread *threading ){
 #else
     coarse_solve_odd_even_PRECISION( &(l->p_PRECISION), &(l->oe_op_PRECISION), l, threading );
 #endif
+*/
   }
 
   START_MASTER(threading);
