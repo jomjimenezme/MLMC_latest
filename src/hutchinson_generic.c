@@ -86,11 +86,11 @@ complex_PRECISION hutchinson_driver_PRECISION( level_struct *l, struct Thread *t
 void rademacher_create_PRECISION( level_struct *l, hutchinson_PRECISION_struct* h, int type, struct Thread *threading ){
   if( type==0 ){
     START_MASTER(threading)
-    if(h->hutch_compute_one_sample == g5_3D_hutchinson_mlmc_difference_PRECISION || h->hutch_compute_one_sample == g5_3D_hutchinson_mlmc_coarsest_PRECISION){
-      vector_PRECISION_define_random_rademacher( h->rademacher_vector, 0, h->finest_level->inner_vector_size, h->finest_level );
-    }else{
-      vector_PRECISION_define_random_rademacher( h->rademacher_vector, 0, l->inner_vector_size, l );
-    }
+    // if(h->hutch_compute_one_sample == g5_3D_hutchinson_mlmc_difference_PRECISION || h->hutch_compute_one_sample == g5_3D_hutchinson_mlmc_coarsest_PRECISION){
+    // vector_PRECISION_define_random_rademacher( h->rademacher_vector, 0, h->finest_level->inner_vector_size, h->finest_level );
+    // }else{
+    vector_PRECISION_define_random_rademacher( h->rademacher_vector, 0, l->inner_vector_size, l );
+    //}
     END_MASTER(threading)
     SYNC_MASTER_TO_ALL(threading)
   }
@@ -273,7 +273,9 @@ complex_PRECISION g5_3D_hutchinson_plain_PRECISION( int type_appl, level_struct 
     compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
 
     if ( type_appl==-1 ) {
-      vector_PRECISION_copy( p->b, h->rademacher_vector, start, end, l );
+      vector_PRECISION_copy( h->mlmc_b1, h->rademacher_vector, start, end, l );
+      vector_PRECISION_ghg(  h->mlmc_b1, 0, l->inner_vector_size, l );
+      vector_PRECISION_copy( p->b,  h->mlmc_b1, start, end, l );
     } else {
       //vector_PRECISION_copy( p->b, l->powerit_PRECISION.vecs[type_appl], start, end, l );
     }
