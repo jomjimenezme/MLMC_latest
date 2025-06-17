@@ -287,7 +287,7 @@ complex_PRECISION g5_3D_hutchinson_plain_PRECISION( int type_appl, level_struct 
     if ( type_appl==-1 ) {
       //vector_PRECISION_copy( h->mlmc_b1, h->rademacher_vector, start, end, l );
       vector_PRECISION_ghg(  h->rademacher_vector, 0, l->inner_vector_size, l );
-      vector_PRECISION_copy( p->b,  h->mlmc_b1, start, end, l );
+      vector_PRECISION_copy( p->b,  h->rademacher_vector, start, end, l );
       //vector_PRECISION_copy( p->b, h->rademacher_vector, start, end, l );
     } else {
       //vector_PRECISION_copy( p->b, l->powerit_PRECISION.vecs[type_appl], start, end, l );
