@@ -260,7 +260,9 @@ complex_PRECISION g5_3D_hutchinson_driver_PRECISION( level_struct *l, struct Thr
   
     if (g.probing) {
     for (g.coloring_count = 1; g.coloring_count < g.num_colors[0] + 1; g.coloring_count++){
-	printf("\nEstimating trace at color %d\n", g.coloring_count);
+	if(g.my_rank==0)
+		printf("\nEstimating trace at color %d\n", g.coloring_count);
+
         estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
         trace += estimate.acc_trace / estimate.sample_size;
     }
