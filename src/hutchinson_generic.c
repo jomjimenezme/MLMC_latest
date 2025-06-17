@@ -226,6 +226,9 @@ struct sample hutchinson_blind_PRECISION( level_struct *l, hutchinson_PRECISION_
       if(g.my_rank==0) {
         printf("[%d, trace: %f+%f, variance: %f] ", i, creal(trace), cimag(trace), creal(variance));
         fflush(0);
+
+	if(g.probing == 1 && i == h->max_iters[l->depth] - 1)
+            g.variances[l->depth] += creal(variance);
       }
       END_MASTER(threading);
       RMSD = sqrt(creal(variance)/j);
@@ -254,8 +257,17 @@ complex_PRECISION g5_3D_hutchinson_driver_PRECISION( level_struct *l, struct Thr
 
   // set the pointer to the finest-level Hutchinson estimator
   h->hutch_compute_one_sample = g5_3D_hutchinson_plain_PRECISION;
-  estimate = hutchinson_blind_PRECISION( lx, h, 0, threading );
-  trace += estimate.acc_trace/estimate.sample_size;
+  
+    if (g.probing) {
+    for (g.coloring_count = 1; g.coloring_count < g.num_colors[0] + 1; g.coloring_count++){
+	printf("\nEstimating trace at color %d\n", g.coloring_count);
+        estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
+        trace += estimate.acc_trace / estimate.sample_size;
+    }
+  } else {
+    estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
+    trace += estimate.acc_trace / estimate.sample_size;
+  }
 
   // if deflation vectors are available
   //if(g.trace_deflation_type[l->depth] != 0){
@@ -273,7 +285,10 @@ complex_PRECISION g5_3D_hutchinson_plain_PRECISION( int type_appl, level_struct 
     compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
 
     if ( type_appl==-1 ) {
-      vector_PRECISION_copy( p->b, h->rademacher_vector, start, end, l );
+      //vector_PRECISION_copy( h->mlmc_b1, h->rademacher_vector, start, end, l );
+      vector_PRECISION_ghg(  h->rademacher_vector, 0, l->inner_vector_size, l );
+      vector_PRECISION_copy( p->b,  h->mlmc_b1, start, end, l );
+      //vector_PRECISION_copy( p->b, h->rademacher_vector, start, end, l );
     } else {
       //vector_PRECISION_copy( p->b, l->powerit_PRECISION.vecs[type_appl], start, end, l );
     }
