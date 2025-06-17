@@ -120,6 +120,19 @@ typedef struct global_struct
     double avg_b1;
     double avg_b2;
     double avg_crst;
+
+
+    int probing; //contains information on whether probing is performed or not
+    int coloring_distance;
+    int coloring_method;
+
+    int **colors; //colors of the lattice
+    int **local_colors; //colors of every MPI process
+    int *num_colors; //number of colors at every level
+    int coloring_count;
+
+    double *variances; //variance of the estimator at every level
+
 } global_struct;
 
 extern global_struct g;

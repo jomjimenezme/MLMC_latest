@@ -130,6 +130,15 @@ int main( int argc, char **argv ) {
     rangeHandle = startProfilingRange("Solve");
     g.on_solve=1;
 
+    if(g.probing){
+        graph_coloring();
+    }else {
+        MALLOC(g.num_colors, int, g.num_levels);
+        for(int i = 0; i<g.num_levels; i++){
+            g.num_colors[i] = 1;
+        }
+    }
+
     //solve_driver( &l, &threading );
     // pre-setting some values for the Hutchinson struct
     struct Thread *threadingx = &threading;  
