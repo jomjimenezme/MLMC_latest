@@ -234,6 +234,9 @@ void graph_coloring() {
     time_taken = end_time - start_time;
                  
     printf("\nTime for coloring: %f seconds\n", time_taken);
+    for (int level = 0; level < g.num_levels; level++){
+       printf("\n Colors at depth %d : \t %d \n", level, g.num_colors[level]);
+    }
 
     /*
     FILE *file = fopen("print_files/colors.txt", "w");
