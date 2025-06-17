@@ -1,6 +1,8 @@
 #include "main.h"
 #include "data_layout.h"
 
+//TODO: We need a function that frees the memory allocated by the calls of probing, there are memory leaks
+
 int max(int v[], int size) {
     int max = v[0];  
 
@@ -17,6 +19,16 @@ void vector_copy(int *dest, int *src, int size) {
     for (int i = 0; i < size; i++) {
         dest[i] = src[i];
     }
+}
+
+// Variances must be set to zero for each time-slice trace estimation
+void set_probing_variances_to_zero(){
+  if(g.my_rank == 0){
+    MALLOC(g.variances, double, g.num_levels);
+    for(int level = 0; level < g.num_levels; level++){
+      g.variances[level] = 0.0;
+    }
+  }
 }
 
 void setup_local_colors(){
@@ -42,6 +54,7 @@ void setup_local_colors(){
             vector_copy(current_level_colors, g.colors[level], size);
         }
         
+        g.local_colors[level] = NULL;
         MALLOC(g.local_colors[level], int, local_size);
     
         int *current_level_local_colors;
@@ -143,8 +156,6 @@ void graph_coloring() {
     MALLOC(g.variances, double, g.num_levels);
     
     for(int level = 0; level < g.num_levels; level++){
-
-    g.variances[level] = 0.0;
     
     int T = g.global_lattice[level][0];
     int Z = g.global_lattice[level][1];
@@ -160,6 +171,7 @@ void graph_coloring() {
 
     int total_points = T * Z * Y * X;
     
+    g.colors[level] = NULL;
     MALLOC(g.colors[level], int, total_points);
     
     if(level<g.coloring_method){

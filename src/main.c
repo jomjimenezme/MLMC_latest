@@ -149,22 +149,26 @@ int main( int argc, char **argv ) {
       hutchinson_diver_double_init( &l, &threading );  
       hutchinson_diver_double_alloc( &l, &threading ); 
     }
-    for(g.time_slice = 0; g.time_slice <1 ; g.time_slice++){//g.time_slice< g.global_lattice[0][0]; g.time_slice++){
+    for(g.time_slice = 0; g.time_slice <2 ; g.time_slice++){//g.time_slice< g.global_lattice[0][0]; g.time_slice++){
       
       if(g.my_rank==0) printf("\n\n Timeslice %d\n\n",  g.time_slice);
-      
-     if( g.trace_op_type == 2){
-        START_MASTER(threadingx)
-        if(g.my_rank==0) printf("Using plain Hutchinson for computing the trace\n");
-        END_MASTER(threadingx)
-          
-        trace = g5_3D_hutchinson_driver_double( &l, &threading );
-        //trace = hutchinson_driver_double( &l, &threading );
-        
-        START_MASTER(threadingx)
-        if(g.my_rank==0) printf("\nResulting trace from plain Hutchinson = %f+i%f\n", CSPLIT(trace)); fflush(0);
-        if(g.my_rank==0 && g.probing==1) printf("Resulting variance from plain Hutchinson = %f\n", g.variances[0]);	
-        END_MASTER(threadingx)
+
+      if(g.probing){
+        set_probing_variances_to_zero();
+      }
+
+      if( g.trace_op_type == 2){
+          START_MASTER(threadingx)
+          if(g.my_rank==0) printf("Using plain Hutchinson for computing the trace\n");
+          END_MASTER(threadingx)
+
+          trace = g5_3D_hutchinson_driver_double( &l, &threading );
+          //trace = hutchinson_driver_double( &l, &threading );
+
+          START_MASTER(threadingx)
+          if(g.my_rank==0) printf("\nResulting trace from plain Hutchinson = %f+i%f\n", CSPLIT(trace)); fflush(0);
+          if(g.my_rank==0 && g.probing==1) printf("Resulting variance from plain Hutchinson = %f\n", g.variances[0]);
+          END_MASTER(threadingx)
       }
       
       if( g.trace_op_type == 1){
@@ -172,11 +176,11 @@ int main( int argc, char **argv ) {
         START_MASTER(threadingx)
         if(g.my_rank==0) printf("Using MLMC for computing the trace\n");
         END_MASTER(threadingx)
-          
+
         trace = g5_3D_mlmc_hutchinson_driver_double(&l, &threading);
-          
+
         START_MASTER(threadingx)
-        if(g.my_rank==0) printf("\nResulting trace from MLMC  = %f+i%f\n", CSPLIT(trace)); fflush(0); 
+        if(g.my_rank==0) printf("\nResulting trace from MLMC  = %f+i%f\n", CSPLIT(trace)); fflush(0);
         END_MASTER(threadingx)
       }
 
