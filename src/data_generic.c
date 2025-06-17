@@ -57,24 +57,59 @@ void vector_PRECISION_define_random( vector_PRECISION phi, int start, int end, l
   PROF_PRECISION_STOP( _SET, 1 );
 }
 
+
+void vector_PRECISION_define_random_rademacher( vector_PRECISION phi, int start, int end, level_struct *l ) {
+
+  int thread = omp_get_thread_num();
+  if(thread == 0 && start != end)
+  PROF_PRECISION_START( _SET );
+  if ( phi != NULL ) {
+    int i;
+    int j = 0;
+
+    int size = g.global_lattice[l->depth][0]*g.global_lattice[l->depth][1]*g.global_lattice[l->depth][2]*g.global_lattice[l->depth][3];
+    int dof = l->num_lattice_site_var;
+
+    for ( i=start; i<end; i++ ){
+      if(g.probing){
+
+         if(i%dof == 0 && i > 0)
+            j++;
+
+         if(g.local_colors[l->depth][j] == g.coloring_count){
+            if(   (PRECISION)((double)rand()<(double)RAND_MAX/2.0)   ) phi[i]=  (double) (-1);
+            else phi[i]= (PRECISION)(1);
+         }else{
+            phi[i] = 0.0;
+         }
+      }else{
+        if(   (PRECISION)((double)rand()<(double)RAND_MAX/2.0)   ) phi[i]=  (double) (-1);
+        else phi[i]= (PRECISION)(1);
+      }
+    }
+  } else {
+    error0("Error in \"vector_PRECISION_define_random\": pointer is null\n");
+  }
+
+  if(thread == 0 && start != end)
+  PROF_PRECISION_STOP( _SET, 1 );
+
+}
+
+
 // TODO: implement separate 3D funciton, this is just for testing
-/*  Rademacher ±1 point-source on a fixed global time-slice
- *  -------------------------------------------------------
- *  • Layout   :  site-major,  dof_idx = spin*3 + colour
- *  • Traversal:  only the sites owned by this rank
- *                lexicographic (t,z,y,x) with x fastest
- *  • Value    :  ±1   (real)  with probability ½ each,   imag = 0
- *  • The source is non-zero only on the global time-slice   g.time_slice.
+/*  Takes a 4D vector and sets it’s components to 0
+ * at all components except in g.time_slice
  */
-void vector_PRECISION_define_random_rademacher(vector_PRECISION phi,
+void vector_PRECISION_ghg(vector_PRECISION phi,
                                                int start, int end,
                                                level_struct *l)
 {
-	int thread = omp_get_thread_num();
+  int thread = omp_get_thread_num();
   if(thread == 0 && start != end)
     PROF_PRECISION_START( _SET );
    if(thread == 0){
-    for (int i = start; i < end; ++i) phi[i] = 0.0;
+    //for (int i = start; i < end; ++i) phi[i] = 0.0;
     if ( phi != NULL ) {
       int depth = l->depth;
       int r_t = g.my_coords[T];
@@ -111,22 +146,23 @@ void vector_PRECISION_define_random_rademacher(vector_PRECISION phi,
 
                   for (int d=0; d<4; ++d) {
                     for (int c=0; c<3; ++c){
-                        
+
                         int i = loc_site*12    /* site base  */
                                   + d * 3      /* stride is 3 colors  */
                                   + c;         /* color component   */
-                        if (ontimeslice){
-                          //printf("IN, g.time_slice = %d, t = %d, z %d, y %d, x %d,\t RANK %d\n", g.time_slice, t, z,y,x, g.my_rank); 
-                        	if(   (PRECISION)((double)rand()<(double)RAND_MAX/2.0)   ) {
-                        		phi[i ]=  (double) (-1);
-                        	}
-                        	else{
-                        	   phi[i ]= (PRECISION)(1);
-                        	}
+                        if (!ontimeslice){
+                          //printf("IN, g.time_slice = %d, t = %d, z %d, y %d, x %d,\t RANK %d\n", g.time_slice, t, z,y,x, g.my_rank);
+                          //if(   (PRECISION)((double)rand()<(double)RAND_MAX/2.0)   ) {
+                              //phi[i ]=  (double) (-1);
+                        	//}
+                        	//else{
+                        	//   phi[i ]= (PRECISION)(1);
+                        	//}
+                          phi[i] = 0.0;
                         }
-                        else{
-                          phi[i]=0.0;
-                        }
+                        //else{
+                        //  phi[i]=0.0;
+                        //}
                         //fflush(0); MPI_Barrier(MPI_COMM_WORLD); sleep(0.01);
                 }
               }
