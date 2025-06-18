@@ -227,8 +227,8 @@ struct sample hutchinson_blind_PRECISION( level_struct *l, hutchinson_PRECISION_
         printf("[%d, trace: %f+%f, variance: %f] ", i, creal(trace), cimag(trace), creal(variance));
         fflush(0);
 
-	if(g.probing == 1 && i == h->max_iters[l->depth] - 1)
-            g.variances[l->depth] += creal(variance);
+	    if(g.probing == 1 && i == h->max_iters[l->depth] - 1)
+        g.variances[l->depth] += creal(variance);
       }
       END_MASTER(threading);
       RMSD = sqrt(creal(variance)/j);
@@ -258,13 +258,13 @@ complex_PRECISION g5_3D_hutchinson_driver_PRECISION( level_struct *l, struct Thr
   // set the pointer to the finest-level Hutchinson estimator
   h->hutch_compute_one_sample = g5_3D_hutchinson_plain_PRECISION;
   
-    if (g.probing) {
+  if (g.probing) {
     for (g.coloring_count = 1; g.coloring_count < g.num_colors[0] + 1; g.coloring_count++){
-	if(g.my_rank==0)
-		printf("\nEstimating trace at color %d\n", g.coloring_count);
+	    if(g.my_rank==0)
+		    printf("\nEstimating trace at color %d\n", g.coloring_count);
 
-        estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
-        trace += estimate.acc_trace / estimate.sample_size;
+      estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
+      trace += estimate.acc_trace / estimate.sample_size;
     }
   } else {
     estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
@@ -380,6 +380,9 @@ complex_PRECISION g5_3D_hutchinson_mlmc_difference_PRECISION( int type_appl, lev
     gmres_PRECISION_struct* p = get_p_struct_PRECISION( l );
     compute_core_start_end( 0, finest_l->inner_vector_size, &start, &end, finest_l, threading );
 
+    // Project rademacher vector into time-slice
+		vector_PRECISION_ghg(  h->rademacher_vector, 0, finest_l->inner_vector_size, finest_l );
+      
     // Apply gamma_5 AT FINEST level and save in buffer
     gamma5_PRECISION( h->mlmc_testing, h->rademacher_vector, finest_l, threading );
 
@@ -552,6 +555,8 @@ complex_PRECISION g5_3D_hutchinson_mlmc_coarsest_PRECISION( int type_appl, level
     gmres_PRECISION_struct* p = get_p_struct_PRECISION( l );
     compute_core_start_end( 0, finest_l->inner_vector_size, &start, &end, finest_l, threading );
 
+    // Project rademacher vector into time-slice
+		vector_PRECISION_ghg(  h->rademacher_vector, 0, finest_l->inner_vector_size, finest_l );
     // Apply gamma_5 AT FINEST level and save in buffer
     gamma5_PRECISION( h->mlmc_testing, h->rademacher_vector, finest_l, threading );
 
@@ -804,8 +809,20 @@ complex_PRECISION g5_3D_mlmc_hutchinson_driver_PRECISION( level_struct *l, struc
   for( i=0; i<g.num_levels-1; i++ ){
     // set the pointer to the mlmc difference operator
     h->hutch_compute_one_sample = g5_3D_hutchinson_mlmc_difference_PRECISION;
-    estimate = hutchinson_blind_PRECISION( lx, h, 0, threading );
-    trace += estimate.acc_trace/estimate.sample_size;
+    
+    if (g.probing) {
+      for (g.coloring_count = 1; g.coloring_count < g.num_colors[i] + 1; g.coloring_count++){
+        if(g.my_rank==0)
+		      printf("\nEstimating trace at color %d\n", g.coloring_count);
+      
+        estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
+        trace += estimate.acc_trace / estimate.sample_size;
+      }
+    } else {
+      estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
+      trace += estimate.acc_trace / estimate.sample_size;
+    }
+    
     //if deflation vectors are available
     //if(g.trace_deflation_type[lx->depth] != 0){
     //  trace += hutchinson_deflated_direct_term_PRECISION( lx, h, threading );
@@ -816,8 +833,19 @@ complex_PRECISION g5_3D_mlmc_hutchinson_driver_PRECISION( level_struct *l, struc
   // coarsest level
   // set the pointer to the coarsest-level Hutchinson estimator
   h->hutch_compute_one_sample = g5_3D_hutchinson_mlmc_coarsest_PRECISION;
-  estimate = hutchinson_blind_PRECISION( lx, h, 0, threading );
-  trace += estimate.acc_trace/estimate.sample_size;
+  
+  if (g.probing) {
+   for (g.coloring_count = 1; g.coloring_count < g.num_colors[i] + 1; g.coloring_count++){
+     if(g.my_rank==0)
+	     printf("\nEstimating trace at color %d\n", g.coloring_count);
+      
+     estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
+     trace += estimate.acc_trace / estimate.sample_size;
+    }
+   } else {
+      estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
+      trace += estimate.acc_trace / estimate.sample_size;
+   }
   //if deflation vectors are available
   //if(g.trace_deflation_type[lx->depth] != 0){
   //  trace += hutchinson_deflated_direct_term_PRECISION( lx, h, threading );

@@ -24,7 +24,6 @@ void vector_copy(int *dest, int *src, int size) {
 // Variances must be set to zero for each time-slice trace estimation
 void set_probing_variances_to_zero(){
   if(g.my_rank == 0){
-    MALLOC(g.variances, double, g.num_levels);
     for(int level = 0; level < g.num_levels; level++){
       g.variances[level] = 0.0;
     }
