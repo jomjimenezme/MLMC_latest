@@ -374,138 +374,46 @@ complex_PRECISION g5_3D_hutchinson_mlmc_difference_PRECISION( int type_appl, lev
   vector_PRECISION second_term = NULL;
   PUBLIC_MALLOC( second_term, complex_PRECISION, finest_l->inner_vector_size );
 
-  // FIRST TERM : result stored in first_term
+  // FIRST TERM
   {
     int start, end;
-    gmres_PRECISION_struct* p = get_p_struct_PRECISION( l );
+    gmres_PRECISION_struct* p = get_p_struct_PRECISION( finest_l );
     compute_core_start_end( 0, finest_l->inner_vector_size, &start, &end, finest_l, threading );
 
-    // Project rademacher vector into time-slice
+    // Project rademacher vector into time-slice: G_1^H x
 		vector_PRECISION_ghg(  h->rademacher_vector, 0, finest_l->inner_vector_size, finest_l );
-      
-    // Apply gamma_5 AT FINEST level and save in buffer
+
+    // gamma_5 G_1^H x
     gamma5_PRECISION( h->mlmc_testing, h->rademacher_vector, finest_l, threading );
 
-    // copy buffer to be restricted below
+
+    vector_PRECISION_copy( p->b,  h->mlmc_testing, start, end, finest_l);
+    // D_1^{-1} gamma_5 G_1^H x
+    apply_solver_PRECISION( finest_l, threading );
+
+
     if ( type_appl==-1 ) {
-      vector_PRECISION_copy( h->mlmc_b1, h->mlmc_testing, start, end, finest_l );
+      // P^H D_1^{-1} gamma_5 G_1^H x
+      apply_R_PRECISION( h->mlmc_b1, p->x, finest_l, threading );
+      // P P^H D_1^{-1} gamma_5 G_1^H x
+      apply_P_PRECISION( h->mlmc_b2, h->mlmc_b1, finest_l, threading );
+      // (I - P^H D_1^{-1} gamma_5 G_1^H) x
+      vector_PRECISION_minus( h->mlmc_b1, h->rademacher_vector, h->mlmc_b2, start, end, finest_l );
+      PRECISION norm =  global_inner_product_PRECISION(  h->mlmc_testing,  h->mlmc_testing, p->v_start, p->v_end, finest_l, threading );
+      if(g.my_rank==0)printf("\n norm%f\n", norm);
+      //vector_PRECISION_copy( h->mlmc_b1, h->mlmc_testing, start, end, finest_l );
     } else {
      // vector_PRECISION_copy( p->b, l->powerit_PRECISION.vecs[type_appl], start, end, l );
     }
 
-    // Restrict rhs from finest to current level
-    int start_tmp, end_tmp, start_tmp_c, end_tmp_c;
-
-    for (int i = 0; i < l_index; ++i) {
-      level_struct *fine   = levels[i];
-      level_struct *coarse = levels[i + 1];
-
-      compute_core_start_end(0, fine->inner_vector_size, &start_tmp, &end_tmp, fine, threading);
-      compute_core_start_end(0, coarse->inner_vector_size, &start_tmp_c, &end_tmp_c, coarse, threading);
-      // restrict from fine to coarse
-      apply_R_PRECISION(h->mlmc_b2, h->mlmc_b1, fine, threading);
-      vector_PRECISION_copy(h->mlmc_b1, h->mlmc_b2, start_tmp_c, end_tmp_c, coarse);
-
-      if (g.my_rank == 0)
-        printf("TERM 1: Restricting from depth %d to %d, \tfunction called at depth %d \n", fine->depth, coarse->depth, l->depth);
-    }
-
-    // Solve at current level
-    compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
-    vector_PRECISION_copy( p->b, h->mlmc_b1, start, end, l);
-    apply_solver_PRECISION( l, threading );
-
-    // Prolongate solution to finest level
-
-    vector_PRECISION_copy(h->mlmc_b1, p->x, start, end, l);
-    for (int i = l_index; i > 0; --i) {
-      level_struct *coarse = levels[i];
-      level_struct *fine   = levels[i - 1];  /* finer level (towards finest) */
-
-      compute_core_start_end(0, fine->inner_vector_size, &start_tmp, &end_tmp, fine, threading);
-      apply_P_PRECISION(h->mlmc_b2, h->mlmc_b1, fine, threading);  /* prolongate from coarse to fine */
-      vector_PRECISION_copy(h->mlmc_b1, h->mlmc_b2, start_tmp, end_tmp, fine);  /* copy result to fine level */
-
-      if(g.my_rank == 0) {
-        printf("TERM 1: Prolongating from depth %d to %d, \tfunction called at depth %d\n\n", coarse->depth, fine->depth, l->depth);
-      }
-
-    }
-
-    // Copy result in first term vector at finest
-    compute_core_start_end(0, finest_l->inner_vector_size, &start_tmp, &end_tmp, finest_l, threading);
-    // copy for dot product
-    vector_PRECISION_copy(first_term, h->mlmc_b1, start_tmp, end_tmp, finest_l);
   }
 
-  // SECOND TERM : result stored in h->mlmc_b2
-  // 1. Restrict (iteratively from finest)
-  // 2. invert
-  // 3. Prolongate (iteratively to finest)
-  {
-    int start, end, start_tmp, end_tmp, start_tmp_c, end_tmp_c;
-    compute_core_start_end( 0, finest_l->inner_vector_size, &start, &end, finest_l, threading );
-
-    if ( type_appl==-1 ) {
-      // Copy gamma_5 x at the finest
-      vector_PRECISION_copy( h->mlmc_b1, h->mlmc_testing, start, end, finest_l );
-
-      // Restrict it from finest to NEXT level
-      for (int i = 0; i < l_index+1; ++i) {
-        level_struct *fine   = levels[i];
-        level_struct *coarse = levels[i + 1];
-
-        compute_core_start_end(0, fine->inner_vector_size, &start_tmp, &end_tmp, fine, threading);
-        compute_core_start_end(0, coarse->inner_vector_size, &start_tmp_c, &end_tmp_c, coarse, threading);
-        // restrict from fine to coarse
-        apply_R_PRECISION(h->mlmc_b2, h->mlmc_b1, fine, threading);
-        vector_PRECISION_copy(h->mlmc_b1, h->mlmc_b2, start_tmp_c, end_tmp_c, coarse);
-
-        if (g.my_rank == 0)
-          printf("TERM 2: Restricting from depth %d to %d, \tfunction called at depth %d \n", fine->depth, coarse->depth, l->depth);
-      }
-
-      // Copy restricted vector to rhs at the next level
-      compute_core_start_end( 0, l->next_level->inner_vector_size, &start_tmp, &end_tmp, l->next_level, threading );
-      vector_PRECISION_copy(l->next_level->p_PRECISION.b, h->mlmc_b1, start_tmp, end_tmp, l->next_level);
-    } else {
-     // apply_R_PRECISION( l->next_level->p_PRECISION.b, l->powerit_PRECISION.vecs[type_appl], l, threading );
-    }
-
-    // the input of this solve is l->next_level->p_PRECISION.x, the output l->next_level->p_PRECISION.b
-    apply_solver_PRECISION( l->next_level, threading );
-
-    // Prolongate Solution from NEXT level to finest
-
-    vector_PRECISION_copy(h->mlmc_b1, l->next_level->p_PRECISION.x, start_tmp, end_tmp, l->next_level);
-    for (int i = l_index+1; i > 0; --i) {
-      level_struct *coarse = levels[i];
-      // finer level (towards finest)
-      level_struct *fine   = levels[i - 1];
-
-      compute_core_start_end(0, fine->inner_vector_size, &start_tmp, &end_tmp, fine, threading);
-      // prolongate from coarse to fine
-      apply_P_PRECISION(h->mlmc_b2, h->mlmc_b1, fine, threading);
-      // copy result to fine level
-      vector_PRECISION_copy(h->mlmc_b1, h->mlmc_b2, start_tmp, end_tmp, fine);
-
-      if(g.my_rank == 0) {
-        printf("TERM 2: Prolongating from depth %d to %d, \tfunction called at depth %d\n\n", coarse->depth, fine->depth, l->depth);
-      }
-    }
-
-    // Copy result in second term vector
-    compute_core_start_end(0, finest_l->inner_vector_size, &start_tmp, &end_tmp, finest_l, threading);
-    //copy for dot product
-    vector_PRECISION_copy(second_term, h->mlmc_b1, start_tmp, end_tmp, finest_l);
-  }
-
-  // subtract the results and perform dot product AT FINEST
+  // Dot product: G_1 (I - P^H D_1^{-1} gamma_5 G_1^H) x  AT FINEST
   {
     int start, end;
     gmres_PRECISION_struct* p = get_p_struct_PRECISION( finest_l);
     compute_core_start_end( 0, finest_l->inner_vector_size, &start, &end, finest_l, threading );
-    vector_PRECISION_minus( h->mlmc_b1, first_term, second_term, start, end, finest_l);
+    //vector_PRECISION_minus( h->mlmc_b1, first_term, second_term, start, end, finest_l);
 
     if ( type_appl==-1 ) {
       //if(g.trace_deflation_type[l->depth] != 0){
@@ -806,15 +714,15 @@ complex_PRECISION g5_3D_mlmc_hutchinson_driver_PRECISION( level_struct *l, struc
 
   // for all but coarsest level
   lx = l;
-  for( i=0; i<g.num_levels-1; i++ ){
+  for( i=0; i<1; i++ ){
     // set the pointer to the mlmc difference operator
     h->hutch_compute_one_sample = g5_3D_hutchinson_mlmc_difference_PRECISION;
-    
+
     if (g.probing) {
       for (g.coloring_count = 1; g.coloring_count < g.num_colors[i] + 1; g.coloring_count++){
         if(g.my_rank==0)
 		      printf("\nEstimating trace at color %d\n", g.coloring_count);
-      
+
         estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
         trace += estimate.acc_trace / estimate.sample_size;
       }
@@ -822,7 +730,7 @@ complex_PRECISION g5_3D_mlmc_hutchinson_driver_PRECISION( level_struct *l, struc
       estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
       trace += estimate.acc_trace / estimate.sample_size;
     }
-    
+
     //if deflation vectors are available
     //if(g.trace_deflation_type[lx->depth] != 0){
     //  trace += hutchinson_deflated_direct_term_PRECISION( lx, h, threading );
@@ -832,13 +740,13 @@ complex_PRECISION g5_3D_mlmc_hutchinson_driver_PRECISION( level_struct *l, struc
 
   // coarsest level
   // set the pointer to the coarsest-level Hutchinson estimator
-  h->hutch_compute_one_sample = g5_3D_hutchinson_mlmc_coarsest_PRECISION;
-  
+  /*h->hutch_compute_one_sample = g5_3D_hutchinson_mlmc_coarsest_PRECISION;
+
   if (g.probing) {
    for (g.coloring_count = 1; g.coloring_count < g.num_colors[i] + 1; g.coloring_count++){
      if(g.my_rank==0)
 	     printf("\nEstimating trace at color %d\n", g.coloring_count);
-      
+
      estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
      trace += estimate.acc_trace / estimate.sample_size;
     }
@@ -850,7 +758,7 @@ complex_PRECISION g5_3D_mlmc_hutchinson_driver_PRECISION( level_struct *l, struc
   //if(g.trace_deflation_type[lx->depth] != 0){
   //  trace += hutchinson_deflated_direct_term_PRECISION( lx, h, threading );
   //}
-
+*/
   return trace;
 }
 
