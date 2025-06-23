@@ -382,25 +382,29 @@ complex_PRECISION g5_3D_hutchinson_mlmc_difference_PRECISION( int type_appl, lev
 
     // Project rademacher vector into time-slice: G_1^H x
 		vector_PRECISION_ghg(  h->rademacher_vector, 0, finest_l->inner_vector_size, finest_l );
+    // backup of G_1^H x
+    vector_PRECISION_copy( h->mlmc_testing, h->rademacher_vector, start, end, finest_l );
 
     // gamma_5 G_1^H x
-    gamma5_PRECISION( h->mlmc_testing, h->rademacher_vector, finest_l, threading );
+    gamma5_PRECISION( h->rademacher_vector, h->rademacher_vector, finest_l, threading );
 
-
-    vector_PRECISION_copy( p->b,  h->mlmc_testing, start, end, finest_l);
-    // D_1^{-1} gamma_5 G_1^H x
+    vector_PRECISION_copy( p->b,  h->rademacher_vector, start, end, finest_l);
+    // (D_1^{-1} gamma_5 G_1^H) x
     apply_solver_PRECISION( finest_l, threading );
+
+     // backup of (D_1^{-1} gamma_5 G_1^H) x
+    vector_PRECISION_copy( h->rademacher_vector,  p->x, start, end, finest_l );
 
 
     if ( type_appl==-1 ) {
-      // P^H D_1^{-1} gamma_5 G_1^H x
+      // P^H (D_1^{-1} gamma_5 G_1^H) x
       apply_R_PRECISION( h->mlmc_b1, p->x, finest_l, threading );
-      // P P^H D_1^{-1} gamma_5 G_1^H x
+      // P P^H (D_1^{-1} gamma_5 G_1^H) x
       apply_P_PRECISION( h->mlmc_b2, h->mlmc_b1, finest_l, threading );
-      // (I - P^H D_1^{-1} gamma_5 G_1^H) x
-      vector_PRECISION_minus( h->mlmc_b1, h->rademacher_vector, h->mlmc_b2, start, end, finest_l );
-      PRECISION norm =  global_inner_product_PRECISION(  h->mlmc_testing,  h->mlmc_testing, p->v_start, p->v_end, finest_l, threading );
-      if(g.my_rank==0)printf("\n norm%f\n", norm);
+      // (I - P^H (D_1^{-1} gamma_5 G_1^H) ) x
+      vector_PRECISION_minus( h->mlmc_b1,  h->rademacher_vector, h->mlmc_b2, start, end, finest_l );
+      //PRECISION norm =  global_inner_product_PRECISION(  h->mlmc_testing,  h->mlmc_testing, p->v_start, p->v_end, finest_l, threading );
+      //if(g.my_rank==0)printf("\n norm%f\n", norm);
       //vector_PRECISION_copy( h->mlmc_b1, h->mlmc_testing, start, end, finest_l );
     } else {
      // vector_PRECISION_copy( p->b, l->powerit_PRECISION.vecs[type_appl], start, end, l );
@@ -419,7 +423,7 @@ complex_PRECISION g5_3D_hutchinson_mlmc_difference_PRECISION( int type_appl, lev
       //if(g.trace_deflation_type[l->depth] != 0){
         //hutchinson_deflate_vector_PRECISION(h->mlmc_b1, l, threading);
       //}
-      aux = global_inner_product_PRECISION( h->rademacher_vector, h->mlmc_b1, p->v_start, p->v_end, finest_l, threading );
+      aux = global_inner_product_PRECISION( h->mlmc_testing, h->mlmc_b1, p->v_start, p->v_end, finest_l, threading );
     } else {
       //aux = global_inner_product_PRECISION( l->powerit_PRECISION.vecs[type_appl], h->mlmc_b1, p->v_start, p->v_end, l, threading );
     }
