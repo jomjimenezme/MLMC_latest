@@ -677,8 +677,14 @@ complex_PRECISION g5_3D_connected_mlmc_difference_PRECISION( int type_appl, leve
     //gmres_PRECISION_struct* p = get_p_struct_PRECISION( l );
     compute_core_start_end( 0, finest_l->inner_vector_size, &start, &end, finest_l, threading );
 
-    // Project rademacher vector into time-slice
-    vector_PRECISION_ghg(  h->rademacher_vector, 0, finest_l->inner_vector_size, finest_l );
+    // Project rademacher vector into t+t'
+    int bufft = g.time_slice;
+    // TODO : check : is this assuming periodic in time ?
+    g.time_slice = g.time_slice + g.time_slice_inner_connected;
+    g.time_slice = g.time_slice%g.global_lattice[0][0];
+    vector_PRECISION_ghg( h->rademacher_vector, 0, l->inner_vector_size, l );
+    g.time_slice = bufft;
+    //vector_PRECISION_ghg(  h->rademacher_vector, 0, finest_l->inner_vector_size, finest_l );
 
     // Apply gamma_5 AT FINEST level and save in buffer
     gamma5_PRECISION( h->mlmc_testing, h->rademacher_vector, finest_l, threading );
