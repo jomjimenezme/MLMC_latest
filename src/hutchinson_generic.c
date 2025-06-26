@@ -1327,19 +1327,21 @@ complex_PRECISION g5_3D_connected_mlmc_driver_PRECISION( level_struct *l, struct
   for( i=0; i<1; i++ ) {
     // set the pointer to the mlmc difference operator
     h->hutch_compute_one_sample = g5_3D_connected_mlmc_difference_PRECISION;
+    
+    for ( g.time_slice_inner_connected=0; g.time_slice_inner_connected<g.global_lattice[0][0]; g.time_slice_inner_connected++ ) {
+      if (g.probing) {
+        for (g.coloring_count = 1; g.coloring_count < g.num_colors[i] + 1; g.coloring_count++) {
+          if(g.my_rank==0) {
+            printf("\nEstimating trace at color %d\n", g.coloring_count);
+          }
 
-    if (g.probing) {
-      for (g.coloring_count = 1; g.coloring_count < g.num_colors[i] + 1; g.coloring_count++) {
-        if(g.my_rank==0) {
-          printf("\nEstimating trace at color %d\n", g.coloring_count);
+          estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
+          trace += estimate.acc_trace / estimate.sample_size;
         }
-
+      } else {
         estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
         trace += estimate.acc_trace / estimate.sample_size;
       }
-    } else {
-      estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
-      trace += estimate.acc_trace / estimate.sample_size;
     }
 
     //if deflation vectors are available
