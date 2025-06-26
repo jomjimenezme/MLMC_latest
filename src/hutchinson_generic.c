@@ -203,7 +203,15 @@ struct sample hutchinson_blind_PRECISION( level_struct *l, hutchinson_PRECISION_
 
   for( i=0; i<h->max_iters[l->depth];i++ ){
     // 1. create Rademacher vector, stored in h->rademacher_vector
-    rademacher_create_PRECISION( l, h, type, threading );
+    if ( g.trace_op_type == 3 ){
+      int bufft = g.time_slice;
+      // TODO : check : is this assuming periodic in time ?
+      g.time_slice = g.time_slice + g.time_slice_inner_connected;
+      g.time_slice = g.time_slice%g.global_lattice[0][0];
+      rademacher_create_PRECISION( l, h, type, threading );
+      g.time_slice = bufft;
+    }
+    else { rademacher_create_PRECISION( l, h, type, threading ); }
 
     // 2. apply the operator to the Rademacher vector
     // 3. dot product
@@ -248,7 +256,7 @@ struct sample hutchinson_blind_PRECISION( level_struct *l, hutchinson_PRECISION_
   return estimate;
 }
 
-
+// this is the driver for plain Hutchinson
 complex_PRECISION g5_3D_hutchinson_driver_PRECISION( level_struct *l, struct Thread *threading ){
   complex_PRECISION trace = 0.0;
   struct sample estimate;
@@ -279,6 +287,85 @@ complex_PRECISION g5_3D_hutchinson_driver_PRECISION( level_struct *l, struct Thr
   return trace;
 }
 
+// this is the driver for plain Hutchinson, BUT for the connected operator (-> connected diagram)
+complex_PRECISION g5_3D_connected_hutchinson_driver_PRECISION( level_struct *l, struct Thread *threading ){
+  complex_PRECISION trace = 0.0;
+  struct sample estimate;
+  hutchinson_PRECISION_struct* h = &(l->h_PRECISION);
+  level_struct* lx = l;
+
+  for ( g.time_slice_inner_connected=0; g.time_slice_inner_connected<g.global_lattice[0][0]; g.time_slice_inner_connected++ ) {
+    // set the pointer to the finest-level Hutchinson estimator
+    h->hutch_compute_one_sample = g5_3D_connected_hutchinson_plain_PRECISION;
+    estimate = hutchinson_blind_PRECISION( lx, h, 0, threading );
+    trace += estimate.acc_trace/estimate.sample_size;
+  }
+
+  // if deflation vectors are available
+  //if(g.trace_deflation_type[l->depth] != 0){
+  //  trace += hutchinson_deflated_direct_term_PRECISION( l, h, threading );
+  //}
+
+  return trace;
+}
+
+
+complex_PRECISION g5_3D_connected_hutchinson_plain_PRECISION( int type_appl, level_struct *l, hutchinson_PRECISION_struct* h, struct Thread *threading ){
+  {
+    int start, end;
+    gmres_PRECISION_struct* p = get_p_struct_PRECISION( l );
+    compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
+
+    if ( type_appl==-1 ) {
+      vector_PRECISION_copy( p->b, h->rademacher_vector, start, end, l );
+    } else {
+      //vector_PRECISION_copy( p->b, l->powerit_PRECISION.vecs[type_appl], start, end, l );
+    }
+
+    // Apply Gamma_5
+    gamma5_PRECISION( p->b, p->b, l, threading );
+  }
+
+  {
+    apply_solver_PRECISION( l, threading );
+  }
+
+  {
+    int start, end;
+    gmres_PRECISION_struct* p = get_p_struct_PRECISION( l );
+    compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
+
+    // apply \Pi_{t'}
+    vector_PRECISION_ghg(  p->x, 0, l->inner_vector_size, l );
+
+    // apply G5
+    gamma5_PRECISION( p->x, p->x, l, threading );
+
+    // inverse again
+    vector_PRECISION_copy( p->b, p->x, start, end, l );
+    apply_solver_PRECISION( l, threading );
+  }
+
+  // subtract the results and perform dot product
+  {
+    int start, end;
+    complex_PRECISION aux = 0;
+    gmres_PRECISION_struct* p = get_p_struct_PRECISION( l );
+    compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
+
+    if ( type_appl==-1 ) {
+     //if(g.trace_deflation_type[l->depth] != 0){
+     //  hutchinson_deflate_vector_PRECISION(p->x, l, threading);
+     //}
+      aux = global_inner_product_PRECISION( h->rademacher_vector, p->x, p->v_start, p->v_end, l, threading );
+    } else {
+      //vector_PRECISION_copy(l->powerit_PRECISION.vecs_buff1, p->x, start, end, l);
+      //aux = global_inner_product_PRECISION( l->powerit_PRECISION.vecs[type_appl], l->powerit_PRECISION.vecs_buff1, p->v_start, p->v_end, l, threading );
+    }
+
+    return aux;
+  }
+}
 
 complex_PRECISION g5_3D_hutchinson_plain_PRECISION( int type_appl, level_struct *l, hutchinson_PRECISION_struct* h, struct Thread *threading ){
   {

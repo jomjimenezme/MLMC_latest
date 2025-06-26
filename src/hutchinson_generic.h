@@ -17,7 +17,8 @@
   void hutchinson_diver_PRECISION_alloc( level_struct *l, struct Thread *threading );
   void hutchinson_diver_PRECISION_free( level_struct *l, struct Thread *threading );
   complex_PRECISION hutchinson_driver_PRECISION( level_struct *l, struct Thread *threading );
-
+  complex_PRECISION g5_3D_connected_hutchinson_driver_PRECISION( level_struct *l, struct Thread *threading );
+  complex_PRECISION g5_3D_connected_hutchinson_plain_PRECISION( int type_appl, level_struct *l, hutchinson_PRECISION_struct* h, struct Thread *threading );
 
   complex_PRECISION g5_3D_hutchinson_driver_PRECISION( level_struct *l, struct Thread *threading );
   complex_PRECISION g5_3D_hutchinson_plain_PRECISION( int type_appl, level_struct *l, hutchinson_PRECISION_struct* h, struct Thread *threading );
