@@ -149,7 +149,7 @@ int main( int argc, char **argv ) {
       hutchinson_diver_double_init( &l, &threading );  
       hutchinson_diver_double_alloc( &l, &threading ); 
     }
-    for(g.time_slice = 31; g.time_slice <32 ; g.time_slice++){//g.time_slice< g.global_lattice[0][0]; g.time_slice++){
+    for(g.time_slice = 0; g.time_slice< g.global_lattice[0][0]; g.time_slice++){
       
       if(g.my_rank==0) printf("\n\n Timeslice %d\n\n",  g.time_slice);
 
