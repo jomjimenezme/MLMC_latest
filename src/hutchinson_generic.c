@@ -203,15 +203,7 @@ struct sample hutchinson_blind_PRECISION( level_struct *l, hutchinson_PRECISION_
 
   for( i=0; i<h->max_iters[l->depth];i++ ){
     // 1. create Rademacher vector, stored in h->rademacher_vector
-    if ( g.trace_op_type == 3 ){
-      int bufft = g.time_slice;
-      // TODO : check : is this assuming periodic in time ?
-      g.time_slice = g.time_slice + g.time_slice_inner_connected;
-      g.time_slice = g.time_slice%g.global_lattice[0][0];
-      rademacher_create_PRECISION( l, h, type, threading );
-      g.time_slice = bufft;
-    }
-    else { rademacher_create_PRECISION( l, h, type, threading ); }
+    rademacher_create_PRECISION( l, h, type, threading );
 
     // 2. apply the operator to the Rademacher vector
     // 3. dot product
@@ -317,6 +309,13 @@ complex_PRECISION g5_3D_connected_hutchinson_plain_PRECISION( int type_appl, lev
     compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
 
     if ( type_appl==-1 ) {
+      //Apply \Pi_{t’+t}
+      int bufft = g.time_slice;
+      // TODO : check : is this assuming periodic in time ?
+      g.time_slice = g.time_slice + g.time_slice_inner_connected;
+      g.time_slice = g.time_slice%g.global_lattice[0][0];
+      vector_PRECISION_ghg( h->rademacher_vector, 0, l->inner_vector_size, l );
+      g.time_slice = bufft;
       vector_PRECISION_copy( p->b, h->rademacher_vector, start, end, l );
     } else {
       //vector_PRECISION_copy( p->b, l->powerit_PRECISION.vecs[type_appl], start, end, l );
