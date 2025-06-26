@@ -143,8 +143,22 @@ int main( int argc, char **argv ) {
     for(g.time_slice = 0; g.time_slice <1 ; g.time_slice++){//g.time_slice< g.global_lattice[0][0]; g.time_slice++){
       
       if(g.my_rank==0) printf("\n\n Timeslice %d\n\n",  g.time_slice);
-      
-     if( g.trace_op_type == 2){
+
+      // this third case is the connected diagram operator
+      if( g.trace_op_type == 3 ){
+        START_MASTER(threadingx)
+        if(g.my_rank==0) printf("Calling Hutchinson for connected diagram operator\n");
+        END_MASTER(threadingx)
+          
+        trace = g5_3D_connected_hutchinson_driver_double( &l, &threading );
+        //trace = hutchinson_driver_double( &l, &threading );
+        
+        START_MASTER(threadingx)
+        if(g.my_rank==0) printf("\nResulting trace from calling Hutchinson for connected diagram operator = %f+i%f\n", CSPLIT(trace)); fflush(0); 
+        END_MASTER(threadingx)
+      }
+
+      if( g.trace_op_type == 2){
         START_MASTER(threadingx)
         if(g.my_rank==0) printf("Using plain Hutchinson for computing the trace\n");
         END_MASTER(threadingx)

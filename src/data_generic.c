@@ -145,6 +145,89 @@ void vector_PRECISION_define_random_rademacher(vector_PRECISION phi,
 
 }
 
+/*  Takes a 4D vector and sets it’s components to 0
+ * at all components except in g.time_slice
+ */
+void vector_PRECISION_ghg(vector_PRECISION phi,
+                                               int start, int end,
+                                               level_struct *l)
+{
+  int thread = omp_get_thread_num();
+  if(thread == 0 && start != end)
+    PROF_PRECISION_START( _SET );
+   if(thread == 0){
+    //for (int i = start; i < end; ++i) phi[i] = 0.0;
+    if ( phi != NULL ) {
+      int depth = l->depth;
+      int r_t = g.my_coords[T];
+      int r_z = g.my_coords[Z];
+      int r_y = g.my_coords[Y];
+      int r_x = g.my_coords[X];
+      //printf("rank= %d \t %d %d %d %d \n",g.my_rank, r_t, r_z, r_y, r_x);
+
+      /* global_splitting: Num Procs in each dim
+       * Nt_loc: Local Lattice sites per direcction*/
+      int Nt_loc = g.global_lattice[depth][T]/l->global_splitting[T];
+      int Nz_loc = g.global_lattice[depth][Z]/l->global_splitting[Z];
+      int Ny_loc = g.global_lattice[depth][Y]/l->global_splitting[Y];
+      int Nx_loc = g.global_lattice[depth][X]/l->global_splitting[X];
+
+      // Initial global coordinates based on cartesian coordinates
+      int t0 = r_t * Nt_loc;
+      int x0 = r_x * Nx_loc;
+      int y0 = r_y * Ny_loc;
+      int z0 = r_z * Nz_loc;
+
+      //printf("RANK = %d \t Nt= %d,  Nz = %d, Ny= %d, Nx = %d\n T = %d, Z = %d, Y = %d, X = %d\n", g.my_rank, Nt_loc, Nz_loc, Ny_loc, Nx_loc, T,Z,Y,X);
+      for (int lt=0; lt<Nt_loc; ++lt) {
+        int t = t0 + lt;               // global t
+        bool ontimeslice = (t == g.time_slice);
+        for (int lz=0; lz<Nz_loc; ++lz) {
+          int z = z0 + lz;
+            for (int ly=0; ly<Ny_loc; ++ly) {
+              int y = y0 + ly;           // global y
+                for (int lx=0; lx<Nx_loc; ++lx) {
+                  int x = x0 + lx;             // global x
+
+                  int loc_site  = ((lt * Nz_loc + lz) * Ny_loc + ly) * Nx_loc + lx;
+
+                  for (int d=0; d<4; ++d) {
+                    for (int c=0; c<3; ++c){
+
+                        int i = loc_site*12    /* site base  */
+                                  + d * 3      /* stride is 3 colors  */
+                                  + c;         /* color component   */
+                        if (!ontimeslice){
+                          //printf("IN, g.time_slice = %d, t = %d, z %d, y %d, x %d,\t RANK %d\n", g.time_slice, t, z,y,x, g.my_rank);
+                          //if(   (PRECISION)((double)rand()<(double)RAND_MAX/2.0)   ) {
+                              //phi[i ]=  (double) (-1);
+                        	//}
+                        	//else{
+                        	//   phi[i ]= (PRECISION)(1);
+                        	//}
+                          phi[i] = 0.0;
+                        }
+                        //else{
+                        //  phi[i]=0.0;
+                        //}
+                        //fflush(0); MPI_Barrier(MPI_COMM_WORLD); sleep(0.01);
+                }
+              }
+            }
+          }
+        }
+      }
+
+
+    }else {
+      error0("Error in \"vector_PRECISION_define_random\": pointer is null\n");
+    }
+  }
+  if(thread == 0 && start != end)
+    PROF_PRECISION_STOP( _SET, 1 );
+
+}
+
 void vector_PRECISION_define_spin_color( vector_PRECISION phi, int start, int end, level_struct *l, struct Thread *threading) {
   
   int thread = omp_get_thread_num();
