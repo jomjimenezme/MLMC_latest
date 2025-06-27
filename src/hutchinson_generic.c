@@ -341,7 +341,8 @@ complex_PRECISION g5_3D_connected_hutchinson_plain_PRECISION( int type_appl, lev
     // TODO : check : is this assuming periodic in time ?
     g.time_slice = g.time_slice_inner_connected;
     //g.time_slice = g.time_slice%g.global_lattice[0][0];
-    vector_PRECISION_ghg( h->rademacher_vector, 0, l->inner_vector_size, l );
+    //vector_PRECISION_ghg( h->rademacher_vector, 0, l->inner_vector_size, l );
+    vector_PRECISION_ghg( p->x, 0, l->inner_vector_size, l );
     g.time_slice = bufft;
 
     // apply G5
