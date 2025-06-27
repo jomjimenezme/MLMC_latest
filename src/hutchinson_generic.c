@@ -683,7 +683,7 @@ complex_PRECISION g5_3D_connected_mlmc_difference_PRECISION( int type_appl, leve
     // TODO : check : is this assuming periodic in time ?
     g.time_slice = g.time_slice + g.time_slice_inner_connected;
     g.time_slice = g.time_slice%g.global_lattice[0][0];
-    vector_PRECISION_ghg( h->rademacher_vector, 0, l->inner_vector_size, l );
+    vector_PRECISION_ghg( h->rademacher_vector, 0, finest_l->inner_vector_size, finest_l );
     g.time_slice = bufft;
     //vector_PRECISION_ghg(  h->rademacher_vector, 0, finest_l->inner_vector_size, finest_l );
 
@@ -729,7 +729,6 @@ complex_PRECISION g5_3D_connected_mlmc_difference_PRECISION( int type_appl, leve
     apply_solver_PRECISION( l, threading );
 
     // Prolongate solution to finest level
-
     vector_PRECISION_copy(h->mlmc_b1, p->x, start, end, l);
     for (int i = l_index; i > 0; --i) {
       level_struct *coarse = levels[i];
@@ -742,7 +741,6 @@ complex_PRECISION g5_3D_connected_mlmc_difference_PRECISION( int type_appl, leve
       if(g.my_rank == 0) {
         printf("TERM 1: Prolongating from depth %d to %d, \tfunction called at depth %d\n\n", coarse->depth, fine->depth, l->depth);
       }
-
     }
 
     // Copy result in first term vector at finest
@@ -788,7 +786,6 @@ complex_PRECISION g5_3D_connected_mlmc_difference_PRECISION( int type_appl, leve
     apply_solver_PRECISION( l->next_level, threading );
 
     // Prolongate Solution from NEXT level to finest
-
     vector_PRECISION_copy(h->mlmc_b1, l->next_level->p_PRECISION.x, start_tmp, end_tmp, l->next_level);
     for (int i = l_index+1; i > 0; --i) {
       level_struct *coarse = levels[i];
