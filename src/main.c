@@ -157,6 +157,20 @@ int main( int argc, char **argv ) {
         set_probing_variances_to_zero();
       }
 
+       // this third case is the connected diagram operator, with Split
+      if( g.trace_op_type == 8 ){
+        START_MASTER(threadingx)
+        if(g.my_rank==0) printf("Calling SPLIT for connected diagram operator\n"); 
+        END_MASTER(threadingx)
+
+        trace = g5_3D_connected_split_driver_double( &l, &threading );
+        //trace = hutchinson_driver_double( &l, &threading );
+
+        START_MASTER(threadingx)
+        if(g.my_rank==0) printf("\nResulting trace from calling SPLIT for connected diagram operator = %f+i%f\n", CSPLIT(trace)); fflush(0);
+        END_MASTER(threadingx)
+      }
+      
       // this third case is the connected diagram operator, with MLMC
       if( g.trace_op_type == 7 ){
         START_MASTER(threadingx)
