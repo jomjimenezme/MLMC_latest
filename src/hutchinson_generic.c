@@ -1285,8 +1285,7 @@ complex_PRECISION g5_3D_mlmc_hutchinson_driver_PRECISION( level_struct *l, struc
   lx = l;
   for( i=0; i<g.num_levels-1; i++ ){
     // set the pointer to the mlmc difference operator
-    //h->hutch_compute_one_sample = g5_3D_hutchinson_mlmc_difference_PRECISION;
-    h->hutch_compute_one_sample = connected_outer_PRECISION;
+    h->hutch_compute_one_sample = g5_3D_hutchinson_mlmc_difference_PRECISION;
     if (g.probing) {
       for (g.coloring_count = 1; g.coloring_count < g.num_colors[i] + 1; g.coloring_count++){
         if(g.my_rank==0)
@@ -1344,7 +1343,8 @@ complex_PRECISION g5_3D_connected_mlmc_driver_PRECISION( level_struct *l, struct
   //for( i=0; i<1; i++ ) {
   for( i=0; i<g.num_levels-1; i++ ){
     // set the pointer to the mlmc difference operator
-    h->hutch_compute_one_sample = g5_3D_connected_mlmc_difference_PRECISION;
+    //h->hutch_compute_one_sample = g5_3D_connected_mlmc_difference_PRECISION;
+    h->hutch_compute_one_sample = connected_outer_PRECISION;
     
     for ( g.time_slice_inner_connected=0; g.time_slice_inner_connected<g.global_lattice[0][0]; g.time_slice_inner_connected++ ) {
       if (g.probing) {
@@ -1791,7 +1791,6 @@ void connected_mlmc_PRECISION_non_difference( vector_PRECISION out, vector_PRECI
 
 
 void connected_mlmc_PRECISION_difference( vector_PRECISION out, vector_PRECISION in, level_struct *l,  hutchinson_PRECISION_struct* h, struct Thread *threading ){
-
   // store from fine to coarsest lvl in an array
   level_struct *finest_l = h->finest_level;
   level_struct *levels[g.num_levels];
@@ -1954,11 +1953,11 @@ void connected_mlmc_PRECISION_difference( vector_PRECISION out, vector_PRECISION
 
 
 //TODO: Update to a better name (?)
-complex_PRECISION connected_outer_PRECISION( level_struct *l, struct Thread *threading ){
+complex_PRECISION connected_outer_PRECISION( int type_appl, level_struct *l, hutchinson_PRECISION_struct* h, struct Thread *threading ){
   int i;
   complex_PRECISION trace = 0.0;
   struct sample estimate;
-  hutchinson_PRECISION_struct* h = &(l->h_PRECISION);
+  //hutchinson_PRECISION_struct* h = &(l->h_PRECISION);
   level_struct* lx;
   level_struct *finest_l = h->finest_level;
 
@@ -1969,12 +1968,8 @@ complex_PRECISION connected_outer_PRECISION( level_struct *l, struct Thread *thr
   // for all but coarsest level
   lx = l;
   
-  // CONNECTED STEP #1. apply \Pi_{t+t'}
+  // CONNECTED STEP #1. apply \Pi_{t+t'}   (\Pi_{t+t'} x)
   {
-    int start, end;
-    //gmres_PRECISION_struct* p = get_p_struct_PRECISION( l );
-    compute_core_start_end( 0, finest_l->inner_vector_size, &start, &end, finest_l, threading );
-
     // Project rademacher vector into t+t'
     int bufft = g.time_slice;
     // TODO : check : is this assuming periodic in time ?
@@ -1984,14 +1979,11 @@ complex_PRECISION connected_outer_PRECISION( level_struct *l, struct Thread *thr
     g.time_slice = bufft;
   }
 
-  // CONNECTED STEP #2. apply Difference operator L_0
+  // CONNECTED STEP #2. apply Difference operator L_0    (L_0 \Pi_{t+t'} x) 
   connected_mlmc_PRECISION_difference( op1, h->rademacher_vector, l,  h, threading );
   
-  // CONNECTED STEP #3. apply \Pi{t’}
+  // CONNECTED STEP #3. apply \Pi{t’}    (\Pi_{t'} L_0 \Pi_{t+t'} x) 
    {
-    int start, end;
-    compute_core_start_end( 0, finest_l->inner_vector_size, &start, &end, finest_l, threading );
-
     int bufft = g.time_slice;
     // TODO : check : is this assuming periodic in time ?
     g.time_slice = g.time_slice_inner_connected;
@@ -1999,25 +1991,11 @@ complex_PRECISION connected_outer_PRECISION( level_struct *l, struct Thread *thr
     g.time_slice = bufft;
   }
   
-  // CONNECTED STEP #4. apply Difference operator L_0
+  // CONNECTED STEP #4. apply Difference operator L_0    (L_0 \Pi_{t'} L_0 \Pi_{t+t'} x)
   connected_mlmc_PRECISION_difference( op1, op1, l,  h, threading );
 
-  // CONNECTED STEP #5. apply \Pi_{t+t'}
-  {
-    int start, end;
-    //gmres_PRECISION_struct* p = get_p_struct_PRECISION( l );
-    compute_core_start_end( 0, finest_l->inner_vector_size, &start, &end, finest_l, threading );
-
-    // Project rademacher vector into t+t'
-    int bufft = g.time_slice;
-    // TODO : check : is this assuming periodic in time ?
-    g.time_slice = g.time_slice + g.time_slice_inner_connected;
-    g.time_slice = g.time_slice%g.global_lattice[0][0];
-    vector_PRECISION_ghg( op1, 0, finest_l->inner_vector_size, finest_l );
-    g.time_slice = bufft;
-  }
   
-   // CONNECTED STEP #6 do the dot product AT FINEST
+   // CONNECTED STEP #5 do the dot product AT FINEST       (x^H \Pi_{t+t'} L_0 \Pi_{t'} L_0 \Pi_{t+t'} x)
   {
     gmres_PRECISION_struct* p = get_p_struct_PRECISION( finest_l);
 
@@ -2025,7 +2003,7 @@ complex_PRECISION connected_outer_PRECISION( level_struct *l, struct Thread *thr
     //  if(g.trace_deflation_type[l->depth] != 0){
     //    hutchinson_deflate_vector_PRECISION(h->mlmc_b1, l, threading);
     //  }
-    trace = global_inner_product_PRECISION( h->rademacher_vector, h->mlmc_b1, p->v_start, p->v_end, finest_l, threading );
+    trace = global_inner_product_PRECISION( h->rademacher_vector, op1, p->v_start, p->v_end, finest_l, threading );
     //  } else {
     //  aux = global_inner_product_PRECISION( l->powerit_PRECISION.vecs[type_appl], h->mlmc_b1, p->v_start, p->v_end, l, threading );
     // }
