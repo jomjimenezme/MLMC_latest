@@ -1345,10 +1345,11 @@ complex_PRECISION g5_3D_connected_mlmc_driver_PRECISION( level_struct *l, struct
   struct sample estimate;
   hutchinson_PRECISION_struct* h = &(l->h_PRECISION);
 
-  h->lx_i = l;
-  h->lx_j = l;
+  h->lx_i = h->finest_level;
+  h->lx_j = h->finest_level;
 
   for(i = 0; i < g.num_levels; i++){
+    h->lx_j = h->finest_level;
     for(j = 0; j < g.num_levels; j++){
     
       if(g.my_rank == 0) printf("\n Computing trace for C_{%d, %d} \n", i,j);
@@ -1372,13 +1373,16 @@ complex_PRECISION g5_3D_connected_mlmc_driver_PRECISION( level_struct *l, struct
         }
       }
       
+      
       int nlevs = g.num_levels;
       int idx = h->lx_i->depth * nlevs + h->lx_j->depth;  
-      if(g.my_rank == 0) printf("\n Trace for C_{%d, %d} = %f\n, variance = %f", i,j, estimate.acc_trace / estimate.sample_size, g.variances[idx]);
+      if (g.my_rank == 0) printf("\n Trace for C_{%d, %d} = %f\n, variance = %f", h->lx_i->depth, h->lx_j->depth, estimate.acc_trace / estimate.sample_size, g.variances[idx]);
       
-      h->lx_j = h->lx_j->next_level;	
+      if (j < g.num_levels - 1)    
+        h->lx_j = h->lx_j->next_level;
     }
-      h->lx_i = h->lx_i->next_level;
+      if (i < g.num_levels - 1)
+        h->lx_i = h->lx_i->next_level;
   }
 
   
