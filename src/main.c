@@ -211,7 +211,7 @@ int main( int argc, char **argv ) {
 
           START_MASTER(threadingx)
           if(g.my_rank==0) printf("\nResulting trace from plain Hutchinson = %f+i%f\n", CSPLIT(trace)); fflush(0);
-          if(g.my_rank==0 && g.probing==1) printf("Resulting variance from plain Hutchinson = %f\n", g.variances[0]);
+          if(g.my_rank==0) printf("Resulting variance from plain Hutchinson = %f\n", g.variances[0]);
           END_MASTER(threadingx)
       }
       
@@ -225,7 +225,7 @@ int main( int argc, char **argv ) {
 
         START_MASTER(threadingx)
         if(g.my_rank==0) printf("\nResulting trace from MLMC  = %f+i%f\n", CSPLIT(trace)); fflush(0);
-        if(g.my_rank == 0 && g.probing==1){
+        if(g.my_rank == 0){
           for(int level = 0; level < g.num_levels; level++){
             printf("Resulting variance from (traditional) MGMLMC at level %d = %f\n", level + 1, g.variances[level]);
           }

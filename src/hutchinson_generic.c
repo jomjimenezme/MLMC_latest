@@ -229,7 +229,7 @@ struct sample hutchinson_blind_PRECISION( level_struct *l, hutchinson_PRECISION_
         printf("[%d, trace: %f+%f, variance: %f] ", i, creal(trace), cimag(trace), creal(variance));
         fflush(0);
 
-      if(g.probing == 1 && i == h->max_iters[l->depth] - 1)
+      if(i == h->max_iters[l->depth] - 1)
         g.variances[l->depth] += creal(variance);
       }
       END_MASTER(threading);
