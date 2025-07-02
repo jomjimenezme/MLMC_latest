@@ -24,10 +24,32 @@ void vector_copy(int *dest, int *src, int size) {
 // Variances must be set to zero for each time-slice trace estimation
 void set_probing_variances_to_zero(){
   if(g.my_rank == 0){
-    for(int level = 0; level < g.num_levels; level++){
-      g.variances[level] = 0.0;
+    if(g.trace_op_type==7){
+    	for(int level = 0; level < g.num_levels*g.num_levels; level++){
+            g.variances[level] = 0.0;
+	    printf("\n variance at level %d = %f, operation type = %d\n",level, g.variances[level], g.trace_op_type);
+    	}
+    
+  }else{
+	for(int level = 0; level < g.num_levels; level++){
+            g.variances[level] = 0.0;
+	    printf("\n variance at level %d = %f, operation type = %d\n",level, g.variances[level], g.trace_op_type);
+        }
+
     }
   }
+}
+
+void allocate_variances(){
+//If we are doing mlmc with connected operator we have g.num_levels^2 operators
+   if(g.my_rank==0){
+      if(g.trace_op_type==7)
+          MALLOC(g.variances, double, g.num_levels*g.num_levels);
+      else
+          MALLOC(g.variances, double, g.num_levels);
+
+      set_probing_variances_to_zero();
+   }
 }
 
 void setup_local_colors(){
@@ -151,9 +173,7 @@ void graph_coloring() {
     
     if (g.colors == NULL)
         error0("Allocation error0\n");
-    
-    MALLOC(g.variances, double, g.num_levels);
-    
+
     for(int level = 0; level < g.num_levels; level++){
     
     int T = g.global_lattice[level][0];

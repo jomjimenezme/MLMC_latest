@@ -546,8 +546,12 @@ void method_finalize( level_struct *l ) {
         int local_size = size/num_processes;
         FREE(g.local_colors[level], int*, local_size);
     }
-    FREE(g.variances, double, g.num_levels);
   }
+
+  if(g.trace_op_type == 7)
+     FREE(g.variances, double, g.num_levels*g.num_levels);
+  else
+     FREE(g.variances, double, g.num_levels);
 
   FREE(g.num_colors, int, g.num_levels);
   

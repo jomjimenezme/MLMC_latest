@@ -130,6 +130,8 @@ int main( int argc, char **argv ) {
     rangeHandle = startProfilingRange("Solve");
     g.on_solve=1;
 
+    allocate_variances();
+
     if(g.probing){
         graph_coloring();
     }else {
