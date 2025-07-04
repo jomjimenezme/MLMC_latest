@@ -233,10 +233,9 @@ struct sample hutchinson_blind_PRECISION( level_struct *l, hutchinson_PRECISION_
         g.variances[l->depth] += creal(variance);
 
       if(i == h->max_iters[l->depth] - 1 && g.trace_op_type == 7){
-	int nlevs = g.num_levels;
-	int idx = h->lx_i->depth*nlevs + h->lx_j->depth;
-	g.variances[idx] += creal(variance);
-	//printf("\nOperator index in variance assignment = %d", idx);
+        int nlevs = g.num_levels;
+        int idx = h->lx_i->depth*nlevs + h->lx_j->depth;
+        g.variances[idx] += creal(variance);
       }
       }
       END_MASTER(threading);
@@ -1376,7 +1375,7 @@ complex_PRECISION g5_3D_connected_mlmc_driver_PRECISION( level_struct *l, struct
       
       int nlevs = g.num_levels;
       int idx = h->lx_i->depth * nlevs + h->lx_j->depth;  
-      if (g.my_rank == 0) printf("\n Trace for C_{%d, %d} = %f\n, variance = %f", h->lx_i->depth, h->lx_j->depth, estimate.acc_trace / estimate.sample_size, g.variances[idx]);
+      if (g.my_rank == 0) printf("\n Trace for C_{%d, %d} = %f\n", h->lx_i->depth, h->lx_j->depth, estimate.acc_trace / estimate.sample_size);
       
       if (j < g.num_levels - 1)    
         h->lx_j = h->lx_j->next_level;

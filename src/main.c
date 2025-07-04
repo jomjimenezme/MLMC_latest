@@ -152,12 +152,9 @@ int main( int argc, char **argv ) {
       hutchinson_diver_double_alloc( &l, &threading ); 
     }
     for(g.time_slice = 0; g.time_slice< g.global_lattice[0][0]; g.time_slice++){
-      
       if(g.my_rank==0) printf("\n\n Timeslice %d\n\n",  g.time_slice);
 
-      if(g.probing){
-        set_probing_variances_to_zero();
-      }
+      set_probing_variances_to_zero();
 
        // this third case is the connected diagram operator, with Split
       if( g.trace_op_type == 8 ){
@@ -184,6 +181,7 @@ int main( int argc, char **argv ) {
 
         START_MASTER(threadingx)
         if(g.my_rank==0) printf("\nResulting trace from calling MLMC for connected diagram operator = %f+i%f\n", CSPLIT(trace)); fflush(0);
+        mlmc_connected_print_variances();
         END_MASTER(threadingx)
       }
 

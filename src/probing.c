@@ -21,6 +21,19 @@ void vector_copy(int *dest, int *src, int size) {
     }
 }
 
+//TODO: move all the variance related functions here into a new file
+void mlmc_connected_print_variances(){
+  if(g.my_rank==0){
+    for(int i=0; i<g.num_levels; i++){
+        for(int j=0; j<g.num_levels; j++){
+            int nlevs = g.num_levels;
+            int idx = i*nlevs + j;
+            printf("\n Variance of G_{%d,%d} = %f ", i,j,g.variances[idx]);
+        }
+    }
+  }
+}
+
 // Variances must be set to zero for each time-slice trace estimation
 void set_probing_variances_to_zero(){
   if(g.my_rank == 0){
