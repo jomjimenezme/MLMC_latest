@@ -1341,6 +1341,7 @@ complex_PRECISION g5_3D_mlmc_hutchinson_driver_PRECISION( level_struct *l, struc
 complex_PRECISION g5_3D_connected_mlmc_driver_PRECISION( level_struct *l, struct Thread *threading ){
   int i, j;
   complex_PRECISION trace = 0.0;
+  complex_PRECISION global_connected_trace = 0.0;
   struct sample estimate;
   hutchinson_PRECISION_struct* h = &(l->h_PRECISION);
 
@@ -1351,8 +1352,9 @@ complex_PRECISION g5_3D_connected_mlmc_driver_PRECISION( level_struct *l, struct
     h->lx_j = h->finest_level;
     for(j = 0; j < g.num_levels; j++){
     
-      if(g.my_rank == 0) printf("\n Computing trace for C_{%d, %d} \n", i,j);
+      if(g.my_rank == 0) printf("\n Computing trace for G_{%d, %d} \n", i,j);
       
+      trace = 0.0;
       h->hutch_compute_one_sample = connected_outer_PRECISION;
       
       // Call to blind from t+t’ with t’ = 0, ..., T-1
@@ -1372,10 +1374,11 @@ complex_PRECISION g5_3D_connected_mlmc_driver_PRECISION( level_struct *l, struct
         }
       }
       
-      
+      trace = trace/g.time_slice_inner_connected;
+      global_connected_trace += trace;
       int nlevs = g.num_levels;
       int idx = h->lx_i->depth * nlevs + h->lx_j->depth;  
-      if (g.my_rank == 0) printf("\n Trace for C_{%d, %d} = %f\n", h->lx_i->depth, h->lx_j->depth, estimate.acc_trace / estimate.sample_size);
+      if (g.my_rank == 0) printf("\n Trace of G_{%d, %d}(t=%d) = %f\n", h->lx_i->depth, h->lx_j->depth, g.time_slice, trace);
       
       if (j < g.num_levels - 1)    
         h->lx_j = h->lx_j->next_level;
@@ -1384,7 +1387,7 @@ complex_PRECISION g5_3D_connected_mlmc_driver_PRECISION( level_struct *l, struct
         h->lx_i = h->lx_i->next_level;
   }
 
-  
+  return global_connected_trace;
   
 }
 

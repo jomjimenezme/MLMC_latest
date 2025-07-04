@@ -28,7 +28,7 @@ void mlmc_connected_print_variances(){
         for(int j=0; j<g.num_levels; j++){
             int nlevs = g.num_levels;
             int idx = i*nlevs + j;
-            printf("\n Variance of G_{%d,%d} = %f ", i,j,g.variances[idx]);
+            printf("\n Variance of G_{%d,%d}(t=%d) = %f ", i,j,g.time_slice,g.variances[idx]);
         }
     }
   }
