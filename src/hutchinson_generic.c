@@ -1376,9 +1376,9 @@ complex_PRECISION g5_3D_connected_mlmc_driver_PRECISION( level_struct *l, struct
       
       trace = trace/g.time_slice_inner_connected;
       global_connected_trace += trace;
-      int nlevs = g.num_levels;
-      int idx = h->lx_i->depth * nlevs + h->lx_j->depth;  
-      if (g.my_rank == 0) printf("\n Trace of G_{%d, %d}(t=%d) = %f\n", h->lx_i->depth, h->lx_j->depth, g.time_slice, trace);
+      //int nlevs = g.num_levels;
+      //int idx = h->lx_i->depth * nlevs + h->lx_j->depth;  
+      if (g.my_rank == 0) printf("\n Trace of G_{%d, %d}(t=%d) = %f +%f\n", h->lx_i->depth, h->lx_j->depth, g.time_slice, CSPLIT(trace));
       
       if (j < g.num_levels - 1)    
         h->lx_j = h->lx_j->next_level;
@@ -1767,8 +1767,6 @@ void connected_mlmc_PRECISION_non_difference( vector_PRECISION out, vector_PRECI
   level_struct *levels[g.num_levels];
   int lvl_nr = 0, l_index = -1;
 
-  complex_PRECISION aux = 0;
-
   if(g.my_rank == 0) {
     printf("\n\n------------------function at level %d ------------------\n\n", l->depth);fflush(0);
   }
@@ -1855,8 +1853,6 @@ void connected_mlmc_PRECISION_difference( vector_PRECISION out, vector_PRECISION
   level_struct *finest_l = h->finest_level;
   level_struct *levels[g.num_levels];
   int lvl_nr = 0, l_index = -1;
-
-  complex_PRECISION aux = 0;
 
   if(g.my_rank == 0) {
     printf("\n\n------------------function at level %d ------------------\n\n", l->depth);fflush(0);
@@ -2017,7 +2013,6 @@ void connected_mlmc_PRECISION_difference( vector_PRECISION out, vector_PRECISION
 complex_PRECISION connected_outer_PRECISION( int type_appl, level_struct *l, hutchinson_PRECISION_struct* h, struct Thread *threading ){
 
   complex_PRECISION trace = 0.0;
-  struct sample estimate;
   
   level_struct *finest_l = h->finest_level;
   level_struct* lx_i;

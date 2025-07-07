@@ -67,7 +67,7 @@ void vector_PRECISION_define_random_rademacher( vector_PRECISION phi, int start,
     int i;
     int j = 0;
 
-    int size = g.global_lattice[l->depth][0]*g.global_lattice[l->depth][1]*g.global_lattice[l->depth][2]*g.global_lattice[l->depth][3];
+    //int size = g.global_lattice[l->depth][0]*g.global_lattice[l->depth][1]*g.global_lattice[l->depth][2]*g.global_lattice[l->depth][3];
     int dof = l->num_lattice_site_var;
 
     for ( i=start; i<end; i++ ){
@@ -113,9 +113,9 @@ void vector_PRECISION_ghg(vector_PRECISION phi,
     if ( phi != NULL ) {
       int depth = l->depth;
       int r_t = g.my_coords[T];
-      int r_z = g.my_coords[Z];
-      int r_y = g.my_coords[Y];
-      int r_x = g.my_coords[X];
+      //int r_z = g.my_coords[Z];
+      //int r_y = g.my_coords[Y];
+      //int r_x = g.my_coords[X];
       //printf("rank= %d \t %d %d %d %d \n",g.my_rank, r_t, r_z, r_y, r_x);
 
       /* global_splitting: Num Procs in each dim
@@ -127,20 +127,20 @@ void vector_PRECISION_ghg(vector_PRECISION phi,
 
       // Initial global coordinates based on cartesian coordinates
       int t0 = r_t * Nt_loc;
-      int x0 = r_x * Nx_loc;
-      int y0 = r_y * Ny_loc;
-      int z0 = r_z * Nz_loc;
+      //int x0 = r_x * Nx_loc;
+      //int y0 = r_y * Ny_loc;
+      //int z0 = r_z * Nz_loc;
 
       //printf("RANK = %d \t Nt= %d,  Nz = %d, Ny= %d, Nx = %d\n T = %d, Z = %d, Y = %d, X = %d\n", g.my_rank, Nt_loc, Nz_loc, Ny_loc, Nx_loc, T,Z,Y,X);
       for (int lt = 0; lt< Nt_loc; ++lt) {
         int t = t0 + lt;               // global t
         bool ontimeslice = (t == g.time_slice);
         for (int lz = 0; lz < Nz_loc; ++lz) {
-          int z = z0 + lz;
+         // int z = z0 + lz;
           for (int ly = 0; ly < Ny_loc; ++ly) {
-            int y = y0 + ly;           // global y
+          //  int y = y0 + ly;           // global y
             for (int lx = 0; lx < Nx_loc; ++lx) {
-              int x = x0 + lx;             // global x
+            //  int x = x0 + lx;             // global x
 
               int loc_site  = ((lt * Nz_loc + lz) * Ny_loc + ly) * Nx_loc + lx;
 
