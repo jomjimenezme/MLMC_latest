@@ -132,53 +132,39 @@ void vector_PRECISION_ghg(vector_PRECISION phi,
       int z0 = r_z * Nz_loc;
 
       //printf("RANK = %d \t Nt= %d,  Nz = %d, Ny= %d, Nx = %d\n T = %d, Z = %d, Y = %d, X = %d\n", g.my_rank, Nt_loc, Nz_loc, Ny_loc, Nx_loc, T,Z,Y,X);
-      for (int lt=0; lt<Nt_loc; ++lt) {
+      for (int lt = 0; lt< Nt_loc; ++lt) {
         int t = t0 + lt;               // global t
         bool ontimeslice = (t == g.time_slice);
-        for (int lz=0; lz<Nz_loc; ++lz) {
+        for (int lz = 0; lz < Nz_loc; ++lz) {
           int z = z0 + lz;
-            for (int ly=0; ly<Ny_loc; ++ly) {
-              int y = y0 + ly;           // global y
-                for (int lx=0; lx<Nx_loc; ++lx) {
-                  int x = x0 + lx;             // global x
+          for (int ly = 0; ly < Ny_loc; ++ly) {
+            int y = y0 + ly;           // global y
+            for (int lx = 0; lx < Nx_loc; ++lx) {
+              int x = x0 + lx;             // global x
 
-                  int loc_site  = ((lt * Nz_loc + lz) * Ny_loc + ly) * Nx_loc + lx;
+              int loc_site  = ((lt * Nz_loc + lz) * Ny_loc + ly) * Nx_loc + lx;
 
-                  for (int d=0; d<4; ++d) {
-                    for (int c=0; c<3; ++c){
-
-                        int i = loc_site*12    /* site base  */
-                                  + d * 3      /* stride is 3 colors  */
-                                  + c;         /* color component   */
-                        if (!ontimeslice){
-                          //printf("IN, g.time_slice = %d, t = %d, z %d, y %d, x %d,\t RANK %d\n", g.time_slice, t, z,y,x, g.my_rank);
-                          //if(   (PRECISION)((double)rand()<(double)RAND_MAX/2.0)   ) {
-                              //phi[i ]=  (double) (-1);
-                        	//}
-                        	//else{
-                        	//   phi[i ]= (PRECISION)(1);
-                        	//}
-                          phi[i] = 0.0;
-                        }
-                        //else{
-                        //  phi[i]=0.0;
-                        //}
-                        //fflush(0); MPI_Barrier(MPI_COMM_WORLD); sleep(0.01);
+              for( int site_el = 0; site_el < l->num_lattice_site_var; site_el++){
+              //for (int d=0; d<4; ++d) {
+              //  for (int c=0; c<3; ++c){
+              //      int i = loc_site*12    /* site base  */
+              //                + d * 3      /* stride is 3 colors  */
+              //                + c;         /* color component   */
+                int i = loc_site * l->num_lattice_site_var + site_el;
+                if (!ontimeslice){
+                  phi[i] = 0.0;
                 }
               }
             }
           }
         }
       }
-
-
     }else {
       error0("Error in \"vector_PRECISION_define_random\": pointer is null\n");
     }
   }
   if(thread == 0 && start != end)
     PROF_PRECISION_STOP( _SET, 1 );
-
 }
 
 void vector_PRECISION_define_spin_color( vector_PRECISION phi, int start, int end, level_struct *l, struct Thread *threading) {
