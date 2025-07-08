@@ -302,6 +302,9 @@ typedef struct {
     struct level_struct *lx_i;
     struct level_struct *lx_j;
 
+    // indicies for the right or left operator
+    int r_op, l_op; 
+
   } hutchinson_PRECISION_struct;
 
 

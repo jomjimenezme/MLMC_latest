@@ -40,13 +40,11 @@ void set_probing_variances_to_zero(){
     if(g.trace_op_type==7){
     	for(int level = 0; level < g.num_levels*g.num_levels; level++){
             g.variances[level] = 0.0;
-	    printf("\n variance at level %d = %f, operation type = %d\n",level, g.variances[level], g.trace_op_type);
     	}
     
   }else{
 	for(int level = 0; level < g.num_levels; level++){
             g.variances[level] = 0.0;
-	    printf("\n variance at level %d = %f, operation type = %d\n",level, g.variances[level], g.trace_op_type);
         }
 
     }
