@@ -2482,8 +2482,12 @@ complex_PRECISION g5_3D_connected_split_driver_PRECISION( level_struct *l, struc
             rop_string = "CL";
 
 	  if(i == g.num_levels-1 || j == g.num_levels-1){
-	    if(CL_check_PRECISION(h->l_op, h->r_op, i, j))
+	    if(CL_check_PRECISION(h->l_op, h->r_op, i, j)){
+	      if (j < g.num_levels - 1)
+          	h->lx_j = h->lx_j->next_level;
+
 	      continue;
+	    }
 	  }
 
           if(g.my_rank == 0) printf("\n Computing trace for G_{%d, %d}^{%s-%s}(t=%d) \n", i,j, lop_string, rop_string, g.time_slice);
