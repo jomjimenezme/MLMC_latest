@@ -1360,7 +1360,7 @@ complex_PRECISION g5_3D_connected_mlmc_driver_PRECISION( level_struct *l, struct
       // Call to blind from t+t’ with t’ = 0, ..., T-1
       for ( g.time_slice_inner_connected=0; g.time_slice_inner_connected<g.global_lattice[0][0]; g.time_slice_inner_connected++ ) {
         if (g.probing) {
-          for (g.coloring_count = 1; g.coloring_count < g.num_colors[i] + 1; g.coloring_count++) {
+          for (g.coloring_count = 1; g.coloring_count < g.num_colors[0] + 1; g.coloring_count++) {
             if(g.my_rank==0) {
               printf("\nEstimating trace at color %d\n", g.coloring_count);
             }
@@ -2326,7 +2326,7 @@ void connected_split_PRECISION_intermediate( vector_PRECISION out, vector_PRECIS
 
 
 //TODO: better naming (?)
-// builds C_ij by calling mlmc_difference and mlmc_non_difference
+// builds C_ij for split by calling split_intermediate, split_orthogonal and mlmc_non_difference
 complex_PRECISION connected_outer_split_PRECISION( int type_appl, level_struct *l, hutchinson_PRECISION_struct* h, struct Thread *threading ){
 
   complex_PRECISION trace = 0.0;
@@ -2336,8 +2336,10 @@ complex_PRECISION connected_outer_split_PRECISION( int type_appl, level_struct *
   level_struct* lx_j;
   lx_i = h->lx_i;
   lx_j = h->lx_j;
-  
-  int i = lx_i->depth;
+
+  int l_op = h->l_op; //0 is orthogonal and 1 is full rank
+  int r_op = h->r_op;
+  int i = lx_i->depth; //When i or j = g.num_levels-1 we deal with the coarsest level operator
   int j = lx_j->depth;
   
   // Allocate buffer at finest
@@ -2347,7 +2349,7 @@ complex_PRECISION connected_outer_split_PRECISION( int type_appl, level_struct *
   // for all but coarsest level
   //lx = l;
   
-  // CONNECTED STEP #1. apply \Pi_{t+t'}   (\Pi_{t+t'} x)
+  // CONNECTED SPLIT STEP #1. apply \Pi_{t+t'}   (\Pi_{t+t'} x)
   {
     // Project rademacher vector into t+t'
     int bufft = g.time_slice;
@@ -2358,13 +2360,20 @@ complex_PRECISION connected_outer_split_PRECISION( int type_appl, level_struct *
     g.time_slice = bufft;
   }
 
-  // CONNECTED STEP #2. apply Operator S_j    (S_j \Pi_{t+t'} x)
+  // CONNECTED SPLIT STEP #2. apply Operator S_j    (S_j \Pi_{t+t'} x)
+  if(g.my_rank == 0) printf("\napplying right operator, r_op = %d, j = %d", r_op, j);
   {
-    connected_split_PRECISION_intermediate(op1, h->rademacher_vector, lx_j,  h, threading ); 
+    if(r_op == 0 && j != g.num_levels-1)
+    	connected_split_PRECISION_orthogonal(op1, h->rademacher_vector, lx_j,  h, threading );
+    else if(r_op == 1 && j != g.num_levels-1)
+	connected_split_PRECISION_intermediate(op1, h->rademacher_vector, lx_j,  h, threading );
+    else if(j == g.num_levels-1)
+	connected_mlmc_PRECISION_non_difference( op1, h->rademacher_vector, lx_j,  h, threading ); 
     
   }
+  if(g.my_rank == 0) printf("\nright operator applied");
   
-  // CONNECTED STEP #3. apply \Pi{t’}    (\Pi_{t'} S_j \Pi_{t+t'} x) 
+  // CONNECTED SPLIT STEP #3. apply \Pi{t’}    (\Pi_{t'} S_j \Pi_{t+t'} x) 
   {
     int bufft = g.time_slice;
     // TODO : check : is this assuming periodic in time ?
@@ -2373,13 +2382,21 @@ complex_PRECISION connected_outer_split_PRECISION( int type_appl, level_struct *
     g.time_slice = bufft;
   }
   
-  // CONNECTED STEP #4. apply Difference operator S_i    (S_i \Pi_{t'} S_j \Pi_{t+t'} x)
+  // CONNECTED SPLIT STEP #4. apply Difference operator S_i    (S_i \Pi_{t'} S_j \Pi_{t+t'} x)
+  if(g.my_rank == 0) printf("\napplying left operator, l_op = %d, i = %d", l_op, i);
   {
-    connected_split_PRECISION_intermediate( op1, op1,  lx_i,  h, threading );
+    if(l_op == 0 && i != g.num_levels-1)
+        connected_split_PRECISION_orthogonal(op1, h->rademacher_vector, lx_i,  h, threading );
+    else if(l_op == 1 && i != g.num_levels-1)
+        connected_split_PRECISION_intermediate(op1, h->rademacher_vector, lx_i,  h, threading );
+    else if(i == g.num_levels-1)
+        connected_mlmc_PRECISION_non_difference( op1, h->rademacher_vector, lx_i,  h, threading );
+
   }
+  if(g.my_rank == 0) printf("\nleft operator applied");
 
   
-  // CONNECTED STEP #5 do the dot product AT FINEST       (x^H \Pi_{t+t'} S_i \Pi_{t'} S_j \Pi_{t+t'} x))
+  // CONNECTED SPLIT STEP #5 do the dot product AT FINEST       (x^H \Pi_{t+t'} S_i \Pi_{t'} S_j \Pi_{t+t'} x))
   {
     gmres_PRECISION_struct* p = get_p_struct_PRECISION( finest_l);
 
@@ -2399,6 +2416,29 @@ complex_PRECISION connected_outer_split_PRECISION( int type_appl, level_struct *
 
 }
 
+//This function returns 0 if the corresponding CL terms has not been computed yet and 1 otherwise
+int CL_check_PRECISION(int l_op, int r_op, int i, int j){
+  int CL_status = 0;
+
+  if(l_op == 0 && r_op == 0)
+    CL_status = 0;
+
+  if(l_op == 0 && r_op == 1)
+    CL_status = 1;
+
+  if(l_op == 1 && r_op == 0){
+    if(i == g.num_levels-1 && j == g.num_levels-1)
+      CL_status = 1;
+    else
+      CL_status = 0;
+  }
+
+  if(l_op == 1 && r_op == 1)
+    CL_status = 1;
+
+  return CL_status;
+}
+
 
 
 complex_PRECISION g5_3D_connected_split_driver_PRECISION( level_struct *l, struct Thread *threading ){
@@ -2408,47 +2448,82 @@ complex_PRECISION g5_3D_connected_split_driver_PRECISION( level_struct *l, struc
   struct sample estimate;
   hutchinson_PRECISION_struct* h = &(l->h_PRECISION);
 
-  h->lx_i = h->finest_level;
-  h->lx_j = h->finest_level;
+  h->l_op = 0; //0:ORT 1:FR
+  h->r_op = 0; //we have CL when i or j == g.num_levels-1
+  
+  //To avoid creating the same operator more than once we need the CL_check function for the CL terms
+  //In a n lvl method the number of operators for the connected split is (2n-1)*(2n-1)
+  //E.g. with the 4 nested for loops in a n=3 lvl method we would have 36 iterations but only 25 operators
+  //The extra iterations will create repeated CL terms because when i or j == g.num_levels-1 the index of the corresponding G term
+  //is always CL and not ORT or FR
+  //In a n lvl method the total number of ORT-CL FR-CL CL-ORT CL-FR CL-CL terms is 4n-3 
 
-  for(i = 0; i < g.num_levels-1; i++){
-    h->lx_j = h->finest_level;
-    for(j = 0; j < g.num_levels-1; j++){
-    
-      if(g.my_rank == 0) printf("\n Computing trace for G_{%d, %d} \n", i,j);
-      
-      trace = 0.0;
-      h->hutch_compute_one_sample = connected_outer_split_PRECISION;
-      
-      // Call to blind from t+t’ with t’ = 0, ..., T-1
-      for ( g.time_slice_inner_connected=0; g.time_slice_inner_connected<g.global_lattice[0][0]; g.time_slice_inner_connected++ ) {
-        if (g.probing) {
-          for (g.coloring_count = 1; g.coloring_count < g.num_colors[0] + 1; g.coloring_count++) {
-            if(g.my_rank==0) {
-              printf("\nEstimating trace at color %d\n", g.coloring_count);
-            }
-            // TODO: should we indeed pass finest lvl? or some other? 
-            estimate = hutchinson_blind_PRECISION(h->finest_level, h, 0, threading);
-            trace += estimate.acc_trace / estimate.sample_size;
-          }
-        } else {
-          estimate = hutchinson_blind_PRECISION(h->finest_level, h, 0, threading);
-          trace += estimate.acc_trace / estimate.sample_size;
-        }
+  for(h->l_op = 0; h->l_op < 2; h->l_op++){
+    for(h->r_op = 0; h->r_op < 2; h->r_op++){
+      h->lx_i = h->finest_level;
+      h->lx_j = h->finest_level;
+      for(i = 0; i < g.num_levels; i++){
+        h->lx_j = h->finest_level;
+        for(j = 0; j < g.num_levels; j++){
+
+	  const char *lop_string, *rop_string;
+	  if(h->l_op == 0 && i != g.num_levels-1)
+	    lop_string = "ORT";
+	  else if(h->l_op == 1 && i != g.num_levels-1)
+	    lop_string = "FR";
+	  else if(i == g.num_levels-1)
+	    lop_string = "CL";
+
+	  if(h->r_op == 0 && j != g.num_levels-1)
+            rop_string = "ORT";
+          else if(h->r_op == 1 && j != g.num_levels-1)
+            rop_string = "FR";
+          else if(j == g.num_levels-1)
+            rop_string = "CL";
+
+	  if(i == g.num_levels-1 || j == g.num_levels-1){
+	    if(CL_check_PRECISION(h->l_op, h->r_op, i, j))
+	      continue;
+	  }
+
+          if(g.my_rank == 0) printf("\n Computing trace for G_{%d, %d}^{%s-%s}(t=%d) \n", i,j, lop_string, rop_string, g.time_slice);
+
+          trace = 0.0;
+          h->hutch_compute_one_sample = connected_outer_split_PRECISION;
+
+          // Call to blind from t+t’ with t’ = 0, ..., T-1
+          for ( g.time_slice_inner_connected=0; g.time_slice_inner_connected<g.global_lattice[0][0]; g.time_slice_inner_connected++ ) {
+            if (g.probing) {
+              for (g.coloring_count = 1; g.coloring_count < g.num_colors[0] + 1; g.coloring_count++) {
+                if(g.my_rank==0) {
+                  printf("\nEstimating trace at color %d\n", g.coloring_count);
+                }
+                // TODO: should we indeed pass finest lvl? or some other?
+                estimate = hutchinson_blind_PRECISION(h->finest_level, h, 0, threading);
+                trace += estimate.acc_trace / estimate.sample_size;
+              }
+            } else {
+                estimate = hutchinson_blind_PRECISION(h->finest_level, h, 0, threading);
+                trace += estimate.acc_trace / estimate.sample_size;
+              }
+           }
+
+        trace = trace/g.time_slice_inner_connected;
+        global_connected_trace += trace;
+        //int nlevs = g.num_levels;
+        //int idx = h->lx_i->depth * nlevs + h->lx_j->depth;
+        if (g.my_rank == 0) printf("\n Trace of G_{%d, %d}^{%s, %s}(t=%d) = %f +%f\n", h->lx_i->depth, h->lx_j->depth, lop_string, rop_string, g.time_slice, CSPLIT(trace));
+
+
+
+        if (j < g.num_levels - 1)
+          h->lx_j = h->lx_j->next_level;
       }
-      
-      trace = trace/g.time_slice_inner_connected;
-      global_connected_trace += trace;
-      //int nlevs = g.num_levels;
-      //int idx = h->lx_i->depth * nlevs + h->lx_j->depth;  
-      if (g.my_rank == 0) printf("\n Trace of G_{%d, %d}(t=%d) = %f +%f\n", h->lx_i->depth, h->lx_j->depth, g.time_slice, CSPLIT(trace));
-      
-      if (j < g.num_levels - 1)    
-        h->lx_j = h->lx_j->next_level;
+        if (i < g.num_levels - 1)
+          h->lx_i = h->lx_i->next_level;
     }
-      if (i < g.num_levels - 1)
-        h->lx_i = h->lx_i->next_level;
   }
+}
 
   return global_connected_trace;
   
