@@ -2363,13 +2363,18 @@ complex_PRECISION connected_outer_split_PRECISION( int type_appl, level_struct *
   // CONNECTED SPLIT STEP #2. apply Operator S_j    (S_j \Pi_{t+t'} x)
   if(g.my_rank == 0) printf("\napplying right operator, r_op = %d, j = %d", r_op, j);
   {
-    if(r_op == 0 && j != g.num_levels-1)
-    	connected_split_PRECISION_orthogonal(op1, h->rademacher_vector, lx_j,  h, threading );
-    else if(r_op == 1 && j != g.num_levels-1)
-	connected_split_PRECISION_intermediate(op1, h->rademacher_vector, lx_j,  h, threading );
-    else if(j == g.num_levels-1)
-	connected_mlmc_PRECISION_non_difference( op1, h->rademacher_vector, lx_j,  h, threading ); 
-    
+    if(r_op == 0 && j != g.num_levels-1){
+      if(g.my_rank == 0) printf("\napplying Right ORTHOGONAL\n");
+      connected_split_PRECISION_orthogonal(op1, h->rademacher_vector, lx_j,  h, threading );
+    }
+    else if(r_op == 1 && j != g.num_levels-1){
+      if(g.my_rank == 0) printf("\napplying Right FULL RANK\n");
+      connected_split_PRECISION_intermediate(op1, h->rademacher_vector, lx_j,  h, threading );
+    }
+    else if(j == g.num_levels-1){
+      if(g.my_rank == 0) printf("\napplying Right COARSEST\n");
+      connected_mlmc_PRECISION_non_difference( op1, h->rademacher_vector, lx_j,  h, threading ); 
+    }
   }
   if(g.my_rank == 0) printf("\nright operator applied");
   
@@ -2385,13 +2390,18 @@ complex_PRECISION connected_outer_split_PRECISION( int type_appl, level_struct *
   // CONNECTED SPLIT STEP #4. apply Difference operator S_i    (S_i \Pi_{t'} S_j \Pi_{t+t'} x)
   if(g.my_rank == 0) printf("\napplying left operator, l_op = %d, i = %d", l_op, i);
   {
-    if(l_op == 0 && i != g.num_levels-1)
-        connected_split_PRECISION_orthogonal(op1, h->rademacher_vector, lx_i,  h, threading );
-    else if(l_op == 1 && i != g.num_levels-1)
+    if(l_op == 0 && i != g.num_levels-1){
+      if(g.my_rank == 0) printf("\napplying Left ORTHOGONAL\n");
+      connected_split_PRECISION_orthogonal(op1, h->rademacher_vector, lx_i,  h, threading );
+    }
+    else if(l_op == 1 && i != g.num_levels-1){
+        if(g.my_rank == 0) printf("\napplying Left FULL RANK\n");
         connected_split_PRECISION_intermediate(op1, h->rademacher_vector, lx_i,  h, threading );
-    else if(i == g.num_levels-1)
-        connected_mlmc_PRECISION_non_difference( op1, h->rademacher_vector, lx_i,  h, threading );
-
+    }
+    else if(i == g.num_levels-1){
+      if(g.my_rank == 0) printf("\napplying Left COARSEST\n");
+      connected_mlmc_PRECISION_non_difference( op1, h->rademacher_vector, lx_i,  h, threading );
+    }
   }
   if(g.my_rank == 0) printf("\nleft operator applied");
 
@@ -2424,13 +2434,16 @@ int CL_check_PRECISION(int l_op, int r_op, int i, int j){
     CL_status = 0;
 
   if(l_op == 0 && r_op == 1)
-    CL_status = 1;
+    if( i == g.num_levels-1 && j != g.num_levels-1)
+      CL_status = 0;
+    else
+      CL_status = 1;
 
   if(l_op == 1 && r_op == 0){
-    if(i == g.num_levels-1 && j == g.num_levels-1)
-      CL_status = 1;
-    else
+    if(i != g.num_levels-1)
       CL_status = 0;
+    else
+      CL_status = 1;
   }
 
   if(l_op == 1 && r_op == 1)
@@ -2466,29 +2479,28 @@ complex_PRECISION g5_3D_connected_split_driver_PRECISION( level_struct *l, struc
         h->lx_j = h->finest_level;
         for(j = 0; j < g.num_levels; j++){
 
-	  const char *lop_string, *rop_string;
-	  if(h->l_op == 0 && i != g.num_levels-1)
-	    lop_string = "ORT";
-	  else if(h->l_op == 1 && i != g.num_levels-1)
-	    lop_string = "FR";
-	  else if(i == g.num_levels-1)
-	    lop_string = "CL";
+          const char *lop_string, *rop_string;
+          if(h->l_op == 0 && i != g.num_levels-1)
+            lop_string = "ORT";
+          else if(h->l_op == 1 && i != g.num_levels-1)
+            lop_string = "FR";
+          else if(i == g.num_levels-1)
+            lop_string = "CL";
 
-	  if(h->r_op == 0 && j != g.num_levels-1)
-            rop_string = "ORT";
-          else if(h->r_op == 1 && j != g.num_levels-1)
-            rop_string = "FR";
-          else if(j == g.num_levels-1)
-            rop_string = "CL";
+          if(h->r_op == 0 && j != g.num_levels-1)
+              rop_string = "ORT";
+            else if(h->r_op == 1 && j != g.num_levels-1)
+              rop_string = "FR";
+            else if(j == g.num_levels-1)
+              rop_string = "CL";
 
-	  if(i == g.num_levels-1 || j == g.num_levels-1){
-	    if(CL_check_PRECISION(h->l_op, h->r_op, i, j)){
-	      if (j < g.num_levels - 1)
-          	h->lx_j = h->lx_j->next_level;
-
-	      continue;
-	    }
-	  }
+          if(i == g.num_levels-1 || j == g.num_levels-1){
+            if(CL_check_PRECISION(h->l_op, h->r_op, i, j)){
+              if (j < g.num_levels - 1)
+                h->lx_j = h->lx_j->next_level;
+                continue;
+              }
+          }
 
           if(g.my_rank == 0) printf("\n Computing trace for G_{%d, %d}^{%s-%s}(t=%d) \n", i,j, lop_string, rop_string, g.time_slice);
 
@@ -2496,7 +2508,7 @@ complex_PRECISION g5_3D_connected_split_driver_PRECISION( level_struct *l, struc
           h->hutch_compute_one_sample = connected_outer_split_PRECISION;
 
           // Call to blind from t+t’ with t’ = 0, ..., T-1
-          for ( g.time_slice_inner_connected=0; g.time_slice_inner_connected<g.global_lattice[0][0]; g.time_slice_inner_connected++ ) {
+          for ( g.time_slice_inner_connected=0; g.time_slice_inner_connected < g.global_lattice[0][0]; g.time_slice_inner_connected++ ) {
             if (g.probing) {
               for (g.coloring_count = 1; g.coloring_count < g.num_colors[0] + 1; g.coloring_count++) {
                 if(g.my_rank==0) {
