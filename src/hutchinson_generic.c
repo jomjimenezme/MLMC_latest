@@ -2376,7 +2376,7 @@ complex_PRECISION connected_outer_split_PRECISION( int type_appl, level_struct *
       connected_mlmc_PRECISION_non_difference( op1, h->rademacher_vector, lx_j,  h, threading ); 
     }
   }
-  if(g.my_rank == 0) printf("\nright operator applied");
+  if(g.my_rank == 0) printf("\nright operator applied\n");
   
   // CONNECTED SPLIT STEP #3. apply \Pi{t’}    (\Pi_{t'} S_j \Pi_{t+t'} x) 
   {
@@ -2392,18 +2392,18 @@ complex_PRECISION connected_outer_split_PRECISION( int type_appl, level_struct *
   {
     if(l_op == 0 && i != g.num_levels-1){
       if(g.my_rank == 0) printf("\napplying Left ORTHOGONAL\n");
-      connected_split_PRECISION_orthogonal(op1, h->rademacher_vector, lx_i,  h, threading );
+      connected_split_PRECISION_orthogonal(op1, op1, lx_i,  h, threading );
     }
     else if(l_op == 1 && i != g.num_levels-1){
         if(g.my_rank == 0) printf("\napplying Left FULL RANK\n");
-        connected_split_PRECISION_intermediate(op1, h->rademacher_vector, lx_i,  h, threading );
+        connected_split_PRECISION_intermediate(op1, op1, lx_i,  h, threading );
     }
     else if(i == g.num_levels-1){
       if(g.my_rank == 0) printf("\napplying Left COARSEST\n");
-      connected_mlmc_PRECISION_non_difference( op1, h->rademacher_vector, lx_i,  h, threading );
+      connected_mlmc_PRECISION_non_difference( op1, op1, lx_i,  h, threading );
     }
   }
-  if(g.my_rank == 0) printf("\nleft operator applied");
+  if(g.my_rank == 0) printf("\nleft operator applied\n");
 
   
   // CONNECTED SPLIT STEP #5 do the dot product AT FINEST       (x^H \Pi_{t+t'} S_i \Pi_{t'} S_j \Pi_{t+t'} x))
