@@ -157,6 +157,42 @@ int main( int argc, char **argv ) {
 
       set_probing_variances_to_zero();
 
+        if( g.trace_op_type == 10){
+
+        START_MASTER(threadingx)
+        if(g.my_rank==0) printf("Using MLMC for computing the 3D trace of g=identity\n");
+        END_MASTER(threadingx)
+
+        trace = id_3D_mlmc_hutchinson_driver_double(&l, &threading);
+
+        START_MASTER(threadingx)
+        if(g.my_rank==0) printf("\nResulting trace from MLMC  = %f+i%f\n", CSPLIT(trace));
+        if(g.my_rank == 0){
+          for(int level = 0; level < g.num_levels; level++){
+            printf("Resulting variance from (traditional) MGMLMC at level %d = %f\n", level + 1, g.variances[level]);
+          }
+        }
+        fflush(0);
+        END_MASTER(threadingx)
+      }
+
+
+      if( g.trace_op_type == 9){
+          START_MASTER(threadingx)
+          if(g.my_rank==0) printf("Using plain Hutchinson for computing the 3D trace of g=identity\n");
+          END_MASTER(threadingx)
+
+          trace = id_3D_hutchinson_driver_double( &l, &threading );
+          //trace = hutchinson_driver_double( &l, &threading );
+
+          START_MASTER(threadingx)
+          if(g.my_rank==0) printf("\nResulting trace from plain Hutchinson = %f+i%f\n", CSPLIT(trace));
+          if(g.my_rank==0) printf("Resulting variance from plain Hutchinson = %f\n", g.variances[0]);
+          fflush(0);
+          END_MASTER(threadingx)
+      }
+
+
        // this third case is the connected diagram operator, with Split
       if( g.trace_op_type == 8 ){
         START_MASTER(threadingx)
