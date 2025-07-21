@@ -94,6 +94,8 @@ void vector_PRECISION_define_random_rademacher( vector_PRECISION phi, int start,
   if(thread == 0 && start != end)
   PROF_PRECISION_STOP( _SET, 1 );
 
+  print_rademacher_PRECISION( phi, l);
+
 }
 
 
@@ -238,6 +240,75 @@ void vector_PRECISION_define_spin_color( vector_PRECISION phi, int start, int en
 }
 
 
+void print_rademacher_PRECISION( vector_PRECISION phi, level_struct *l){
+
+  int depth = l->depth;
+  int dof   = l->num_lattice_site_var;
+
+  int Nt_loc = g.global_lattice[depth][T] / l->global_splitting[T];
+  int Nz_loc = g.global_lattice[depth][Z] / l->global_splitting[Z];
+  int Ny_loc = g.global_lattice[depth][Y] / l->global_splitting[Y];
+  int Nx_loc = g.global_lattice[depth][X] / l->global_splitting[X];
+
+  int r_t = g.my_coords[T];
+  int r_z = g.my_coords[Z];
+  int r_y = g.my_coords[Y];
+  int r_x = g.my_coords[X];
+
+  //global offset of this rank’s block
+  int t0 = r_t * Nt_loc;
+  int z0 = r_z * Nz_loc;
+  int y0 = r_y * Ny_loc;
+  int x0 = r_x * Nx_loc;
+
+  // global lattice sizes
+  int T_g = g.global_lattice[depth][0];
+  int Z_g = g.global_lattice[depth][1];
+  int Y_g = g.global_lattice[depth][2];
+  int X_g = g.global_lattice[depth][3];
+
+
+  MPI_Barrier(g.comm_cart);
+
+  // go through global sites in order
+  for (int gsite = 0; gsite < T_g * Z_g * Y_g * X_g; ++gsite) {
+      // get (t,z,y,x) from lexicographic index:
+      int t = gsite / (Z_g * Y_g * X_g);
+      int z = (gsite / (Y_g * X_g)) % Z_g;
+      int y = (gsite /  X_g)          % Y_g;
+      int x =  gsite %  X_g;
+
+      // check if this rank owns the site
+      if ( t >= t0 && t < t0 + Nt_loc &&
+          z >= z0 && z < z0 + Nz_loc &&
+          y >= y0 && y < y0 + Ny_loc &&
+          x >= x0 && x < x0 + Nx_loc )
+      {
+          // local indices
+          int lt = t - t0;
+          int lz = z - z0;
+          int ly = y - y0;
+          int lx = x - x0;
+
+          int local_site = ((lt * Nz_loc + lz) * Ny_loc + ly) * Nx_loc + lx;
+          int color      = g.local_colors[depth][local_site];
+
+          // print first component of phi for this site
+          printf("x = %+6.1f , color = %6d , site = %3d , t = %3d , rank = %3d\n",
+                creal(phi[local_site * dof]),
+                color,
+                gsite,
+                t,
+                g.my_rank);
+
+          fflush(stdout);
+      }
+
+      // "ordered" output
+      MPI_Barrier(g.comm_cart);
+  }
+
+}
 
 /*void vector_PRECISION_define_spin_color( vector_PRECISION phi, int start, int end, level_struct *l, struct Thread *threading) {
   

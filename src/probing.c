@@ -4,10 +4,10 @@
 //TODO: We need a function that frees the memory allocated by the calls of probing, there are memory leaks
 
 int max(int v[], int size) {
-    int max = v[0];  
+    int max = v[0];
 
-    for (int i = 1; i < size; i++) { 
-        if (v[i] > max) {          
+    for (int i = 1; i < size; i++) {
+        if (v[i] > max) {
             max = v[i];
         }
     }
@@ -41,7 +41,7 @@ void set_probing_variances_to_zero(){
     	for(int level = 0; level < g.num_levels*g.num_levels; level++){
             g.variances[level] = 0.0;
     	}
-    
+
   }else{
 	for(int level = 0; level < g.num_levels; level++){
             g.variances[level] = 0.0;
@@ -64,61 +64,148 @@ void allocate_variances(){
 }
 
 void setup_local_colors(){
-    
+
     int num_processes;
     MPI_Comm_size(MPI_COMM_WORLD, &num_processes);
-    
+
+    // Cartisian Topology variables TODO: dims should be read from l->global_splitting
+    int dims[4], periods[4], coords[4];
+    MPI_Cart_get(g.comm_cart, 4, dims, periods, coords);
+
     g.local_colors = (int**)malloc(g.num_levels * sizeof(int*));
-    
+
     for(int level = 0; level < g.num_levels; level++){
-        
+
+        // int size = T * Z * Y * X;
+        // int local_size = size/num_processes;
+        // int *current_level_colors;
+
+        //global and local sizes in terms of cartisian grid
         int T = g.global_lattice[level][0];
         int Z = g.global_lattice[level][1];
         int Y = g.global_lattice[level][2];
         int X = g.global_lattice[level][3];
-        
-        int size = T * Z * Y * X;
-        int local_size = size/num_processes;
-        int *current_level_colors;
-        
-        if(g.my_rank == 0){
-            MALLOC(current_level_colors, int, size);
-            vector_copy(current_level_colors, g.colors[level], size);
+
+        int Nt_loc = T / dims[0];
+        int Nz_loc = Z / dims[1];
+        int Ny_loc = Y / dims[2];
+        int Nx_loc = X / dims[3];
+
+        const int global_size = T * Z * Y * X;
+        const int local_size  = Nt_loc * Nz_loc * Ny_loc * Nx_loc;
+
+        //if(g.my_rank == 0){
+        //    MALLOC(current_level_colors, int, size);
+        //    vector_copy(current_level_colors, g.colors[level], size);
+        //}
+
+        // buffer holding the FULL global colour array on every rank
+        int *global_colors = NULL;
+        if (g.my_rank == 0) {
+            global_colors = g.colors[level];       //already allocated
+        } else {
+            MALLOC(global_colors, int, global_size);
         }
-        
-        g.local_colors[level] = NULL;
+
+
+        //g.local_colors[level] = NULL;
+        //MALLOC(g.local_colors[level], int, local_size);
+
+        //int *current_level_local_colors;
+        //MALLOC(current_level_local_colors, int, local_size);
+
+        //MPI_Barrier(MPI_COMM_WORLD);
+
+        //MPI_Scatter(current_level_colors, local_size, MPI_INT,
+        //        current_level_local_colors, local_size, MPI_INT,
+        //        0, MPI_COMM_WORLD);
+
+        //vector_copy(g.local_colors[level], current_level_local_colors, local_size);
+
+        //FREE(current_level_colors, int, size);
+        //FREE(current_level_local_colors, int, local_size);
+
+        // broadcast the full colour array from rank 0
+        MPI_Bcast(global_colors, global_size, MPI_INT, 0, g.comm_cart);
+
+        // allocate and fill local colour array for this level
         MALLOC(g.local_colors[level], int, local_size);
-    
-        int *current_level_local_colors;
-        MALLOC(current_level_local_colors, int, local_size);
-    
-        MPI_Barrier(MPI_COMM_WORLD);
-        
-        MPI_Scatter(current_level_colors, local_size, MPI_INT,
-                current_level_local_colors, local_size, MPI_INT, 
-                0, MPI_COMM_WORLD);
-    
-        vector_copy(g.local_colors[level], current_level_local_colors, local_size);
-        
-        FREE(current_level_colors, int, size);
-        FREE(current_level_local_colors, int, local_size);
-    }
-    
-    if(g.my_rank==0){
-        for(int i = 0; i < g.num_levels; i++){
-	  int T = g.global_lattice[i][0];
-	  int Z = g.global_lattice[i][1];
-	  int Y = g.global_lattice[i][2];
-	  int X = g.global_lattice[i][3];
-          int size = T * Z * Y * X;
-          FREE(g.colors[i], int*, size );
-      }
+
+        // Initial global coordinates based on cartesian coordinates
+        int t0 = coords[0] * Nt_loc;
+        int z0 = coords[1] * Nz_loc;
+        int y0 = coords[2] * Ny_loc;
+        int x0 = coords[3] * Nx_loc;
+
+        // loop over local linear index  idx
+        int idx = 0;
+        for (int lt = 0; lt < Nt_loc; lt++)
+            for (int lz = 0; lz < Nz_loc; lz++)
+                for (int ly = 0; ly < Ny_loc; ly++)
+                    for (int lx = 0; lx < Nx_loc; lx++, idx++)
+                    {
+                        // global coordinates
+                        int t = t0 + lt;
+                        int z = z0 + lz;
+                        int y = y0 + ly;
+                        int x = x0 + lx;
+
+                        // global site with t,z,y,x ordering TODO: use lex_index?
+                        int gsite = ((t * Z + z) * Y + y) * X + x;
+                        g.local_colors[level][idx] = global_colors[gsite];
+                    }
+
+    //ranks other than 0 allocated a temporary copy -> free it
+    if (g.my_rank != 0){
+        FREE(global_colors, int, global_size);
     }
 
+
+    // TODO: make it a function or remove this block
+    // Debug print: global colour array on rank 0
+        if (g.my_rank == 0) {
+            printf("[Rank %d] Global color array at level %d:\n", g.my_rank, level);
+            for (int i = 0; i < global_size; i++)
+                printf("%d ", global_colors[i]);
+            printf("\n");
+        }
+
+        MPI_Barrier(g.comm_cart);
+
+    // Debug print: local colour arrays
+        for (int r = 0; r < num_processes; r++) {
+            if (g.my_rank == r) {
+                printf("[Rank %d] Local color array at level %d:\n", g.my_rank, level);
+                for (int i = 0; i < local_size; i++)
+                    printf("%d ", g.local_colors[level][i]);
+                printf("\n");
+                fflush(stdout);
+            }
+            MPI_Barrier(g.comm_cart);
+        }
+
+
+
+    }
+
+
+
+    //if(g.my_rank==0){
+    //    for(int i = 0; i < g.num_levels; i++){
+	  //int T = g.global_lattice[i][0];
+	  //int Z = g.global_lattice[i][1];
+	  //int Y = g.global_lattice[i][2];
+	  //int X = g.global_lattice[i][3];
+    //      int size = T * Z * Y * X;
+    //      FREE(g.colors[i], int*, size );
+    //  }
+    //}
+
     MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Bcast(g.num_colors, g.num_levels, MPI_INT, 0, MPI_COMM_WORLD);
+    //MPI_Bcast(g.num_colors, g.num_levels, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(g.num_colors, g.num_levels, MPI_INT, 0, g.comm_cart);
     MPI_Barrier(MPI_COMM_WORLD);
-   
+
 }
 
 void generate_neighbors(int t, int z, int y, int x, int **neighbors, int *num_neighbors, int size[4]) {
@@ -126,7 +213,7 @@ void generate_neighbors(int t, int z, int y, int x, int **neighbors, int *num_ne
     int Z = size[1];
     int Y = size[2];
     int X = size[3];
-    
+
     int max_neighbors = 1; // Includes central point
     for (int delta = 1; delta <= g.coloring_distance; delta++) {
         max_neighbors += 8 * delta * delta * delta; // Estimate maximum number
@@ -139,7 +226,7 @@ void generate_neighbors(int t, int z, int y, int x, int **neighbors, int *num_ne
         for (int dz = -g.coloring_distance; dz <= g.coloring_distance; dz++) {
             for (int dy = -g.coloring_distance; dy <= g.coloring_distance; dy++) {
                 for (int dx = -g.coloring_distance; dx <= g.coloring_distance; dx++) {
-                    
+
                     //Verify that the distance is the right one
                     if (abs(dt) + abs(dz) + abs(dy) + abs(dx) > g.coloring_distance) {
                         continue;
@@ -167,43 +254,43 @@ void generate_neighbors(int t, int z, int y, int x, int **neighbors, int *num_ne
 
 
 void graph_coloring() {
-    
+
     MALLOC(g.num_colors, int, g.num_levels);
-    
+
     if(g.my_rank == 0){
 
     printf("\nProbing = %d\n", g.probing);
     printf("Coloring_distance = %d\n", g.coloring_distance);
     printf("Coloring_method = %d\n", g.coloring_method);
-        
+
     double time_taken;
-    
+
     double start_time = MPI_Wtime();
-    
+
     g.colors = (int**)malloc(g.num_levels * sizeof(int*));
-    
+
     if (g.colors == NULL)
         error0("Allocation error0\n");
 
     for(int level = 0; level < g.num_levels; level++){
-    
+
     int T = g.global_lattice[level][0];
     int Z = g.global_lattice[level][1];
     int Y = g.global_lattice[level][2];
     int X = g.global_lattice[level][3];
-    
+
     int size[4];
-    
+
     size[0] = T;
     size[1] = Z;
     size[2] = Y;
     size[3] = X;
 
     int total_points = T * Z * Y * X;
-    
+
     g.colors[level] = NULL;
     MALLOC(g.colors[level], int, total_points);
-    
+
     if(level<g.coloring_method){
 
     // Set all colors to 0 (not assigned)
@@ -213,6 +300,7 @@ void graph_coloring() {
 
     // Iterate over all lattice sites
     for (int t = 0; t < T; t++) {
+        if (t != g.time_slice) continue;  //TODO: This should be done for 3D traces ONLY!!
         for (int z = 0; z < Z; z++) {
             for (int y = 0; y < Y; y++) {
                 for (int x = 0; x < X; x++) {
@@ -228,7 +316,7 @@ void graph_coloring() {
                     int num_neighbors;
                     generate_neighbors(t, z, y, x, &neighbors, &num_neighbors, size);
 
-                    int used_colors[256] = {0}; 
+                    int used_colors[256] = {0};
                     for (int i = 0; i < num_neighbors; i++) {
                         int neighbor_index = neighbors[i];
                         if (g.colors[level][neighbor_index] != 0) {
@@ -254,15 +342,15 @@ void graph_coloring() {
         for(int i = 0; i < total_points; i++)
             g.colors[level][i] = 1;
         }
-        
+
     g.num_colors[level] = max(g.colors[level], total_points);
-    
+
     }
-    
+
     double end_time = MPI_Wtime();
-    
+
     time_taken = end_time - start_time;
-                 
+
     printf("\nTime for coloring: %f seconds\n", time_taken);
     for (int level = 0; level < g.num_levels; level++){
        printf("\n Colors at depth %d : \t %d \n", level, g.num_colors[level]);
@@ -291,7 +379,7 @@ void graph_coloring() {
     fclose(file);
     */
     }
-    
+
     MPI_Barrier(MPI_COMM_WORLD);
     setup_local_colors();
 }

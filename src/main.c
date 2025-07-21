@@ -132,15 +132,6 @@ int main( int argc, char **argv ) {
 
     allocate_variances();
 
-    if(g.probing){
-        graph_coloring();
-    }else {
-        MALLOC(g.num_colors, int, g.num_levels);
-        for(int i = 0; i<g.num_levels; i++){
-            g.num_colors[i] = 1;
-        }
-    }
-
     //solve_driver( &l, &threading );
     // pre-setting some values for the Hutchinson struct
     struct Thread *threadingx = &threading;  
@@ -153,6 +144,16 @@ int main( int argc, char **argv ) {
     }
     for(g.time_slice = 0; g.time_slice < g.global_lattice[0][0]; g.time_slice++){
       if(g.my_rank==0) printf("\n\n Timeslice %d\n\n",  g.time_slice);
+
+          if(g.probing){
+        graph_coloring();
+    }else {
+        MALLOC(g.num_colors, int, g.num_levels);
+        for(int i = 0; i<g.num_levels; i++){
+            g.num_colors[i] = 1;
+        }
+    }
+
 
       set_probing_variances_to_zero();
 
