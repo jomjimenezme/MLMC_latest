@@ -51,6 +51,30 @@ void set_probing_variances_to_zero(){
   }
 }
 
+void print_colors(){
+
+  char filename[100];
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  int num_processes;
+  MPI_Comm_size(MPI_COMM_WORLD, &num_processes);
+  sprintf(filename, "print_files/print_colors/colors_timeslice_%d_rank_%d.txt", g.time_slice, rank);
+  FILE *file = fopen(filename, "w");
+
+  fprintf(file, "\nTimeslice %d, process rank %d, t = %d, z = %d, y = %d, x = %d\n", g.time_slice, rank, g.my_coords[0], g.my_coords[1], g.my_coords[2], g.my_coords[3]);
+
+  for(int level = 0; level < g.num_levels; level++){
+    fprintf(file, "\nColors at level %d\n[", level);
+    int size = g.global_lattice[level][0]*g.global_lattice[level][1]*g.global_lattice[level][2]*g.global_lattice[level][3];
+    int local_size = size/num_processes;
+    for(int i = 0; i < local_size; i++){
+      fprintf(file, " %d", g.local_colors[level][i]);
+    }
+    fprintf(file, "]\n");
+  }
+  fclose(file); 
+}
+
 void allocate_variances(){
 //If we are doing mlmc with connected operator we have g.num_levels^2 operators
    if(g.my_rank==0){
@@ -162,17 +186,17 @@ void setup_local_colors(){
 
 
     // TODO: make it a function or remove this block
-    // Debug print: global colour array on rank 0
+ /*   // Debug print: global colour array on rank 0
         if (g.my_rank == 0) {
             printf("[Rank %d] Global color array at level %d:\n", g.my_rank, level);
             for (int i = 0; i < global_size; i++)
                 printf("%d ", global_colors[i]);
             printf("\n");
         }
-
+*/
         MPI_Barrier(g.comm_cart);
 
-    // Debug print: local colour arrays
+  /*  // Debug print: local colour arrays
         for (int r = 0; r < num_processes; r++) {
             if (g.my_rank == r) {
                 printf("[Rank %d] Local color array at level %d:\n", g.my_rank, level);
@@ -183,7 +207,7 @@ void setup_local_colors(){
             }
             MPI_Barrier(g.comm_cart);
         }
-
+*/
 
 
     }
@@ -204,6 +228,7 @@ void setup_local_colors(){
     MPI_Barrier(MPI_COMM_WORLD);
     //MPI_Bcast(g.num_colors, g.num_levels, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(g.num_colors, g.num_levels, MPI_INT, 0, g.comm_cart);
+    //print_colors();
     MPI_Barrier(MPI_COMM_WORLD);
 
 }
@@ -300,7 +325,7 @@ void graph_coloring() {
 
     // Iterate over all lattice sites
     for (int t = 0; t < T; t++) {
-        if (t != g.time_slice) continue;  //TODO: This should be done for 3D traces ONLY!!
+        if (g.probing_dimension == 3 && t != g.time_slice) continue;  //TODO: This should be done for 3D traces ONLY!!
         for (int z = 0; z < Z; z++) {
             for (int y = 0; y < Y; y++) {
                 for (int x = 0; x < X; x++) {

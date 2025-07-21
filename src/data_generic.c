@@ -94,7 +94,7 @@ void vector_PRECISION_define_random_rademacher( vector_PRECISION phi, int start,
   if(thread == 0 && start != end)
   PROF_PRECISION_STOP( _SET, 1 );
 
-  print_rademacher_PRECISION( phi, l);
+  //print_rademacher_PRECISION( phi, l);
 
 }
 

@@ -123,6 +123,7 @@ typedef struct global_struct
 
 
     int probing; //contains information on whether probing is performed or not
+    int probing_dimension; // 4D or 3D coloring
     int coloring_distance;
     int coloring_method;
 

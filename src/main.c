@@ -142,18 +142,23 @@ int main( int argc, char **argv ) {
       hutchinson_diver_double_init( &l, &threading );  
       hutchinson_diver_double_alloc( &l, &threading ); 
     }
+    
+    int coloring_flag = 0; //Prevents the coloring to be done at every timeslice in 4D coloring case
     for(g.time_slice = 0; g.time_slice < g.global_lattice[0][0]; g.time_slice++){
       if(g.my_rank==0) printf("\n\n Timeslice %d\n\n",  g.time_slice);
 
-          if(g.probing){
-        graph_coloring();
-    }else {
-        MALLOC(g.num_colors, int, g.num_levels);
-        for(int i = 0; i<g.num_levels; i++){
+      if(g.probing){
+        if(coloring_flag == 0)
+          graph_coloring();
+       }else {
+         MALLOC(g.num_colors, int, g.num_levels);
+         for(int i = 0; i<g.num_levels; i++){
             g.num_colors[i] = 1;
-        }
-    }
-
+         }
+      }
+      
+      if(g.probing == 1 && g.probing_dimension == 4)
+        coloring_flag = 1; //If we are doing 4D coloring, set coloring_flag to 1 after coloring the lattice, so at the next timeslice we do not color again
 
       set_probing_variances_to_zero();
 
