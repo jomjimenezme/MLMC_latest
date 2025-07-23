@@ -501,7 +501,7 @@ void distance_2_coloring(){
        printf("\n Colors at depth %d : \t %d \n", level, g.num_colors[level]);
     }
 
-    
+    /*
     FILE *file = fopen("print_files/colors.txt", "w");
 
     for(int i = 0; i < g.num_levels; i++){
@@ -522,7 +522,7 @@ void distance_2_coloring(){
     }
 
     fclose(file);
-    
+    */
       
       
   }
