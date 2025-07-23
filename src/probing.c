@@ -278,7 +278,7 @@ void generate_neighbors(int t, int z, int y, int x, int **neighbors, int *num_ne
 }
 
 
-void graph_coloring() {
+void greedy_coloring() {
 
     MALLOC(g.num_colors, int, g.num_levels);
 
@@ -325,7 +325,7 @@ void graph_coloring() {
 
     // Iterate over all lattice sites
     for (int t = 0; t < T; t++) {
-        if (g.probing_dimension == 3 && t != g.time_slice) continue;  //TODO: This should be done for 3D traces ONLY!!
+        if (g.probing_dimension == 3 && t != g.time_slice) continue;
         for (int z = 0; z < Z; z++) {
             for (int y = 0; y < Y; y++) {
                 for (int x = 0; x < X; x++) {
@@ -407,6 +407,136 @@ void graph_coloring() {
 
     MPI_Barrier(MPI_COMM_WORLD);
     setup_local_colors();
+}
+
+void distance_2_coloring(){
+
+  MALLOC(g.num_colors, int, g.num_levels);
+  
+  if(g.my_rank==0){
+      
+    printf("\nProbing = %d\n", g.probing);
+    printf("Coloring_distance = %d\n", g.coloring_distance);
+    printf("Coloring_method = %d\n", g.coloring_method);
+
+    double time_taken;
+
+    double start_time = MPI_Wtime();
+
+    g.colors = (int**)malloc(g.num_levels * sizeof(int*));
+
+    if (g.colors == NULL)
+        error0("Allocation error0\n");
+
+    for(int level = 0; level < g.num_levels; level++){
+      
+      int T = g.global_lattice[level][0];
+      int Z = g.global_lattice[level][1];
+      int Y = g.global_lattice[level][2];
+      int X = g.global_lattice[level][3];
+      
+      int size[4];
+
+      size[0] = T;
+      size[1] = Z;
+      size[2] = Y;
+      size[3] = X;
+
+      int total_points = T * Z * Y * X;
+
+      g.colors[level] = NULL;
+      MALLOC(g.colors[level], int, total_points);
+      if(level == 0){
+        
+        g.num_colors[level] = g.nc;
+          
+        // Set all colors to -1 (not assigned)
+        for (int i = 0; i < total_points; i++) {
+          g.colors[level][i] = -1;
+        }
+          
+        // Iterate over all lattice sites
+        for (int t = 0; t < T; t++) {
+          if (t != g.time_slice) continue;
+          for (int z = 0; z < Z; z++) {
+            for (int y = 0; y < Y; y++) {
+              for (int x = 0; x < X; x++) {
+                int index = lex_index(t, z, y, x, size);
+
+                // Skip if the site has already been assigned a color
+                if (g.colors[level][index] != -1) {
+                  continue;
+                }
+                
+                //c(x) = \sum_{i = 1}^d i*x_i mod g.nc  ---> lattice dimensions labeled from 1 to d 
+                int col = z + 2*y + 3*x;  
+                
+                g.colors[level][index] = col%g.nc;
+                
+              }
+            }
+          }
+        }
+        
+        for (int i = 0; i < total_points; i++) {
+          g.colors[level][i]++;
+        }
+    
+          
+      }
+      else{
+        g.num_colors[level] = 1;
+        
+        for(int i = 0; i < total_points; i++)
+          g.colors[level][i] = 1;
+      }
+    }
+    
+    double end_time = MPI_Wtime();
+
+    time_taken = end_time - start_time;
+
+    printf("\nTime for coloring: %f seconds\n", time_taken);
+    for (int level = 0; level < g.num_levels; level++){
+       printf("\n Colors at depth %d : \t %d \n", level, g.num_colors[level]);
+    }
+
+    
+    FILE *file = fopen("print_files/colors.txt", "w");
+
+    for(int i = 0; i < g.num_levels; i++){
+        fprintf(file, "\nColors at level %d\n [", i+1);
+
+        int T = g.global_lattice[i][0];
+        int Z = g.global_lattice[i][1];
+        int Y = g.global_lattice[i][2];
+        int X = g.global_lattice[i][3];
+
+        int size = T*Z*Y*X;
+
+        for(int j = 0; j < size; j++){
+                fprintf(file, " %d ", g.colors[i][j]);
+        }
+
+        fprintf(file, " ]\n");
+    }
+
+    fclose(file);
+    
+      
+      
+  }
+    MPI_Barrier(MPI_COMM_WORLD);
+    setup_local_colors();
+}
+
+void graph_coloring(){
+    
+  if(g.coloring_distance == 2 && g.probing_dimension == 3)
+    distance_2_coloring();
+  else
+    greedy_coloring();
+  
 }
 
 

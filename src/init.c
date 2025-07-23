@@ -767,6 +767,10 @@ void read_global_info( FILE *in ) {
     //Setting the coloring distance
     save_pt = &(g.coloring_distance); g.coloring_distance = 0;
     read_parameter( &save_pt, "coloring distance:", "%d", 1, in, _DEFAULT_SET);
+    
+    //Setting the number of colors at the finest for 3D coloring distance 2
+    save_pt = &(g.nc); g.nc = 1;
+    read_parameter( &save_pt, "number of colors at the finest:", "%d", 1, in, _DEFAULT_SET);
 
     save_pt = &(g.coloring_method); g.coloring_method = 0;
     read_parameter( &save_pt, "coloring:", "%d", 1, in, _DEFAULT_SET);

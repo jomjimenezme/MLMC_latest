@@ -130,6 +130,7 @@ typedef struct global_struct
     int **colors; //colors of the lattice
     int **local_colors; //colors of every MPI process
     int *num_colors; //number of colors at every level
+    int nc; //number of colors at the finest level -> only in 3D case
     int coloring_count;
 
     double *variances; //variance of the estimator at every level
