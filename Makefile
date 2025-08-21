@@ -105,7 +105,7 @@ endif
 
 # Extra Warnings that developers should fix but don't.
 # This is a C only flag as implicit function declaration is forbidden in C++ anyways.
-COMPILE_FLAGS += -Wall -Werror-implicit-function-declaration
+COMPILE_FLAGS += -Wall -Werror-implicit-function-declaration -DTESTVECTOR_ANALYSIS
 LINK_FLAGS = -lgomp -lm -ldl
 
 #LINK_FLAGS += -DHALF_PREC_STORAGE

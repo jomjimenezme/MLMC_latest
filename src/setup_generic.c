@@ -495,6 +495,108 @@ void test_vector_PRECISION_update( int i, level_struct *l, struct Thread *thread
 }
 
 
+void rayleigh_ritz_extraction_PRECISION( level_struct *l, struct Thread *threading ) {
+
+  int m = l->num_eig_vect;
+
+  // allocate the buffers to multiply D times the test vectors
+  vector_PRECISION *buff_D_times_TVs = NULL;
+  MALLOC( buff_D_times_TVs, vector_PRECISION, m );
+  for ( int i=0; i < m; i++ ){
+    buff_D_times_TVs[i] = NULL;
+    MALLOC( buff_D_times_TVs[i], complex_PRECISION, l->inner_vector_size );
+  }
+
+  // the core of the small-subspace eigensolver
+  eigslvr_PRECISION_struct eigslvr;
+  eigslvr.Hc = NULL;
+  eigslvr.vl = NULL;
+  eigslvr.vr = NULL;
+  eigslvr.w = NULL;
+
+  // allocate memory for the compression matrix i.e. living in the small subspace
+  MALLOC( eigslvr.Hc, complex_PRECISION*, m );
+  eigslvr.Hc[0] = NULL;
+  MALLOC( eigslvr.Hc[0], complex_PRECISION, m*m );
+  for ( int i=1; i<m; i++ ) {
+    eigslvr.Hc[i] = eigslvr.Hc[0] + i*m;
+  }
+
+  // allocate memory for the left and right eigenvectors
+  MALLOC( eigslvr.vl, complex_PRECISION, m*m );
+  MALLOC( eigslvr.vr, complex_PRECISION, m*m );
+  MALLOC( eigslvr.w, complex_PRECISION, m );
+
+  // we want to compute the right eigenvectors
+  eigslvr.jobvl = 'N';
+  eigslvr.jobvr = 'V';
+
+  eigslvr.N = m;
+  eigslvr.lda = m;
+  eigslvr.ldvl = m;
+  eigslvr.ldvr = m;
+  //eigslvr.w = p->polyprec_PRECISION.h_ritz;
+  //p->polyprec_PRECISION.Hc = p->polyprec_PRECISION.eigslvr.Hc;
+  //p->polyprec_PRECISION.eigslvr.eigslvr_PRECISION = eigslvr_PRECISION;    
+  eigslvr.A = eigslvr.Hc[0];
+
+  // apply D on the test vectors
+  for ( int i=0; i < m; i++ ) {
+    apply_operator_PRECISION( buff_D_times_TVs[i], l->is_PRECISION.test_vector[i], &(l->p_PRECISION), l, threading );
+  }
+
+  // IMPORTANT : the function eigslvr_PRECISION(...) assumes LAPACK_ROW_MAJOR
+  // build the small-subspace matrix
+  for ( int j=0; j<m; j++ ) {
+    for ( int i=0; i<m; i++ ) {
+      eigslvr.Hc[i][j] = global_inner_product_PRECISION( l->is_PRECISION.test_vector[i], buff_D_times_TVs[j], 0, l->inner_vector_size, l, threading );
+    }
+  }
+
+  // call the eigensolver
+  eigslvr_PRECISION( &eigslvr );
+
+  printf0("\nApproximate eigenvalues from the small subspace (info = %d):\n", eigslvr.info);
+  for ( int i=0; i<m; i++ ) {
+    printf0( "%f+(i)%f\n", CSPLIT(eigslvr.w[i]) );
+  }
+  printf0("\n");
+
+  // finally, do the axpys to update the test vectors
+  vector_PRECISION *buff_axpys = buff_D_times_TVs;
+  for ( int j=0; j<m; j++ ) {
+    vector_PRECISION_define( buff_axpys[j], 0, 0, l->inner_vector_size, l );
+    for ( int i=0; i<m; i++ ) {
+      vector_PRECISION_saxpy( buff_axpys[j], buff_axpys[j], l->is_PRECISION.test_vector[i], eigslvr.vr[j+i*m], 0, l->inner_vector_size, l );
+    }
+  }
+
+  for ( int i=0; i<m; i++ ) {
+    vector_PRECISION_copy( l->is_PRECISION.test_vector[i], buff_axpys[i], 0, l->inner_vector_size, l);
+  }
+
+  //printf0("RIGHT AFTER EIGENSOLVING!\n");
+  //MPI_Finalize();
+  //exit(0);
+
+  // freeing memory
+
+  for ( int i=0; i < m; i++ ){
+    FREE( buff_D_times_TVs[i], complex_PRECISION, l->inner_vector_size );
+  }
+  FREE( buff_D_times_TVs, vector_PRECISION, m );
+
+  FREE( eigslvr.Hc[0], complex_PRECISION, m*m );
+  FREE( eigslvr.Hc, complex_PRECISION*, m );
+
+  FREE( eigslvr.vl, complex_PRECISION, m*m );
+  FREE( eigslvr.vr, complex_PRECISION, m*m );
+  FREE( eigslvr.w, complex_PRECISION, m );
+
+}
+
+
+
 void inv_iter_inv_fcycle_PRECISION( int setup_iter, level_struct *l, struct Thread *threading ) {
 
 #ifdef CUDA_OPT
@@ -510,7 +612,7 @@ void inv_iter_inv_fcycle_PRECISION( int setup_iter, level_struct *l, struct Thre
   complex_PRECISION *buffer = NULL;
   
   PUBLIC_MALLOC( buffer, complex_PRECISION, 2*l->num_eig_vect );
-      
+
   START_LOCKED_MASTER(threading)
   if ( l->depth == 0 )
     set_kcycle_tol_PRECISION( g.coarse_tol, l );
@@ -527,26 +629,69 @@ void inv_iter_inv_fcycle_PRECISION( int setup_iter, level_struct *l, struct Thre
       if ( g.print > 0 ) printf0("depth: %d, bootstrap step number %d...\n", l->depth, j+1 );
       if ( g.print > 0 ) { printf0("\033[0;42m\033[1;37m|"); if ( g.my_rank == 0 ) fflush(0); }
       END_LOCKED_MASTER(threading)
-      
-      gram_schmidt_PRECISION( l->is_PRECISION.test_vector, buffer, 0, l->num_eig_vect, l, threading );
 
-      for ( int i=0; i<l->num_eig_vect; i++ ) {
+      //gram_schmidt_PRECISION( l->is_PRECISION.test_vector, buffer, 0, l->num_eig_vect, l, threading );
+      //gram_schmidt_PRECISION( l->is_PRECISION.test_vector, buffer, 0, l->num_eig_vect, l, threading );
+
+      int iters_repeat = 1;
+      //if ( j > 20 ) { iters_repeat = 5; }
+      for ( int ix = 0; ix < iters_repeat; ix++ ) {
+
+        for ( int i=0; i<l->num_eig_vect; i++ ) {
 #ifdef CUDA_OPT
-        if( l->depth==0 ){
-          vcycle_PRECISION( l->p_PRECISION.xtmp, NULL, l->is_PRECISION.test_vector[i], _NO_RES, l, threading );
-        }
-        else{
-          vcycle_PRECISION( l->p_PRECISION.x, NULL, l->is_PRECISION.test_vector[i], _NO_RES, l, threading );
-        }
+          if( l->depth==0 ){
+            vcycle_PRECISION( l->p_PRECISION.xtmp, NULL, l->is_PRECISION.test_vector[i], _NO_RES, l, threading );
+          }
+          else{
+            vcycle_PRECISION( l->p_PRECISION.x, NULL, l->is_PRECISION.test_vector[i], _NO_RES, l, threading );
+          }
 #else
-        vcycle_PRECISION( l->p_PRECISION.x, NULL, l->is_PRECISION.test_vector[i], _NO_RES, l, threading );
+
+          if ( l->depth > 0 ) {
+            vcycle_PRECISION( l->p_PRECISION.x, NULL, l->is_PRECISION.test_vector[i], _NO_RES, l, threading );
+          } else {
+
+            //int iter = 0, start = threading->start_index[l->depth], end = threading->end_index[l->depth];
+            int iter = 0;
+            //vector_PRECISION rhs = g.mixed_precision==2?g.p_MP.double_section.b:g.p.b;
+            //vector_PRECISION sol = g.mixed_precision==2?g.p_MP.double_section.x:g.p.x;
+            vector_PRECISION rhs = g.p.b;
+            vector_PRECISION sol = g.p.x;
+            //vector_double_copy( rhs, l->is_PRECISION.test_vector[i], start, end, l );
+            trans_back_PRECISION( rhs, l->is_PRECISION.test_vector[i], l->s_PRECISION.op.translation_table, l, threading );
+
+            int buffx = g.print;
+            g.print = -1;
+            iter = fgmres_PRECISION( &(g.p), l, threading );
+            g.print = buffx;
+
+            trans_PRECISION( l->p_PRECISION.x, sol, l->s_PRECISION.op.translation_table, l, threading );
+            //vector_double_copy( l->p_PRECISION.x, sol, start, end, l );
+            printf0("-- just did a fine-grid solve, iters = %d\n", iter);
+
+          }
+
 #endif
-        test_vector_PRECISION_update( i, l, threading );
+          test_vector_PRECISION_update( i, l, threading );
         
-        pc += l->post_smooth_iter;
-        START_MASTER(threading)
-        if ( pc >= (int)((0.2*pi)*pn) ) { if ( g.print > 0 ) { printf0("%4d%% |", 20*pi); if ( g.my_rank == 0 ) fflush(0); } pi++; }
-        END_MASTER(threading)
+          pc += l->post_smooth_iter;
+          START_MASTER(threading)
+          if ( pc >= (int)((0.2*pi)*pn) ) { if ( g.print > 0 ) { printf0("%4d%% |", 20*pi); if ( g.my_rank == 0 ) fflush(0); } pi++; }
+          END_MASTER(threading)
+        }
+
+      }
+
+      gram_schmidt_PRECISION( l->is_PRECISION.test_vector, buffer, 0, l->num_eig_vect, l, threading );
+      //gram_schmidt_PRECISION( l->is_PRECISION.test_vector, buffer, 0, l->num_eig_vect, l, threading );
+
+      // do the Rayleigh-Ritz extraction here!
+      if ( l->depth == 0 ) {
+        rayleigh_ritz_extraction_PRECISION( l, threading );
+      }
+
+      if ( l->depth == 0 ) {
+        testvector_analysis_PRECISION( l->is_PRECISION.test_vector, l, threading );
       }
 
       START_MASTER(threading)
@@ -559,7 +704,9 @@ void inv_iter_inv_fcycle_PRECISION( int setup_iter, level_struct *l, struct Thre
         inv_iter_inv_fcycle_PRECISION( MAX(1,round( ((double)(j+1)*l->next_level->setup_iter)/
         ((double)setup_iter) )), l->next_level, threading );
       }
+
     }
+
     if ( l->depth > 0 && l->next_level->level > 0 ) {
       inv_iter_inv_fcycle_PRECISION( MAX(1, round((double)(l->next_level->setup_iter*setup_iter)/
       ((double)l->setup_iter))), l->next_level, threading );
@@ -568,7 +715,7 @@ void inv_iter_inv_fcycle_PRECISION( int setup_iter, level_struct *l, struct Thre
   
   PUBLIC_FREE( v_buf, complex_PRECISION, l->vector_size );
   PUBLIC_FREE( buffer, complex_PRECISION, 2*l->num_eig_vect );
-  
+
   if ( l->depth == 0 ) {
     START_LOCKED_MASTER(threading)
     set_kcycle_tol_PRECISION( g.kcycle_tol, l );
@@ -581,22 +728,23 @@ void testvector_analysis_PRECISION( vector_PRECISION *test_vectors, level_struct
 #ifdef TESTVECTOR_ANALYSIS
   START_UNTHREADED_FUNCTION(threading)
   if ( l->depth == 0 ) {
-    
-  complex_PRECISION lambda;
-  PRECISION mu;
-  printf0("--------------------------------------- depth: %d ----------------------------------------\n", l->depth );
-  for ( int i=0; i<l->num_eig_vect; i++ ) {
-    printf0("vector #%02d: ", i+1 );
-    apply_operator_PRECISION( l->vbuf_PRECISION[3], test_vectors[i], &(l->p_PRECISION), l, no_threading );
-    coarse_gamma5_PRECISION( l->vbuf_PRECISION[0], l->vbuf_PRECISION[3], 0, l->inner_vector_size, l );
-    lambda = global_inner_product_PRECISION( test_vectors[i], l->vbuf_PRECISION[0], 0, l->inner_vector_size, l, no_threading );
-    lambda /= global_inner_product_PRECISION( test_vectors[i], test_vectors[i], 0, l->inner_vector_size, l, no_threading );
-    vector_PRECISION_saxpy( l->vbuf_PRECISION[1], l->vbuf_PRECISION[0], test_vectors[i], -lambda, 0, l->inner_vector_size, l );
-    mu = global_norm_PRECISION( l->vbuf_PRECISION[1], 0, l->inner_vector_size, l, no_threading )/global_norm_PRECISION( test_vectors[i], 0, l->inner_vector_size, l, no_threading );
-    printf0("singular value: %+lf%+lfi, singular vector precision: %le\n", (double)creal(lambda), (double)cimag(lambda), (double)mu );
-  }
-  printf0("--------------------------------------- depth: %d ----------------------------------------\n", l->depth );
-  
+
+    complex_PRECISION lambda;
+    PRECISION mu;
+    printf0("--------------------------------------- depth: %d ----------------------------------------\n", l->depth );
+    for ( int i=0; i<l->num_eig_vect; i++ ) {
+      printf0("vector #%02d: ", i+1 );
+      apply_operator_PRECISION( l->vbuf_PRECISION[3], test_vectors[i], &(l->p_PRECISION), l, no_threading );
+      lambda = global_inner_product_PRECISION( test_vectors[i], l->vbuf_PRECISION[3], 0, l->inner_vector_size, l, no_threading );
+      lambda /= global_inner_product_PRECISION( test_vectors[i], test_vectors[i], 0, l->inner_vector_size, l, no_threading );
+
+      vector_PRECISION_saxpy( l->vbuf_PRECISION[1], l->vbuf_PRECISION[3], test_vectors[i], -lambda, 0, l->inner_vector_size, l );
+
+      mu = global_norm_PRECISION( l->vbuf_PRECISION[1], 0, l->inner_vector_size, l, no_threading )/global_norm_PRECISION( test_vectors[i], 0, l->inner_vector_size, l, no_threading );
+      printf0("Rayleigh quotient: %+lf%+lfi, Approximate eigenvector precision: %le\n", (double)creal(lambda), (double)cimag(lambda), (double)mu );
+    }
+    printf0("--------------------------------------- depth: %d ----------------------------------------\n", l->depth );
+
   }
   END_UNTHREADED_FUNCTION(threading)
 #endif

@@ -1356,9 +1356,10 @@ complex_PRECISION g5_3D_connected_mlmc_driver_PRECISION( level_struct *l, struct
       
       trace = 0.0;
       h->hutch_compute_one_sample = connected_outer_PRECISION;
-      
+
       // Call to blind from t+t’ with t’ = 0, ..., T-1
-      for ( g.time_slice_inner_connected=0; g.time_slice_inner_connected<g.global_lattice[0][0]; g.time_slice_inner_connected++ ) {
+      //for ( g.time_slice_inner_connected=0; g.time_slice_inner_connected<g.global_lattice[0][0]; g.time_slice_inner_connected++ ) {
+      for ( g.time_slice_inner_connected=0; g.time_slice_inner_connected < 1; g.time_slice_inner_connected++ ) {
         if (g.probing) {
           for (g.coloring_count = 1; g.coloring_count < g.num_colors[0] + 1; g.coloring_count++) {
             if(g.my_rank==0) {
