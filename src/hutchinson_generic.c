@@ -1356,10 +1356,9 @@ complex_PRECISION g5_3D_connected_mlmc_driver_PRECISION( level_struct *l, struct
       
       trace = 0.0;
       h->hutch_compute_one_sample = connected_outer_PRECISION;
-
+      
       // Call to blind from t+t’ with t’ = 0, ..., T-1
-      //for ( g.time_slice_inner_connected=0; g.time_slice_inner_connected<g.global_lattice[0][0]; g.time_slice_inner_connected++ ) {
-      for ( g.time_slice_inner_connected=0; g.time_slice_inner_connected < 1; g.time_slice_inner_connected++ ) {
+      for ( g.time_slice_inner_connected=0; g.time_slice_inner_connected<g.global_lattice[0][0]; g.time_slice_inner_connected++ ) {
         if (g.probing) {
           for (g.coloring_count = 1; g.coloring_count < g.num_colors[0] + 1; g.coloring_count++) {
             if(g.my_rank==0) {
@@ -2213,8 +2212,10 @@ void connected_split_PRECISION_orthogonal( vector_PRECISION out, vector_PRECISIO
         printf("TERM 1: Prolongating from depth %d to %d, \tfunction called at depth %d\n\n", coarse->depth, fine->depth, l->depth);
       }
     }
-
-    vector_PRECISION_copy(out, h->mlmc_b1, start, end, l);
+    
+    int start_f, end_f;
+    compute_core_start_end(0, finest_l->inner_vector_size, &start_f, &end_f, finest_l, threading);
+    vector_PRECISION_copy(out, h->mlmc_b1, start_f, end_f, finest_l);
   }
    
   PUBLIC_FREE( first_term, complex_PRECISION, finest_l->inner_vector_size );
@@ -2316,7 +2317,12 @@ void connected_split_PRECISION_intermediate( vector_PRECISION out, vector_PRECIS
       }
     }
 
-    vector_PRECISION_copy(out, h->mlmc_b1, start, end, l);
+    int start_f, end_f;
+    compute_core_start_end(0, finest_l->inner_vector_size,
+                       &start_f, &end_f, finest_l, threading);
+
+    vector_PRECISION_copy(out, h->mlmc_b1, start_f, end_f, finest_l);
+
   }
    
   PUBLIC_FREE( first_term, complex_PRECISION, finest_l->inner_vector_size );
@@ -2474,11 +2480,14 @@ complex_PRECISION g5_3D_connected_split_driver_PRECISION( level_struct *l, struc
 
   for(h->l_op = 0; h->l_op < 2; h->l_op++){
     for(h->r_op = 0; h->r_op < 2; h->r_op++){
+
       h->lx_i = h->finest_level;
       h->lx_j = h->finest_level;
+
       for(i = 0; i < g.num_levels; i++){
         h->lx_j = h->finest_level;
-        for(j = 0; j < g.num_levels; j++){
+	for(j = 0; j < g.num_levels; j++){
+
 
           const char *lop_string, *rop_string;
           if(h->l_op == 0 && i != g.num_levels-1)
@@ -2503,13 +2512,14 @@ complex_PRECISION g5_3D_connected_split_driver_PRECISION( level_struct *l, struc
               }
           }
 
-          if(g.my_rank == 0) printf("\n Computing trace for G_{%d, %d}^{%s-%s}(t=%d) \n", i,j, lop_string, rop_string, g.time_slice);
+          if(g.my_rank == 0) printf("\n Computing trace for G_{%d, %d}^{%s-%s}(t=%d) \n", h->lx_i->depth, h->lx_j->depth, lop_string, rop_string, g.time_slice);
 
           trace = 0.0;
           h->hutch_compute_one_sample = connected_outer_split_PRECISION;
 
           // Call to blind from t+t’ with t’ = 0, ..., T-1
           for ( g.time_slice_inner_connected=0; g.time_slice_inner_connected < g.global_lattice[0][0]; g.time_slice_inner_connected++ ) {
+
             if (g.probing) {
               for (g.coloring_count = 1; g.coloring_count < g.num_colors[0] + 1; g.coloring_count++) {
                 if(g.my_rank==0) {
@@ -2809,3 +2819,4 @@ struct sample hutchinson_blind_g5_PRECISION( level_struct *l, int depth, hutchin
 }
 
 */
+
