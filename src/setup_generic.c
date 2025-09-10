@@ -626,7 +626,7 @@ void inv_iter_inv_fcycle_PRECISION( int setup_iter, level_struct *l, struct Thre
     //for ( int j=0; j<setup_iter; j++ ) {
     int j = 0;
     PRECISION largest_eigen_res = 1.0;
-    PRECISION target_eigen_res = 1E-8;
+    PRECISION target_eigen_res = g.eigen_tol;
 
     while ( (l->depth > 0 && j < setup_iter) || (l->depth == 0 && largest_eigen_res > target_eigen_res) ) {
       int pc = 0, pi = 1, pn = l->num_eig_vect*l->post_smooth_iter;

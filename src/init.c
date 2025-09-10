@@ -981,6 +981,8 @@ void read_geometry_data( FILE *in, int ls ) {
       sprintf( inputstr, "d%d trace op type:", i );
       save_pt = &(g.trace_op_type); g.trace_op_type = 1;
       read_parameter( &save_pt, inputstr, "%d", 1, in, _DEFAULT_SET );
+      read_parameter( &save_pt, "eigenres tol :", "%d", 1, in, _DEFAULT_SET );
+      save_pt = &(g.eigen_tol); g.eigen_tol = 5E-1;
     }
 
 
