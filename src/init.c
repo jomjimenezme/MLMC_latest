@@ -990,7 +990,10 @@ void read_geometry_data( FILE *in, int ls ) {
       save_pt = &(g.eigen_tol);
       read_parameter(&save_pt, "eigenres tol:", "%le", 1, in, _DEFAULT_SET);
 
-
+      // interpolation_vectors
+      g.interpolation_vectors = 0;
+      save_pt = &(g.interpolation_vectors);
+      read_parameter(&save_pt, "interpolation vectors:", "%d", 1, in, _DEFAULT_SET);
   }
 
 

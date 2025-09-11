@@ -42,6 +42,7 @@ typedef struct global_struct
     double tol, coarse_tol, kcycle_tol, csw, rho, *relax_fac;
 
     double eigen_tol;
+    int interpolation_vectors;
 
     // profiling, analysis, output
     int coarse_iter_count, iter_count, iterator, print, conf_flag, setup_flag, in_setup;
