@@ -596,14 +596,13 @@ void rayleigh_ritz_extraction_PRECISION( level_struct *l, struct Thread *threadi
     // apply ganna_5 if Q is computed
     if ( g.interpolation_vectors == 1 ){
       // multiply the test vectors with gamma5 before going into the solves
-      if ( l->depth == 0 ){
-        gamma5_PRECISION( l->is_PRECISION.test_vector[i], l->is_PRECISION.test_vector[i], l, threading );
-      }
-      else {
+      if (l->depth == 0) {
+        gamma5_PRECISION(buff_D_times_TVs[i], buff_D_times_TVs[i], l, threading);
+      } else {
         int start, end;
-        compute_core_start_end_custom(0, l->inner_vector_size, &start, &end, l, threading, l->num_lattice_site_var );
+        compute_core_start_end_custom(0, l->inner_vector_size, &start, &end, l, threading, l->num_lattice_site_var);
         SYNC_CORES(threading)
-        coarse_gamma5_PRECISION( l->is_PRECISION.test_vector[i], l->is_PRECISION.test_vector[i], start, end, l );
+        coarse_gamma5_PRECISION(buff_D_times_TVs[i], buff_D_times_TVs[i], start, end, l);
         SYNC_CORES(threading)
       }
     }
