@@ -713,67 +713,65 @@ void inv_iter_inv_fcycle_PRECISION( int setup_iter, level_struct *l, struct Thre
       //gram_schmidt_PRECISION( l->is_PRECISION.test_vector, buffer, 0, l->num_eig_vect, l, threading );
       //gram_schmidt_PRECISION( l->is_PRECISION.test_vector, buffer, 0, l->num_eig_vect, l, threading );
 
-      int iters_repeat = 1;
-      //if ( j > 20 ) { iters_repeat = 5; }
-      for ( int ix = 0; ix < iters_repeat; ix++ ) {
 
-        for ( int i=0; i<l->num_eig_vect; i++ ) {
-          if ( g.interpolation_vectors == 1 ){
-          // multiply the test vectors with gamma5 before going into the solves
-          if ( l->depth == 0 ){
-            gamma5_PRECISION( l->is_PRECISION.test_vector[i], l->is_PRECISION.test_vector[i], l, threading );
-          }
-          else {
-            int start, end;
-            compute_core_start_end_custom(0, l->inner_vector_size, &start, &end, l, threading, l->num_lattice_site_var );
-            SYNC_CORES(threading)
-            coarse_gamma5_PRECISION( l->is_PRECISION.test_vector[i], l->is_PRECISION.test_vector[i], start, end, l );
-            SYNC_CORES(threading)
-          }
+      for ( int i=0; i<l->num_eig_vect; i++ ) {
+
+        if ( g.interpolation_vectors == 1 ){
+        // multiply the test vectors with gamma5 before going into the solves
+        if ( l->depth == 0 ){
+          gamma5_PRECISION( l->is_PRECISION.test_vector[i], l->is_PRECISION.test_vector[i], l, threading );
         }
+        else {
+          int start, end;
+          compute_core_start_end_custom(0, l->inner_vector_size, &start, &end, l, threading, l->num_lattice_site_var );
+          SYNC_CORES(threading)
+          coarse_gamma5_PRECISION( l->is_PRECISION.test_vector[i], l->is_PRECISION.test_vector[i], start, end, l );
+          SYNC_CORES(threading)
+        }
+      }
 
 #ifdef CUDA_OPT
-          if( l->depth==0 ){
-            vcycle_PRECISION( l->p_PRECISION.xtmp, NULL, l->is_PRECISION.test_vector[i], _NO_RES, l, threading );
-          }
-          else{
-            vcycle_PRECISION( l->p_PRECISION.x, NULL, l->is_PRECISION.test_vector[i], _NO_RES, l, threading );
-          }
+        if( l->depth==0 ){
+          vcycle_PRECISION( l->p_PRECISION.xtmp, NULL, l->is_PRECISION.test_vector[i], _NO_RES, l, threading );
+        }
+        else{
+          vcycle_PRECISION( l->p_PRECISION.x, NULL, l->is_PRECISION.test_vector[i], _NO_RES, l, threading );
+        }
 #else
 
 
-          if ( l->depth > 0 ) {
-            vcycle_PRECISION( l->p_PRECISION.x, NULL, l->is_PRECISION.test_vector[i], _NO_RES, l, threading );
-          } else {
+        if ( l->depth > 0 ) {
+          vcycle_PRECISION( l->p_PRECISION.x, NULL, l->is_PRECISION.test_vector[i], _NO_RES, l, threading );
+        } else {
 
-            //int iter = 0, start = threading->start_index[l->depth], end = threading->end_index[l->depth];
-            int iter = 0;
-            //vector_PRECISION rhs = g.mixed_precision==2?g.p_MP.double_section.b:g.p.b;
-            //vector_PRECISION sol = g.mixed_precision==2?g.p_MP.double_section.x:g.p.x;
-            vector_PRECISION rhs = g.p.b;
-            vector_PRECISION sol = g.p.x;
-            //vector_double_copy( rhs, l->is_PRECISION.test_vector[i], start, end, l );
-            trans_back_PRECISION( rhs, l->is_PRECISION.test_vector[i], l->s_PRECISION.op.translation_table, l, threading );
+          //int iter = 0, start = threading->start_index[l->depth], end = threading->end_index[l->depth];
+          int iter = 0;
+          //vector_PRECISION rhs = g.mixed_precision==2?g.p_MP.double_section.b:g.p.b;
+          //vector_PRECISION sol = g.mixed_precision==2?g.p_MP.double_section.x:g.p.x;
+          vector_PRECISION rhs = g.p.b;
+          vector_PRECISION sol = g.p.x;
+          //vector_double_copy( rhs, l->is_PRECISION.test_vector[i], start, end, l );
+          trans_back_PRECISION( rhs, l->is_PRECISION.test_vector[i], l->s_PRECISION.op.translation_table, l, threading );
 
-            int buffx = g.print;
-            g.print = -1;
-            iter = fgmres_PRECISION( &(g.p), l, threading );
-            g.print = buffx;
+          int buffx = g.print;
+          g.print = -1;
+          iter = fgmres_PRECISION( &(g.p), l, threading );
+          g.print = buffx;
 
-            trans_PRECISION( l->p_PRECISION.x, sol, l->s_PRECISION.op.translation_table, l, threading );
-            //vector_double_copy( l->p_PRECISION.x, sol, start, end, l );
-            printf0("-- just did a fine-grid solve, iters = %d\n", iter);
+          trans_PRECISION( l->p_PRECISION.x, sol, l->s_PRECISION.op.translation_table, l, threading );
+          //vector_double_copy( l->p_PRECISION.x, sol, start, end, l );
+          printf0("-- just did a fine-grid solve, iters = %d\n", iter);
 
-          }
+        }
 
 #endif
-          test_vector_PRECISION_update( i, l, threading );
+        test_vector_PRECISION_update( i, l, threading );
 
-          pc += l->post_smooth_iter;
-          START_MASTER(threading)
-          if ( pc >= (int)((0.2*pi)*pn) ) { if ( g.print > 0 ) { printf0("%4d%% |", 20*pi); if ( g.my_rank == 0 ) fflush(0); } pi++; }
-          END_MASTER(threading)
-        }
+        pc += l->post_smooth_iter;
+        START_MASTER(threading)
+        if ( pc >= (int)((0.2*pi)*pn) ) { if ( g.print > 0 ) { printf0("%4d%% |", 20*pi); if ( g.my_rank == 0 ) fflush(0); } pi++; }
+        END_MASTER(threading)
+
 
       }
 
@@ -897,5 +895,6 @@ void testvector_max_residual_PRECISION( vector_PRECISION *test_vectors, PRECISIO
   END_UNTHREADED_FUNCTION(threading)
 #endif
 }
+
 
 
