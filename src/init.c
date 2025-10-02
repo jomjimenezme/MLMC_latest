@@ -978,10 +978,29 @@ void read_geometry_data( FILE *in, int ls ) {
     
     // do this only for the finest level, as this is a global quantity
     if ( i==0 ) {
-      sprintf( inputstr, "d%d trace op type:", i );
-      save_pt = &(g.trace_op_type); g.trace_op_type = 1;
-      read_parameter( &save_pt, inputstr, "%d", 1, in, _DEFAULT_SET );
-    }
+      sprintf(inputstr, "d%d trace op type:", i);
+
+      // trace_op_type
+      g.trace_op_type = 1;
+      save_pt = &(g.trace_op_type);
+      read_parameter(&save_pt, inputstr, "%d", 1, in, _DEFAULT_SET);
+
+      // default setup
+      g.default_setup = 1;
+      save_pt = &(g.default_setup);
+      read_parameter(&save_pt, "default setup:", "%d", 1, in, _DEFAULT_SET);
+
+      // eigen_tol
+      g.eigen_tol = 5E-1;
+      save_pt = &(g.eigen_tol);
+      read_parameter(&save_pt, "eigenres tol:", "%le", 1, in, _DEFAULT_SET);
+
+      // interpolation_vectors
+      g.interpolation_vectors = 0;
+      save_pt = &(g.interpolation_vectors);
+      read_parameter(&save_pt, "interpolation vectors:", "%d", 1, in, _DEFAULT_SET);
+  }
+
 
 
     sprintf( inputstr, "d%d trace max iters:", i );

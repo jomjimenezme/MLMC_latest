@@ -142,9 +142,10 @@ int main( int argc, char **argv ) {
       hutchinson_diver_double_init( &l, &threading );  
       hutchinson_diver_double_alloc( &l, &threading ); 
     }
-    
+
     int coloring_flag = 0; //Prevents the coloring to be done at every timeslice in 4D coloring case
-    for(g.time_slice = 0; g.time_slice < g.global_lattice[0][0]; g.time_slice++){
+    //for(g.time_slice = 0; g.time_slice < g.global_lattice[0][0]; g.time_slice++){
+    for(g.time_slice = 0; g.time_slice < 1; g.time_slice++){
       if(g.my_rank==0) printf("\n\n Timeslice %d\n\n",  g.time_slice);
 
       if(g.probing){
@@ -161,6 +162,49 @@ int main( int argc, char **argv ) {
         coloring_flag = 1; //If we are doing 4D coloring, set coloring_flag to 1 after coloring the lattice, so at the next timeslice we do not color again
 
       set_probing_variances_to_zero();
+      
+      if( g.trace_op_type == 11 ){
+        START_MASTER(threadingx)
+        if(g.my_rank==0) printf("Calling SPLIT MLMC for 4D trace\n"); 
+        END_MASTER(threadingx)
+
+        trace = split_mlmc_hutchinson_driver_double( &l, &threading );
+        //trace = hutchinson_driver_double( &l, &threading );
+
+        START_MASTER(threadingx)
+        if(g.my_rank==0) printf("\nResulting trace from calling SPLIT MLMC for 4D trace = %f+i%f\n", CSPLIT(trace)); 
+        fflush(0);
+        END_MASTER(threadingx)
+      }
+      
+      
+      if( g.trace_op_type == 10 ){
+        START_MASTER(threadingx)
+        if(g.my_rank==0) printf("Calling MLMC for 4D trace\n"); 
+        END_MASTER(threadingx)
+
+        trace = mlmc_hutchinson_driver_double( &l, &threading );
+        //trace = hutchinson_driver_double( &l, &threading );
+
+        START_MASTER(threadingx)
+        if(g.my_rank==0) printf("\nResulting trace from calling MLMC for 4D trace = %f+i%f\n", CSPLIT(trace)); 
+        fflush(0);
+        END_MASTER(threadingx)
+      }
+      
+      if( g.trace_op_type == 9 ){
+        START_MASTER(threadingx)
+        if(g.my_rank==0) printf("Calling Plain for 4D trace\n"); 
+        END_MASTER(threadingx)
+
+        trace = hutchinson_driver_double( &l, &threading );
+        //trace = hutchinson_driver_double( &l, &threading );
+
+        START_MASTER(threadingx)
+        if(g.my_rank==0) printf("\nResulting trace from calling Plain for 4D trace = %f+i%f\n", CSPLIT(trace)); 
+        fflush(0);
+        END_MASTER(threadingx)
+      }
 
        // this third case is the connected diagram operator, with Split
       if( g.trace_op_type == 8 ){

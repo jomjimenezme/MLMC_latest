@@ -67,7 +67,7 @@ void hutchinson_diver_PRECISION_free( level_struct *l, struct Thread *threading 
 }
 
 
-/*
+
 
 complex_PRECISION hutchinson_driver_PRECISION( level_struct *l, struct Thread *threading ){
   complex_PRECISION trace = 0.0;
@@ -82,7 +82,7 @@ complex_PRECISION hutchinson_driver_PRECISION( level_struct *l, struct Thread *t
 
   return trace;
 }
-*/
+
 
 
 void rademacher_create_PRECISION( level_struct *l, hutchinson_PRECISION_struct* h, int type, struct Thread *threading ){
@@ -2558,37 +2558,21 @@ complex_PRECISION g5_3D_connected_split_driver_PRECISION( level_struct *l, struc
 
 
 
-/*
 
-//-------------------------------- Jose’s code below -------------------------------------------------//
-
-// if type_appl==-1 : Hutchinson-like
+/// if type_appl==-1 : Hutchinson-like
 // else : direct term, where type_appl is the index of the deflation vector to apply
 //        the operator on
 complex_PRECISION hutchinson_plain_PRECISION( int type_appl, level_struct *l, hutchinson_PRECISION_struct* h, struct Thread *threading ){
-
   {
     int start, end;
     gmres_PRECISION_struct* p = get_p_struct_PRECISION( l );
     compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
 
-  // if ( type_appl==-1 ) {
+    if ( type_appl==-1 ) {
       vector_PRECISION_copy( p->b, h->rademacher_vector, start, end, l );
-    //} else {
-    // vector_PRECISION_copy( p->b, l->powerit_PRECISION.vecs[type_appl], start, end, l );
-    //}
-
-    int d3 = 1;
-    if(d3 == 1){
-      if( l->depth==0 ){
-        gamma5_PRECISION( p->b, p->b, l, threading );
-      }
-      else{
-        int startg5, endg5;
-        compute_core_start_end_custom(0, l->inner_vector_size, &startg5, &endg5, l, threading, l->num_lattice_site_var );
-        coarse_gamma5_PRECISION( p->b, p->b, startg5, endg5, l );
-  //coarse_gamma5_PRECISION( p->b, p->b, startg5, endg5, l );
-      }
+   // } else {
+   //   vector_PRECISION_copy( p->b, l->powerit_PRECISION.vecs[type_appl], start, end, l );
+   //}
     }
   }
 
@@ -2603,51 +2587,21 @@ complex_PRECISION hutchinson_plain_PRECISION( int type_appl, level_struct *l, hu
     gmres_PRECISION_struct* p = get_p_struct_PRECISION( l );
     compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
 
-
     if ( type_appl==-1 ) {
-//      if(g.trace_deflation_type[l->depth] != 0){
-//        hutchinson_deflate_vector_PRECISION(p->x, l, threading);
-//      }
+   //   if(g.trace_deflation_type[l->depth] != 0){
+   //     hutchinson_deflate_vector_PRECISION(p->x, l, threading); 
+   //   }
       aux = global_inner_product_PRECISION( h->rademacher_vector, p->x, p->v_start, p->v_end, l, threading );
-      }
-//    } else {
-//      vector_PRECISION_copy(l->powerit_PRECISION.vecs_buff1, p->x, start, end, l);
-//      aux = global_inner_product_PRECISION( l->powerit_PRECISION.vecs[type_appl], l->powerit_PRECISION.vecs_buff1, p->v_start, p->v_end, l, threading );
-//    }
+   //} else {
+   //   vector_PRECISION_copy(l->powerit_PRECISION.vecs_buff1, p->x, start, end, l);  
+   //   aux = global_inner_product_PRECISION( l->powerit_PRECISION.vecs[type_appl], l->powerit_PRECISION.vecs_buff1, p->v_start, p->v_end, l, threading );
+    }
 
-    return aux;
+    return aux;  
   }
 }
 
 
-
-
-// TODO: Unify with original mlmc driver (maybe by passing finest level l to blind)
-complex_PRECISION mlmc_hutchinson_g5_driver_PRECISION( level_struct *l, struct Thread *threading ){
-  int i;
-  complex_PRECISION trace = 0.0;
-  struct sample estimate;
-  hutchinson_PRECISION_struct* h = &(l->h_PRECISION);
-  level_struct* lx;
-
-  // for all but coarsest level
-  lx = l;
-  for( i=0; i<g.num_levels-1; i++ ){
-    // set the pointer to the mlmc difference operator
-    h->hutch_compute_one_sample = hutchinson_mlmc_difference_PRECISION;
-    estimate = hutchinson_blind_g5_PRECISION( l, lx->depth, h, 0, threading );
-    trace += estimate.acc_trace/estimate.sample_size;
-    lx = lx->next_level;
-  }
-
-  // coarsest level
-  // set the pointer to the coarsest-level Hutchinson estimator
-  h->hutch_compute_one_sample = hutchinson_plain_PRECISION;
-  estimate = hutchinson_blind_g5_PRECISION( l, lx->depth, h, 0, threading );
-  trace += estimate.acc_trace/estimate.sample_size;
-
-  return trace;
-}
 
 // the term tr( A_{l}^{-1} - P A_{l+1}^{-1} R )
 complex_PRECISION hutchinson_mlmc_difference_PRECISION( int type_appl, level_struct *l, hutchinson_PRECISION_struct* h, struct Thread *threading ){
@@ -2657,24 +2611,13 @@ complex_PRECISION hutchinson_mlmc_difference_PRECISION( int type_appl, level_str
     int start, end;
     gmres_PRECISION_struct* p = get_p_struct_PRECISION( l );
     compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
-  //if(l->depth == 1){printf("%d \n",l->depth);fflush(0);exit(0);}
-    //TODO: Set a 3d-trace parameter in .ini --------------
-    int d3 = 1;
-    if(d3 == 1){
-      vector_PRECISION_copy(h->mlmc_b1, h->rademacher_vector, start, end, l );
-      if( l->depth==0 ){
-        gamma5_PRECISION( h->rademacher_vector, h->rademacher_vector, l, threading );
-      }
-      else{
-        int startg5, endg5;
-        compute_core_start_end_custom(0, l->inner_vector_size, &startg5, &endg5, l, threading, l->num_lattice_site_var );
-        coarse_gamma5_PRECISION( h->rademacher_vector, h->rademacher_vector, startg5, endg5, l );
-      }
-    }
 
     if ( type_appl==-1 ) {
       vector_PRECISION_copy( p->b, h->rademacher_vector, start, end, l );
+    //} else {
+    //  vector_PRECISION_copy( p->b, l->powerit_PRECISION.vecs[type_appl], start, end, l );
     }
+
     // solution of this solve is in l->p_PRECISION.x
     apply_solver_PRECISION( l, threading );
   }
@@ -2684,31 +2627,12 @@ complex_PRECISION hutchinson_mlmc_difference_PRECISION( int type_appl, level_str
   // 2. invert
   // 3. Prolongate
   {
-    //TODO: Set a 3d-trace parameter in .ini --------------
-    int d3 = 1;
-    int start, end;
-    compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
-    if(d3 == 1){//restore copy
-      vector_PRECISION_copy(h->rademacher_vector, h->mlmc_b1, start, end, l );
-    }
+
     if ( type_appl==-1 ) {
       apply_R_PRECISION( l->next_level->p_PRECISION.b, h->rademacher_vector, l, threading );
+    //} else {
+    //  apply_R_PRECISION( l->next_level->p_PRECISION.b, l->powerit_PRECISION.vecs[type_appl], l, threading );
     }
-
-    //TODO: Set a 3d-trace parameter in .ini --------------
-    if(d3 == 1){
-      if( l->next_level->depth==0 ){
-        gamma5_PRECISION( l->next_level->p_PRECISION.b, l->next_level->p_PRECISION.b, l->next_level, threading );
-        //gamma5_PRECISION( l->next_level->p_PRECISION.b, l->next_level->p_PRECISION.b, l->next_level, threading );
-      }
-      else{
-        int startg5, endg5;
-        compute_core_start_end_custom(0, l->next_level->inner_vector_size, &startg5, &endg5, l->next_level, threading, l->next_level->num_lattice_site_var );
-        coarse_gamma5_PRECISION( l->next_level->p_PRECISION.b, l->next_level->p_PRECISION.b, startg5, endg5, l->next_level );
-        //coarse_gamma5_PRECISION( l->next_level->p_PRECISION.b, l->next_level->p_PRECISION.b, startg5, endg5, l->next_level );
-      }
-    }
-//exit(0);
 
     // the input of this solve is l->next_level->p_PRECISION.x, the output l->next_level->p_PRECISION.b
     apply_solver_PRECISION( l->next_level, threading );
@@ -2721,16 +2645,15 @@ complex_PRECISION hutchinson_mlmc_difference_PRECISION( int type_appl, level_str
     complex_PRECISION aux;
     gmres_PRECISION_struct* p = get_p_struct_PRECISION( l);
     compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
-
-    int d3 = 1;
-    if(d3 == 1){
-      vector_PRECISION_copy(h->rademacher_vector, h->mlmc_b1, start, end, l );
-    }
-
     vector_PRECISION_minus( h->mlmc_b1, p->x, h->mlmc_b2, start, end, l);
 
     if ( type_appl==-1 ) {
+      //if(g.trace_deflation_type[l->depth] != 0){
+      //  hutchinson_deflate_vector_PRECISION(h->mlmc_b1, l, threading); 
+      //}
       aux = global_inner_product_PRECISION( h->rademacher_vector, h->mlmc_b1, p->v_start, p->v_end, l, threading );
+    //} else {
+    //  aux = global_inner_product_PRECISION( l->powerit_PRECISION.vecs[type_appl], h->mlmc_b1, p->v_start, p->v_end, l, threading );
     }
 
     return aux;
@@ -2738,85 +2661,208 @@ complex_PRECISION hutchinson_mlmc_difference_PRECISION( int type_appl, level_str
 }
 
 
-struct sample hutchinson_blind_g5_PRECISION( level_struct *l, int depth, hutchinson_PRECISION_struct* h, int type, struct Thread *threading ){
-  int i, j;
-  complex_PRECISION one_sample=0, variance=0, trace=0;
-  double RMSD;
+complex_PRECISION mlmc_hutchinson_driver_PRECISION( level_struct *l, struct Thread *threading ){
+  int i;
+  complex_PRECISION trace = 0.0;
   struct sample estimate;
+  hutchinson_PRECISION_struct* h = &(l->h_PRECISION);
+  level_struct* lx;
 
-  estimate.acc_trace = 0.0;
-
-  int start, end;
-  level_struct* lx = l;
-  //get_correct_l_PRECISION( depth, lx );
-  for (int d = 0; d < depth; d++){
+  // for all but coarsest level
+  lx = l;
+  for( i=0; i<g.num_levels-1; i++ ){ 
+    // set the pointer to the mlmc difference operator
+    h->hutch_compute_one_sample = hutchinson_mlmc_difference_PRECISION;
+    estimate = hutchinson_blind_PRECISION( lx, h, 0, threading );
+    trace += estimate.acc_trace/estimate.sample_size;
+    // if deflation vectors are available
+    //if(g.trace_deflation_type[lx->depth] != 0){
+    //  trace += hutchinson_deflated_direct_term_PRECISION( lx, h, threading );
+    //}
     lx = lx->next_level;
   }
-  //if(g.my_rank==0)printf("lx_depth = %d\n", lx->depth);
-  // TODO : move this allocation to some init function
-  complex_PRECISION* samples = (complex_PRECISION*) malloc( h->max_iters[lx->depth]*sizeof(complex_PRECISION) );
-  memset( samples, 0.0, h->max_iters[lx->depth]*sizeof(complex_PRECISION) );
 
-  level_struct* l_restrict = l;
+  // coarsest level
+  // set the pointer to the coarsest-level Hutchinson estimator
+  h->hutch_compute_one_sample = hutchinson_plain_PRECISION;
+  estimate = hutchinson_blind_PRECISION( lx, h, 0, threading );
+  trace += estimate.acc_trace/estimate.sample_size;
+  // if deflation vectors are available
+  //if(g.trace_deflation_type[lx->depth] != 0){
+  //  trace += hutchinson_deflated_direct_term_PRECISION( lx, h, threading );
+  //}
 
-  double t0 = MPI_Wtime();
-  for( i=0; i<h->max_iters[lx->depth];i++ ){
-
-// 1. create Rademacher vector, stored in h->rademacher_vector
-    rademacher_create_PRECISION( l, h, type, threading );
-    //compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
-    //vector_PRECISION_copy( h->mlmc_testing, h->rademacher_vector, start, end, l );
-    l_restrict = l;
-    for (int d = 0; d < depth; d++){
-      apply_R_PRECISION( h->rademacher_vector, h->rademacher_vector, l_restrict, threading );
-      l_restrict = l_restrict->next_level;
-      //if(g.my_rank==0)printf("restricting = %d times\n", d+1);fflush(0);
-    //compute_core_start_end( 0, lx->inner_vector_size, &start, &end, lx, threading );
-    //vector_PRECISION_copy(  h->rademacher_vector, h->mlmc_testing, start, end, lx );
-
-
-    }
-
-    // 2. apply the operator to the Rademacher vector
-    // 3. dot product
-    one_sample = h->hutch_compute_one_sample( -1, lx, h, threading );
-
-
-    samples[i] = one_sample;
-
-    // 4. compute estimated trace and variance, print something?
-    estimate.acc_trace += one_sample;
-
-    if( i!=0 ){
-      variance = 0.0;
-      estimate.sample_size = i+1;
-      trace = estimate.acc_trace/estimate.sample_size;
-      for( j=0; j<i; j++ ){
-        variance += conj(samples[j] - trace) * (samples[j] - trace);
-      }
-      variance = variance / j;
-      START_MASTER(threading);
-      if(g.my_rank==0) {
-        printf("[%d, trace: %f+%f, variance: %f] ", i, creal(trace), cimag(trace), creal(variance));
-        fflush(0);
-      }
-      END_MASTER(threading);
-      RMSD = sqrt(creal(variance)/j);
-      if( i > h->min_iters[lx->depth] && RMSD < cabs(trace) * h->trace_tol * h->tol_per_level[lx->depth]) break;
-    }
-  }
-  double t1 = MPI_Wtime();
-  if(g.my_rank==0){
-    printf("\n");
-    printf("Time for sample computation (Avg.): \t %f\n\n", (t1-t0)/h->max_iters[lx->depth]);
-  }
-  estimate.sample_size = i;
-
-  free(samples);
-
-
-  return estimate;
+  return trace;
 }
 
-*/
+// the term tr( A_{l}^{-1}(I - P_{l} P_{l}^{H})  )
+complex_PRECISION hutchinson_split_orthogonal_PRECISION( int type_appl, level_struct *l, hutchinson_PRECISION_struct* h, struct Thread *threading ){
+  // 1. project
+  // 2. invert
+
+  // FIRST TERM
+  {
+    int start, end;
+    gmres_PRECISION_struct* p = get_p_struct_PRECISION( l );
+
+    if ( type_appl==-1 ) {
+      apply_R_PRECISION( h->mlmc_b2, h->rademacher_vector, l, threading );
+    //} else {
+    //  apply_R_PRECISION( h->mlmc_b2, l->powerit_PRECISION.vecs[type_appl], l, threading );
+    }
+
+    apply_P_PRECISION( h->mlmc_b1, h->mlmc_b2, l, threading );
+    compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
+
+    if ( type_appl==-1 ) {
+      vector_PRECISION_minus( p->b, h->rademacher_vector, h->mlmc_b1, start, end, l );
+    //} else {
+    //  vector_PRECISION_minus( p->b, l->powerit_PRECISION.vecs[type_appl], h->mlmc_b1, start, end, l );
+    }
+  }
+    
+  // SECOND "factor"
+  {
+    apply_solver_PRECISION( l, threading );
+  }
+
+  // perform dot product
+  {
+    int start, end;
+    complex_PRECISION aux = 0.0;
+    gmres_PRECISION_struct* p = get_p_struct_PRECISION( l );
+    compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
+      
+    
+    apply_R_PRECISION( h->mlmc_b2, p->x, l, threading );
+    apply_P_PRECISION( h->mlmc_b1, h->mlmc_b2, l, threading );
+
+    vector_PRECISION_minus( h->mlmc_b1, p->x, h->mlmc_b1, start, end, l );
+    
+    if ( type_appl==-1 ) {
+    //  if(g.trace_deflation_type[l->depth] != 0){
+    //    hutchinson_deflate_vector_PRECISION(h->mlmc_b1, l, threading); 
+    //  }
+      aux = global_inner_product_PRECISION( h->rademacher_vector, h->mlmc_b1, p->v_start, p->v_end, l, threading );   
+    //} else {  
+    //  aux = global_inner_product_PRECISION( l->powerit_PRECISION.vecs[type_appl], h->mlmc_b1, p->v_start, p->v_end, l, threading );
+    }
+    return aux; 
+  }
+}
+
+// the term tr( R A_{l}^{-1} P - A_{l+1}^{-1} )
+complex_PRECISION hutchinson_split_intermediate_PRECISION( int type_appl, level_struct *l, hutchinson_PRECISION_struct* h, struct Thread *threading ){
+
+  // FIRST TERM : result stored in h->mlmc_b1
+  // 1. prolongate
+  // 2. invert
+  // 3. restrict
+  {
+    gmres_PRECISION_struct* p = get_p_struct_PRECISION( l );
+
+    if ( type_appl==-1 ) {
+      apply_P_PRECISION( p->b, h->rademacher_vector, l, threading );
+   // } else {
+   //   apply_P_PRECISION( p->b, l->powerit_PRECISION.vecs[type_appl], l, threading );
+    }
+    // the input of this solve is p->x, the output p->b
+    apply_solver_PRECISION( l, threading );
+    apply_R_PRECISION( h->mlmc_b1, p->x, l, threading );
+  }
+
+  // SECOND TERM : result stored in h->mlmc_b2
+
+  // apply A_{l+1}^{-1}
+  {
+    int start, end;
+    gmres_PRECISION_struct* p = get_p_struct_PRECISION( l->next_level );
+    compute_core_start_end( 0, l->next_level->inner_vector_size, &start, &end, l->next_level, threading );
+
+    if ( type_appl==-1 ) {
+      vector_PRECISION_copy( p->b, h->rademacher_vector, start, end, l->next_level );
+    //} else {
+    //  vector_PRECISION_copy( p->b, l->powerit_PRECISION.vecs[type_appl], start, end, l->next_level );
+    }
+
+    // solution of this solve is in l->next_level->p_PRECISION.x
+    apply_solver_PRECISION( l->next_level, threading );
+    vector_PRECISION_copy( h->mlmc_b2, l->next_level->p_PRECISION.x, start, end, l->next_level );
+  }
+
+  // subtract the results and perform dot product
+  {
+    int start, end;
+    complex_PRECISION aux;
+    gmres_PRECISION_struct* p = get_p_struct_PRECISION( l->next_level );
+    compute_core_start_end( 0, l->next_level->inner_vector_size, &start, &end, l->next_level, threading );
+    vector_PRECISION_minus( h->mlmc_b1, h->mlmc_b1, h->mlmc_b2, start, end, l->next_level ); 
+
+    //if(g.trace_deflation_type[l->depth] != 0){
+    //  hutchinson_deflate_vector_PRECISION(h->mlmc_b1, l, threading); 
+    //}
+
+    if ( type_appl==-1 ) {
+      aux = global_inner_product_PRECISION( h->rademacher_vector, h->mlmc_b1, p->v_start, p->v_end, l->next_level, threading );         
+    //} else {
+    //  aux = global_inner_product_PRECISION( l->powerit_PRECISION.vecs[type_appl], h->mlmc_b1, p->v_start, p->v_end, l->next_level, threading );         
+    }
+      
+    return aux;
+  }
+}
+
+complex_PRECISION split_mlmc_hutchinson_driver_PRECISION( level_struct *l, struct Thread *threading ){
+  int i;
+  complex_PRECISION trace = 0.0;
+  struct sample estimate;
+  hutchinson_PRECISION_struct* h = &(l->h_PRECISION);
+  level_struct* lx=0;
+
+  // for all but coarsest level
+  lx = l;
+  for( i=0; i<g.num_levels-1 ;i++ ){  
+    // set the pointer to the split full rank operator
+    h->hutch_compute_one_sample = hutchinson_split_intermediate_PRECISION;
+    estimate = hutchinson_blind_PRECISION( lx, h, 1, threading );
+    trace += estimate.acc_trace/estimate.sample_size;
+
+    // if deflation vectors are available
+    //if( g.trace_deflation_type[lx->depth] != 0 ){
+    //  if( g.trace_deflation_type[lx->depth]==3 || g.trace_deflation_type[lx->depth]==5 ){
+    //    trace += hutchinson_deflated_direct_term_PRECISION(lx, h, threading);
+    //  }
+    //}
+    lx = lx->next_level;    
+  }
+
+  // for all but coarsest level
+  lx = l;
+  for( i=0; i<g.num_levels-1;i++ ){      
+    // set the pointer to the split orthogonal operator
+    h->hutch_compute_one_sample = hutchinson_split_orthogonal_PRECISION;
+    estimate = hutchinson_blind_PRECISION( lx, h, 0, threading );
+    trace += estimate.acc_trace/estimate.sample_size;
+
+    // if deflation vectors are available
+    //if( g.trace_deflation_type[lx->depth] != 0 ){
+    //  if( g.trace_deflation_type[lx->depth]==4 || g.trace_deflation_type[lx->depth]==5 ){
+    //    trace += hutchinson_deflated_direct_term_PRECISION(lx, h, threading);
+    //  }
+    //}
+    lx = lx->next_level; 
+  }
+
+  // coarsest level
+  // set the pointer to the coarsest-level Hutchinson estimator
+  h->hutch_compute_one_sample = hutchinson_plain_PRECISION;
+  estimate = hutchinson_blind_PRECISION( lx, h, 0, threading );
+  // if deflation vectors are available
+  //if(g.trace_deflation_type[lx->depth] != 0){
+  //  trace += hutchinson_deflated_direct_term_PRECISION(lx, h, threading);
+  //}
+  trace += estimate.acc_trace/estimate.sample_size;
+
+  return trace;
+}
 

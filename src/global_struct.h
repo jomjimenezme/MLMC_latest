@@ -41,6 +41,10 @@ typedef struct global_struct
         *trace_max_iters, *trace_min_iters, time_slice, trace_op_type, time_slice_inner_connected;
     double tol, coarse_tol, kcycle_tol, csw, rho, *relax_fac;
 
+    int default_setup;
+    double eigen_tol;
+    int interpolation_vectors;
+
     // profiling, analysis, output
     int coarse_iter_count, iter_count, iterator, print, conf_flag, setup_flag, in_setup;
     double coarse_time, prec_time, *output_table[8], cur_storage, max_storage, total_time,
