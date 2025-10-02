@@ -295,8 +295,15 @@ typedef struct {
     // this functional returns the estimate needed by Hutchinson at each iteration
     complex_PRECISION (*hutch_compute_one_sample)();
 
-
+		// pointer to the finest level
     struct level_struct *finest_level;
+    
+    // pointers to levels i and j for the C_{i,j} operators
+    struct level_struct *lx_i;
+    struct level_struct *lx_j;
+
+    // indicies for the right or left operator
+    int r_op, l_op; 
 
   } hutchinson_PRECISION_struct;
 

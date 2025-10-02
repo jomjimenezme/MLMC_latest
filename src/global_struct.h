@@ -38,8 +38,12 @@ typedef struct global_struct
         method, odd_even, anti_pbc, rhs, propagator_coords[4],
         interpolation, randomize, *num_eig_vect, num_coarse_eig_vect, kcycle, mixed_precision,
         restart, max_restart, kcycle_restart, kcycle_max_restart, coarse_iter, coarse_restart,
-        *trace_max_iters, *trace_min_iters, time_slice, trace_op_type;
+        *trace_max_iters, *trace_min_iters, time_slice, trace_op_type, time_slice_inner_connected;
     double tol, coarse_tol, kcycle_tol, csw, rho, *relax_fac;
+
+    int default_setup;
+    double eigen_tol;
+    int interpolation_vectors;
 
     // profiling, analysis, output
     int coarse_iter_count, iter_count, iterator, print, conf_flag, setup_flag, in_setup;
@@ -120,6 +124,20 @@ typedef struct global_struct
     double avg_b1;
     double avg_b2;
     double avg_crst;
+
+
+    int probing; //contains information on whether probing is performed or not
+    int probing_dimension; // 4D or 3D coloring
+    int coloring_distance;
+    int coloring_method;
+
+    int **colors; //colors of the lattice
+    int **local_colors; //colors of every MPI process
+    int *num_colors; //number of colors at every level
+    int coloring_count;
+
+    double *variances; //variance of the estimator at every level
+
 } global_struct;
 
 extern global_struct g;

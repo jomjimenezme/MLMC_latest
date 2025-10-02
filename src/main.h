@@ -176,6 +176,7 @@
 
 #include "hutchinson_float.h"
 #include "hutchinson_double.h"
+#include "probing.h"
 
 #ifdef HAVE_LIME
 #include <lime.h>

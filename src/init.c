@@ -532,6 +532,28 @@ void method_init( int *argc, char ***argv, level_struct *l ) {
 void method_finalize( level_struct *l ) {
   
   int ls = MAX(g.num_desired_levels,2);
+
+  if(g.probing){
+    int num_processes;
+    MPI_Comm_size(MPI_COMM_WORLD, &num_processes);
+    for(int level = 0; level < g.num_levels; level++){
+        int T = g.global_lattice[level][0];
+        int Z = g.global_lattice[level][1];
+        int Y = g.global_lattice[level][2];
+        int X = g.global_lattice[level][3];
+        int size = T * Z * Y * X;
+
+        int local_size = size/num_processes;
+        FREE(g.local_colors[level], int*, local_size);
+    }
+  }
+
+  if(g.trace_op_type == 7)
+     FREE(g.variances, double, g.num_levels*g.num_levels);
+  else
+     FREE(g.variances, double, g.num_levels);
+
+  FREE(g.num_colors, int, g.num_levels);
   
   operator_double_free( &(g.op_double), _ORDINARY, l );
   FREE( g.odd_even_table, int, l->num_inner_lattice_sites );
@@ -733,6 +755,22 @@ void read_global_info( FILE *in ) {
 
   void *save_pt;
   int match;
+
+  //Setting the probing parameter_update
+  save_pt = &(g.probing); g.probing = 0;
+  read_parameter( &save_pt, "probing selection:", "%d", 1, in, _DEFAULT_SET);
+
+  if(g.probing){
+    save_pt = &(g.probing_dimension); g.probing_dimension = 0;
+    read_parameter( &save_pt, "timeslice coloring:", "%d", 1, in, _DEFAULT_SET);
+
+    //Setting the coloring distance
+    save_pt = &(g.coloring_distance); g.coloring_distance = 0;
+    read_parameter( &save_pt, "coloring distance:", "%d", 1, in, _DEFAULT_SET);
+
+    save_pt = &(g.coloring_method); g.coloring_method = 0;
+    read_parameter( &save_pt, "coloring:", "%d", 1, in, _DEFAULT_SET);
+  }
 
   // Note: There is actually no default set for the three following values
   // Though, when using the code as a library, no configuration paths are required.
@@ -940,10 +978,29 @@ void read_geometry_data( FILE *in, int ls ) {
     
     // do this only for the finest level, as this is a global quantity
     if ( i==0 ) {
-      sprintf( inputstr, "d%d trace op type:", i );
-      save_pt = &(g.trace_op_type); g.trace_op_type = 1;
-      read_parameter( &save_pt, inputstr, "%d", 1, in, _DEFAULT_SET );
-    }
+      sprintf(inputstr, "d%d trace op type:", i);
+
+      // trace_op_type
+      g.trace_op_type = 1;
+      save_pt = &(g.trace_op_type);
+      read_parameter(&save_pt, inputstr, "%d", 1, in, _DEFAULT_SET);
+
+      // default setup
+      g.default_setup = 1;
+      save_pt = &(g.default_setup);
+      read_parameter(&save_pt, "default setup:", "%d", 1, in, _DEFAULT_SET);
+
+      // eigen_tol
+      g.eigen_tol = 5E-1;
+      save_pt = &(g.eigen_tol);
+      read_parameter(&save_pt, "eigenres tol:", "%le", 1, in, _DEFAULT_SET);
+
+      // interpolation_vectors
+      g.interpolation_vectors = 0;
+      save_pt = &(g.interpolation_vectors);
+      read_parameter(&save_pt, "interpolation vectors:", "%d", 1, in, _DEFAULT_SET);
+  }
+
 
 
     sprintf( inputstr, "d%d trace max iters:", i );
