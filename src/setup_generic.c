@@ -701,8 +701,9 @@ void inv_iter_inv_fcycle_PRECISION( int setup_iter, level_struct *l, struct Thre
     int j = 0;
     PRECISION largest_eigen_res = 1.0;
     PRECISION target_eigen_res = g.eigen_tol;
+    int default_setup = g.default_setup;
 
-    while ( (l->depth > 0 && j < setup_iter) || (l->depth == 0 && largest_eigen_res > target_eigen_res) ) {
+    while ( (l->depth > 0 && j < setup_iter) || (l->depth == 0 && !default_setup && largest_eigen_res > target_eigen_res )  || (l->depth == 0 && default_setup && j < setup_iter) ) {
       int pc = 0, pi = 1, pn = l->num_eig_vect*l->post_smooth_iter;
 
       START_LOCKED_MASTER(threading)
@@ -710,9 +711,9 @@ void inv_iter_inv_fcycle_PRECISION( int setup_iter, level_struct *l, struct Thre
       if ( g.print > 0 ) { printf0("\033[0;42m\033[1;37m|"); if ( g.my_rank == 0 ) fflush(0); }
       END_LOCKED_MASTER(threading)
 
-      //gram_schmidt_PRECISION( l->is_PRECISION.test_vector, buffer, 0, l->num_eig_vect, l, threading );
-      //gram_schmidt_PRECISION( l->is_PRECISION.test_vector, buffer, 0, l->num_eig_vect, l, threading );
-
+      if( default_setup){
+        gram_schmidt_PRECISION( l->is_PRECISION.test_vector, buffer, 0, l->num_eig_vect, l, threading );
+      }
 
       for ( int i=0; i<l->num_eig_vect; i++ ) {
 
@@ -739,8 +740,7 @@ void inv_iter_inv_fcycle_PRECISION( int setup_iter, level_struct *l, struct Thre
         }
 #else
 
-
-        if ( l->depth > 0 ) {
+        if ( l->depth > 0 || l->depth == 0 && default_setup) {
           vcycle_PRECISION( l->p_PRECISION.x, NULL, l->is_PRECISION.test_vector[i], _NO_RES, l, threading );
         } else {
 
@@ -771,19 +771,14 @@ void inv_iter_inv_fcycle_PRECISION( int setup_iter, level_struct *l, struct Thre
         START_MASTER(threading)
         if ( pc >= (int)((0.2*pi)*pn) ) { if ( g.print > 0 ) { printf0("%4d%% |", 20*pi); if ( g.my_rank == 0 ) fflush(0); } pi++; }
         END_MASTER(threading)
-
-
       }
 
       gram_schmidt_PRECISION( l->is_PRECISION.test_vector, buffer, 0, l->num_eig_vect, l, threading );
       //gram_schmidt_PRECISION( l->is_PRECISION.test_vector, buffer, 0, l->num_eig_vect, l, threading );
 
       // do the Rayleigh-Ritz extraction here!
-      if ( l->depth == 0 ) {
+      if ( l->depth == 0 && !default_setup ) {
         rayleigh_ritz_extraction_PRECISION( l, threading );
-      }
-
-      if ( l->depth == 0 ) {
         //testvector_analysis_PRECISION( l->is_PRECISION.test_vector, l, threading );
         testvector_max_residual_PRECISION( l->is_PRECISION.test_vector, &largest_eigen_res, l, threading );
       }
@@ -800,7 +795,6 @@ void inv_iter_inv_fcycle_PRECISION( int setup_iter, level_struct *l, struct Thre
       }
       j++;
     }
-
     if ( l->depth > 0 && l->next_level->level > 0 ) {
       inv_iter_inv_fcycle_PRECISION( MAX(1, round((double)(l->next_level->setup_iter*setup_iter)/
       ((double)l->setup_iter))), l->next_level, threading );
