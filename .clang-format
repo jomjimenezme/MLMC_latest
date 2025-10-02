@@ -1,0 +1,16 @@
+# .clang-format
+BasedOnStyle: LLVM
+IndentWidth: 2
+TabWidth: 2
+UseTab: Never
+ColumnLimit: 180
+
+# Keep all preprocessor directives leftmost (no indentation)
+IndentPPDirectives: None
+
+SpacesInParentheses: true
+
+# For pointer * placement:
+DerivePointerAlignment: false
+PointerAlignment: Left
+
