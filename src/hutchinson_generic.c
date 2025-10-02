@@ -190,6 +190,7 @@ int apply_solver_PRECISION( level_struct* l, struct Thread *threading ){
 
 
 // type : in case of 0 create Rademacher vectors at level l, in case of 1 create Rademacher vectors at level l->next_level
+// TODO: This function should be void to avoid compiler warning.
 struct sample hutchinson_blind_PRECISION( level_struct *l, hutchinson_PRECISION_struct* h, int type, struct Thread *threading ){
   int i, j;
   complex_PRECISION one_sample=0.0, variance=0.0, trace=0.0;
@@ -496,7 +497,7 @@ complex_PRECISION g5_3D_hutchinson_mlmc_difference_PRECISION( int type_appl, lev
   // store from fine to coarsest lvl in an array
   level_struct *finest_l = h->finest_level;
   level_struct *levels[g.num_levels];
-  int lvl_nr = 0, l_index = -1;
+  int lvl_nr = 0, l_index = -1;  (void)l_index;
 
   complex_PRECISION aux = 0;
 
@@ -671,7 +672,8 @@ complex_PRECISION g5_3D_connected_mlmc_difference_PRECISION( int type_appl, leve
   // store from fine to coarsest lvl in an array
   level_struct *finest_l = h->finest_level;
   level_struct *levels[g.num_levels];
-  int lvl_nr = 0, l_index = -1;
+  (void)levels;
+  int lvl_nr = 0, l_index = -1;  (void)l_index;
 
   complex_PRECISION aux = 0;
 
@@ -1013,7 +1015,8 @@ complex_PRECISION g5_3D_hutchinson_mlmc_coarsest_PRECISION( int type_appl, level
   // store from fine to coarsest lvl in an array
   level_struct *finest_l = h->finest_level;
   level_struct *levels[g.num_levels];
-  int lvl_nr = 0, l_index = -1;
+  (void)levels;
+  int lvl_nr = 0, l_index = -1;  (void)l_index;
 
   complex_PRECISION aux = 0;
 
@@ -1186,7 +1189,7 @@ complex_PRECISION g5_3D_hutchinson_mlmc_coarsest_PRECISION( int type_appl, level
 //   /* Store from fine to coarsest lvl in an array*/
 //   level_struct *finest_l = h->finest_level;
 //   level_struct *levels[g.num_levels];
-//   int lvl_nr = 0, l_index = -1;
+//   int lvl_nr = 0, l_index = -1;  (void)l_index;
 
 //   if(g.my_rank == 0)
 //     printf("\n\n------------------function at COARSEST%d ------------------\n\n", l->depth);fflush(0);
@@ -1459,7 +1462,8 @@ complex_PRECISION g5_3D_connected_split_orthogonal_PRECISION( int type_appl, lev
   // store from fine to coarsest lvl in an array
   level_struct *finest_l = h->finest_level;
   level_struct *levels[g.num_levels];
-  int lvl_nr = 0, l_index = -1;
+  (void)levels;
+  int lvl_nr = 0, l_index = -1;  (void)l_index;
 
   complex_PRECISION aux = 0;
 
@@ -1659,7 +1663,8 @@ complex_PRECISION g5_3D_connected_split_intermediate_PRECISION( int type_appl, l
   level_struct *finest_l = h->finest_level;
   level_struct *second_l = h->finest_level->next_level;
   level_struct *levels[g.num_levels];
-  int lvl_nr = 0, l_index = -1;
+  (void)levels;
+  int lvl_nr = 0, l_index = -1;  (void)l_index;
 
   complex_PRECISION aux = 0.0;
 
@@ -1797,7 +1802,7 @@ void connected_mlmc_PRECISION_non_difference( vector_PRECISION out, vector_PRECI
   // store from fine to coarsest lvl in an array
   level_struct *finest_l = h->finest_level;
   level_struct *levels[g.num_levels];
-  int lvl_nr = 0, l_index = -1;
+  int lvl_nr = 0, l_index = -1;  (void)l_index;
 
   if(g.my_rank == 0) {
     printf("\n\n------------------function at level %d ------------------\n\n", l->depth);fflush(0);
@@ -1884,7 +1889,8 @@ void connected_mlmc_PRECISION_difference( vector_PRECISION out, vector_PRECISION
   // store from fine to coarsest lvl in an array
   level_struct *finest_l = h->finest_level;
   level_struct *levels[g.num_levels];
-  int lvl_nr = 0, l_index = -1;
+  (void)levels;
+  int lvl_nr = 0, l_index = -1;  (void)l_index;
 
   if(g.my_rank == 0) {
     printf("\n\n------------------function at level %d ------------------\n\n", l->depth);fflush(0);
@@ -2127,7 +2133,7 @@ void connected_split_PRECISION_orthogonal( vector_PRECISION out, vector_PRECISIO
   // store from fine to coarsest lvl in an array
   level_struct *finest_l = h->finest_level;
   level_struct *levels[g.num_levels];
-  int lvl_nr = 0, l_index = -1;
+  int lvl_nr = 0, l_index = -1;  (void)l_index;
 
   if(g.my_rank == 0) {
     printf("\n\n------------------function at level %d ------------------\n\n", l->depth);fflush(0);
@@ -2155,7 +2161,6 @@ void connected_split_PRECISION_orthogonal( vector_PRECISION out, vector_PRECISIO
   {
     int start, end;
     gmres_PRECISION_struct* p = get_p_struct_PRECISION( l );
-    gmres_PRECISION_struct* p_next = get_p_struct_PRECISION( l->next_level );
 
     compute_core_start_end( 0, finest_l->inner_vector_size, &start, &end, finest_l, threading );
 
@@ -2229,7 +2234,7 @@ void connected_split_PRECISION_intermediate( vector_PRECISION out, vector_PRECIS
   // store from fine to coarsest lvl in an array
   level_struct *finest_l = h->finest_level;
   level_struct *levels[g.num_levels];
-  int lvl_nr = 0, l_index = -1;
+  int lvl_nr = 0, l_index = -1;  (void)l_index;
 
   if(g.my_rank == 0) {
     printf("\n\n------------------function at level %d ------------------\n\n", l->depth);fflush(0);
@@ -2440,11 +2445,12 @@ int CL_check_PRECISION(int l_op, int r_op, int i, int j){
   if(l_op == 0 && r_op == 0)
     CL_status = 0;
 
-  if(l_op == 0 && r_op == 1)
+  if(l_op == 0 && r_op == 1){
     if( i == g.num_levels-1 && j != g.num_levels-1)
       CL_status = 0;
     else
       CL_status = 1;
+  }
 
   if(l_op == 1 && r_op == 0){
     if(i != g.num_levels-1)
@@ -2504,12 +2510,13 @@ complex_PRECISION g5_3D_connected_split_driver_PRECISION( level_struct *l, struc
             else if(j == g.num_levels-1)
               rop_string = "CL";
 
-          if(i == g.num_levels-1 || j == g.num_levels-1){
-            if(CL_check_PRECISION(h->l_op, h->r_op, i, j)){
-              if (j < g.num_levels - 1)
+          if (i == g.num_levels-1 || j == g.num_levels-1) {
+            if (CL_check_PRECISION(h->l_op, h->r_op, i, j)) {
+              if (j < g.num_levels - 1) {
                 h->lx_j = h->lx_j->next_level;
-                continue;
               }
+              continue;
+            }
           }
 
           if(g.my_rank == 0) printf("\n Computing trace for G_{%d, %d}^{%s-%s}(t=%d) \n", h->lx_i->depth, h->lx_j->depth, lop_string, rop_string, g.time_slice);
@@ -2563,6 +2570,7 @@ complex_PRECISION g5_3D_connected_split_driver_PRECISION( level_struct *l, struc
 // else : direct term, where type_appl is the index of the deflation vector to apply
 //        the operator on
 complex_PRECISION hutchinson_plain_PRECISION( int type_appl, level_struct *l, hutchinson_PRECISION_struct* h, struct Thread *threading ){
+  complex_PRECISION aux = 0.0;
   {
     int start, end;
     gmres_PRECISION_struct* p = get_p_struct_PRECISION( l );
@@ -2583,7 +2591,6 @@ complex_PRECISION hutchinson_plain_PRECISION( int type_appl, level_struct *l, hu
   // subtract the results and perform dot product
   {
     int start, end;
-    complex_PRECISION aux;
     gmres_PRECISION_struct* p = get_p_struct_PRECISION( l );
     compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
 
@@ -2607,6 +2614,7 @@ complex_PRECISION hutchinson_plain_PRECISION( int type_appl, level_struct *l, hu
 complex_PRECISION hutchinson_mlmc_difference_PRECISION( int type_appl, level_struct *l, hutchinson_PRECISION_struct* h, struct Thread *threading ){
   // FIRST TERM : result stored in p->x
   // apply A_{l}^{-1}
+  complex_PRECISION aux = 0.0;
   {
     int start, end;
     gmres_PRECISION_struct* p = get_p_struct_PRECISION( l );
@@ -2642,7 +2650,6 @@ complex_PRECISION hutchinson_mlmc_difference_PRECISION( int type_appl, level_str
   // subtract the results and perform dot product
   {
     int start, end;
-    complex_PRECISION aux;
     gmres_PRECISION_struct* p = get_p_struct_PRECISION( l);
     compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
     vector_PRECISION_minus( h->mlmc_b1, p->x, h->mlmc_b2, start, end, l);
@@ -2754,6 +2761,7 @@ complex_PRECISION hutchinson_split_orthogonal_PRECISION( int type_appl, level_st
 // the term tr( R A_{l}^{-1} P - A_{l+1}^{-1} )
 complex_PRECISION hutchinson_split_intermediate_PRECISION( int type_appl, level_struct *l, hutchinson_PRECISION_struct* h, struct Thread *threading ){
 
+  complex_PRECISION aux = 0.0;
   // FIRST TERM : result stored in h->mlmc_b1
   // 1. prolongate
   // 2. invert
@@ -2793,7 +2801,6 @@ complex_PRECISION hutchinson_split_intermediate_PRECISION( int type_appl, level_
   // subtract the results and perform dot product
   {
     int start, end;
-    complex_PRECISION aux;
     gmres_PRECISION_struct* p = get_p_struct_PRECISION( l->next_level );
     compute_core_start_end( 0, l->next_level->inner_vector_size, &start, &end, l->next_level, threading );
     vector_PRECISION_minus( h->mlmc_b1, h->mlmc_b1, h->mlmc_b2, start, end, l->next_level ); 
