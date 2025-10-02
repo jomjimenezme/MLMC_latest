@@ -740,12 +740,13 @@ void inv_iter_inv_fcycle_PRECISION( int setup_iter, level_struct *l, struct Thre
         }
 #else
 
-        if ( l->depth > 0 || l->depth == 0 && default_setup) {
+        if ( l->depth > 0 || (l->depth == 0 && default_setup) ) {
           vcycle_PRECISION( l->p_PRECISION.x, NULL, l->is_PRECISION.test_vector[i], _NO_RES, l, threading );
         } else {
 
           //int iter = 0, start = threading->start_index[l->depth], end = threading->end_index[l->depth];
           int iter = 0;
+          //TODO: what is the right initialization for depth  0 to avoid warnings?
           //vector_PRECISION rhs = g.mixed_precision==2?g.p_MP.double_section.b:g.p.b;
           //vector_PRECISION sol = g.mixed_precision==2?g.p_MP.double_section.x:g.p.x;
           vector_PRECISION rhs = g.p.b;
