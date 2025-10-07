@@ -269,12 +269,11 @@ complex_PRECISION g5_3D_hutchinson_driver_PRECISION( level_struct *l, struct Thr
 
   if (g.probing) {
     for (g.coloring_count = 1; g.coloring_count < g.num_colors[0] + 1; g.coloring_count++){
-      if(g.my_rank==0) {
-        printf("\nEstimating trace at color %d\n", g.coloring_count);
+      for(g.dilution_count = 1; g.dilution_count < g.dilution + 1; g.dilution_count++){
+        if(g.my_rank == 0) printf("\nColor %d, dilution %d", g.coloring_count, g.dilution_count);
+        estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
+        trace += estimate.acc_trace / estimate.sample_size;
       }
-
-      estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
-      trace += estimate.acc_trace / estimate.sample_size;
     }
   } else {
     estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
@@ -302,12 +301,11 @@ complex_PRECISION g5_3D_connected_hutchinson_driver_PRECISION( level_struct *l, 
     
     if (g.probing) {
       for (g.coloring_count = 1; g.coloring_count < g.num_colors[0] + 1; g.coloring_count++){
-        if(g.my_rank==0) {
-          printf("\nEstimating trace at color %d\n", g.coloring_count);
-        }
-
+        for(g.dilution_count = 1; g.dilution_count < g.dilution + 1; g.dilution_count++){
+        if(g.my_rank == 0) printf("\nColor %d, dilution %d", g.coloring_count, g.dilution_count);
         estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
         trace += estimate.acc_trace / estimate.sample_size;
+	}
       }
     } else {
       estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
@@ -1299,11 +1297,11 @@ complex_PRECISION g5_3D_mlmc_hutchinson_driver_PRECISION( level_struct *l, struc
     h->hutch_compute_one_sample = g5_3D_hutchinson_mlmc_difference_PRECISION;
     if (g.probing) {
       for (g.coloring_count = 1; g.coloring_count < g.num_colors[i] + 1; g.coloring_count++){
-        if(g.my_rank==0)
-          printf("\nEstimating trace at color %d\n", g.coloring_count);
-      
+        for(g.dilution_count = 1; g.dilution_count < g.dilution_ml[i] + 1; g.dilution_count++){
+        if(g.my_rank == 0) printf("\nLevel %d color %d, dilution %d", i, g.coloring_count, g.dilution_count);
         estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
         trace += estimate.acc_trace / estimate.sample_size;
+	}
       }
     } else {
       estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
@@ -1323,12 +1321,12 @@ complex_PRECISION g5_3D_mlmc_hutchinson_driver_PRECISION( level_struct *l, struc
   
   if (g.probing) {
   for (g.coloring_count = 1; g.coloring_count < g.num_colors[i] + 1; g.coloring_count++){
-    if(g.my_rank==0)
-      printf("\nEstimating trace at color %d\n", g.coloring_count);
-      
-    estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
-    trace += estimate.acc_trace / estimate.sample_size;
-    }
+    for(g.dilution_count = 1; g.dilution_count < g.dilution_ml[i] + 1; g.dilution_count++){
+      if(g.my_rank == 0) printf("\nLevel %d color %d, dilution %d", i, g.coloring_count, g.dilution_count);
+      estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
+      trace += estimate.acc_trace / estimate.sample_size;
+     }
+  }
   } else {
       estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
       trace += estimate.acc_trace / estimate.sample_size;
@@ -1364,12 +1362,11 @@ complex_PRECISION g5_3D_connected_mlmc_driver_PRECISION( level_struct *l, struct
       for ( g.time_slice_inner_connected=0; g.time_slice_inner_connected<g.global_lattice[0][0]; g.time_slice_inner_connected++ ) {
         if (g.probing) {
           for (g.coloring_count = 1; g.coloring_count < g.num_colors[0] + 1; g.coloring_count++) {
-            if(g.my_rank==0) {
-              printf("\nEstimating trace at color %d\n", g.coloring_count);
-            }
-            // TODO: should we indeed pass finest lvl? or some other? 
-            estimate = hutchinson_blind_PRECISION(h->finest_level, h, 0, threading);
-            trace += estimate.acc_trace / estimate.sample_size;
+            for(g.dilution_count = 1; g.dilution_count < g.dilution_ml[i] + 1; g.dilution_count++){
+              if(g.my_rank == 0) printf("\nLevel %d color %d, dilution %d", i, g.coloring_count, g.dilution_count);
+              estimate = hutchinson_blind_PRECISION(h->finest_level, h, 0, threading);
+              trace += estimate.acc_trace / estimate.sample_size;
+	     }
           }
         } else {
           estimate = hutchinson_blind_PRECISION(h->finest_level, h, 0, threading);
@@ -2529,12 +2526,11 @@ complex_PRECISION g5_3D_connected_split_driver_PRECISION( level_struct *l, struc
 
             if (g.probing) {
               for (g.coloring_count = 1; g.coloring_count < g.num_colors[0] + 1; g.coloring_count++) {
-                if(g.my_rank==0) {
-                  printf("\nEstimating trace at color %d\n", g.coloring_count);
-                }
-                // TODO: should we indeed pass finest lvl? or some other?
-                estimate = hutchinson_blind_PRECISION(h->finest_level, h, 0, threading);
-                trace += estimate.acc_trace / estimate.sample_size;
+                for(g.dilution_count = 1; g.dilution_count < g.dilution_ml[i] + 1; g.dilution_count++){
+                  if(g.my_rank == 0) printf("\nLevel %d color %d, dilution %d", i, g.coloring_count, g.dilution_count);
+                  estimate = hutchinson_blind_PRECISION(h->finest_level, h, 0, threading);
+                  trace += estimate.acc_trace / estimate.sample_size;
+	        }
               }
             } else {
                 estimate = hutchinson_blind_PRECISION(h->finest_level, h, 0, threading);
