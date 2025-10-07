@@ -228,6 +228,7 @@ void setup_local_colors(){
     MPI_Barrier(MPI_COMM_WORLD);
     //MPI_Bcast(g.num_colors, g.num_levels, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(g.num_colors, g.num_levels, MPI_INT, 0, g.comm_cart);
+    MPI_Bcast(g.dilution_ml, g.num_levels, MPI_INT, 0, g.comm_cart);
     //print_colors();
     MPI_Barrier(MPI_COMM_WORLD);
 
@@ -492,9 +493,33 @@ void get_sigma_3D(){
   
 }
 
+void dilution_check(){
+
+  if(g.dilution != 1 && g.dilution != 2 && g.dilution != 3 && g.dilution != 4 && g.dilution != 12){
+    printf("\nError: choose a correct dilution value (1, 2, 3, 4, 12)");
+    exit(1);
+  }
+
+  if(g.dilution == 1)
+    printf("\nNo dilution");
+
+  if(g.dilution == 2)
+    printf("\nPartial spin dilution");
+
+  if(g.dilution == 3)
+    printf("\nColor dilution");
+
+  if(g.dilution == 4)
+    printf("\nComplete spin dilution");
+
+  if(g.dilution == 12)
+    printf("\nSpin-Color dilution");
+}
+
 void graph_coloring(){
 
   MALLOC(g.num_colors, int, g.num_levels);
+  MALLOC(g.dilution_ml, int, g.num_levels);
 
   if(g.my_rank==0){
 
@@ -512,6 +537,8 @@ void graph_coloring(){
     printf("sigma: %d %d %d %d\n", g.sigma[0], g.sigma[1], g.sigma[2], g.sigma[3]);
     printf("colors a the finest: %d\n", g.nc);
 
+    dilution_check();
+
     double time_taken;
 
     double start_time = MPI_Wtime();
@@ -522,6 +549,11 @@ void graph_coloring(){
         error0("Allocation error0\n");
 
     for(int level = 0; level < g.num_levels; level++){
+
+      if(level == 0)
+        g.dilution_ml[level] = g.dilution;
+      else
+        g.dilution_ml[level] = 1;
 
       int T = g.global_lattice[level][0];
       int Z = g.global_lattice[level][1];
@@ -562,7 +594,7 @@ void graph_coloring(){
 
                 //c(x) = \sum_{i = 1}^d i*x_i mod g.nc  ---> lattice dimensions labeled from 1 to d
                 //int col = t + 2*z + 3*y + 4*x;
-		        int col = g.sigma[0]*t + g.sigma[1]*z + g.sigma[2]*y + g.sigma[3]*x;
+		int col = g.sigma[0]*t + g.sigma[1]*z + g.sigma[2]*y + g.sigma[3]*x;
 
                 g.colors[level][index] = col%g.nc;
 
