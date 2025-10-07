@@ -775,7 +775,7 @@ void inv_iter_inv_fcycle_PRECISION( int setup_iter, level_struct *l, struct Thre
       }
 
       gram_schmidt_PRECISION( l->is_PRECISION.test_vector, buffer, 0, l->num_eig_vect, l, threading );
-      //gram_schmidt_PRECISION( l->is_PRECISION.test_vector, buffer, 0, l->num_eig_vect, l, threading );
+      gram_schmidt_PRECISION( l->is_PRECISION.test_vector, buffer, 0, l->num_eig_vect, l, threading );
 
       // do the Rayleigh-Ritz extraction here!
       if ( l->depth == 0 && !default_setup ) {
@@ -795,6 +795,7 @@ void inv_iter_inv_fcycle_PRECISION( int setup_iter, level_struct *l, struct Thre
         ((double)setup_iter) )), l->next_level, threading );
       }
       j++;
+      printf0("-- Inverse Iterations with acelerated Rayleigh Ritz = %d\n", j);
     }
     if ( l->depth > 0 && l->next_level->level > 0 ) {
       inv_iter_inv_fcycle_PRECISION( MAX(1, round((double)(l->next_level->setup_iter*setup_iter)/
@@ -829,7 +830,7 @@ void testvector_analysis_PRECISION( vector_PRECISION *test_vectors, level_struct
 
       vector_PRECISION_saxpy( l->vbuf_PRECISION[1], l->vbuf_PRECISION[3], test_vectors[i], -lambda, 0, l->inner_vector_size, l );
 
-      mu = global_norm_PRECISION( l->vbuf_PRECISION[1], 0, l->inner_vector_size, l, no_threading )/global_norm_PRECISION( test_vectors[i], 0, l->inner_vector_size, l, no_threading );
+      mu = global_norm_PRECISION( l->vbuf_PRECISION[1], 0, l->inner_vector_size, l, no_threading )/cabs(lambda);
       printf0("Rayleigh quotient: %+lf%+lfi, Approximate eigenvector precision: %le\n", (double)creal(lambda), (double)cimag(lambda), (double)mu );
     }
     printf0("--------------------------------------- depth: %d ----------------------------------------\n", l->depth );
@@ -869,7 +870,7 @@ void testvector_max_residual_PRECISION( vector_PRECISION *test_vectors, PRECISIO
                               -lambda, 0, l->inner_vector_size, l );
 
       mu = global_norm_PRECISION( l->vbuf_PRECISION[1], 0, l->inner_vector_size, l, no_threading )
-         / global_norm_PRECISION( test_vectors[i], 0, l->inner_vector_size, l, no_threading );
+         / cabs(lambda);
 
       printf0("Rayleigh quotient: %+lf%+lfi, Approximate eigenvector precision: %le\n",
               (double)creal(lambda), (double)cimag(lambda), (double)mu );
