@@ -554,6 +554,7 @@ void method_finalize( level_struct *l ) {
      FREE(g.variances, double, g.num_levels);
 
   FREE(g.num_colors, int, g.num_levels);
+  FREE(g.dilution_ml, int, g.num_levels);
   
   operator_double_free( &(g.op_double), _ORDINARY, l );
   FREE( g.odd_even_table, int, l->num_inner_lattice_sites );
@@ -770,6 +771,9 @@ void read_global_info( FILE *in ) {
 
     save_pt = &(g.coloring_method); g.coloring_method = 0;
     read_parameter( &save_pt, "coloring:", "%d", 1, in, _DEFAULT_SET);
+
+    save_pt = &(g.dilution); g.dilution = 1;
+    read_parameter( &save_pt, "dilution:", "%d", 1, in, _DEFAULT_SET);
   }
 
   // Note: There is actually no default set for the three following values

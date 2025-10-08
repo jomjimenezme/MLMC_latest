@@ -135,6 +135,13 @@ typedef struct global_struct
     int **local_colors; //colors of every MPI process
     int *num_colors; //number of colors at every level
     int coloring_count;
+    
+    int dilution;
+    int *dilution_ml;
+    int dilution_count;
+
+    int nc;
+    int sigma[4];
 
     double *variances; //variance of the estimator at every level
 

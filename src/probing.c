@@ -228,6 +228,7 @@ void setup_local_colors(){
     MPI_Barrier(MPI_COMM_WORLD);
     //MPI_Bcast(g.num_colors, g.num_levels, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(g.num_colors, g.num_levels, MPI_INT, 0, g.comm_cart);
+    MPI_Bcast(g.dilution_ml, g.num_levels, MPI_INT, 0, g.comm_cart);
     //print_colors();
     MPI_Barrier(MPI_COMM_WORLD);
 
@@ -277,7 +278,8 @@ void generate_neighbors(int t, int z, int y, int x, int **neighbors, int *num_ne
     }
 }
 
-
+/*
+// GREEDY COLORING
 void graph_coloring() {
 
     MALLOC(g.num_colors, int, g.num_levels);
@@ -402,11 +404,253 @@ void graph_coloring() {
     }
 
     fclose(file);
-    */
+    */ /*
     }
 
     MPI_Barrier(MPI_COMM_WORLD);
     setup_local_colors();
 }
 
+*/
 
+void get_sigma_4D(){
+  
+  if(g.coloring_distance == 1){
+    g.sigma[0] = 1;
+    g.sigma[1] = 1;
+    g.sigma[2] = 1;
+    g.sigma[3] = 1;
+    
+    g.nc = 2;
+  }
+  
+  if(g.coloring_distance == 2){
+    g.sigma[0] = 1;
+    g.sigma[1] = 2;
+    g.sigma[2] = 3;
+    g.sigma[3] = 4;
+    
+    g.nc = 10;
+  }
+  
+  if(g.coloring_distance == 3){
+    g.sigma[0] = 1;
+    g.sigma[1] = 5;
+    g.sigma[2] = 55;
+    g.sigma[3] = 61;
+    
+    g.nc = 16;
+  }
+  
+  if(g.coloring_distance == 4){
+    g.sigma[0] = 1;
+    g.sigma[1] = 8;
+    g.sigma[2] = 12;
+    g.sigma[3] = 18;
+    
+    g.nc = 64;
+  }
+  
+}
+
+void get_sigma_3D(){
+  
+  if(g.coloring_distance == 1){
+    g.sigma[0] = 0;
+    g.sigma[1] = 1;
+    g.sigma[2] = 1;
+    g.sigma[3] = 1;
+    
+    g.nc = 2;
+  }
+  
+  if(g.coloring_distance == 2){
+    g.sigma[0] = 0;
+    g.sigma[1] = 1;
+    g.sigma[2] = 2;
+    g.sigma[3] = 3;
+    
+    g.nc = 8;
+  }
+  
+  if(g.coloring_distance == 3){
+    g.sigma[0] = 0;
+    g.sigma[1] = 1;
+    g.sigma[2] = 3;
+    g.sigma[3] = 5;
+    
+    g.nc = 16;
+  }
+  
+  if(g.coloring_distance == 4){
+    g.sigma[0] = 0;
+    g.sigma[1] = 1;
+    g.sigma[2] = 6;
+    g.sigma[3] = 9;
+    
+    g.nc = 32;
+  }
+  
+}
+
+void dilution_check(){
+
+  if(g.dilution != 1 && g.dilution != 2 && g.dilution != 3 && g.dilution != 4 && g.dilution != 12){
+    printf("\nError: choose a correct dilution value (1, 2, 3, 4, 12)");
+    exit(1);
+  }
+
+  if(g.dilution == 1)
+    printf("\nNo dilution");
+
+  if(g.dilution == 2)
+    printf("\nPartial spin dilution");
+
+  if(g.dilution == 3)
+    printf("\nColor dilution");
+
+  if(g.dilution == 4)
+    printf("\nComplete spin dilution");
+
+  if(g.dilution == 12)
+    printf("\nSpin-Color dilution");
+}
+
+void graph_coloring(){
+
+  MALLOC(g.num_colors, int, g.num_levels);
+  MALLOC(g.dilution_ml, int, g.num_levels);
+
+  if(g.my_rank==0){
+
+    MALLOC(g.variances, double, g.num_levels);
+
+    printf("\nProbing = %d\n", g.probing);
+    printf("Coloring_distance = %d\n", g.coloring_distance);
+    printf("Coloring_method = %d\n", g.coloring_method);
+    
+    if(g.probing_dimension == 3)
+      get_sigma_3D();
+    else
+      get_sigma_4D();
+
+    printf("sigma: %d %d %d %d\n", g.sigma[0], g.sigma[1], g.sigma[2], g.sigma[3]);
+    printf("colors a the finest: %d\n", g.nc);
+
+    dilution_check();
+
+    double time_taken;
+
+    double start_time = MPI_Wtime();
+
+    g.colors = (int**)malloc(g.num_levels * sizeof(int*));
+
+    if (g.colors == NULL)
+        error0("Allocation error0\n");
+
+    for(int level = 0; level < g.num_levels; level++){
+
+      if(level == 0)
+        g.dilution_ml[level] = g.dilution;
+      else
+        g.dilution_ml[level] = 1;
+
+      int T = g.global_lattice[level][0];
+      int Z = g.global_lattice[level][1];
+      int Y = g.global_lattice[level][2];
+      int X = g.global_lattice[level][3];
+
+      int size[4];
+
+      size[0] = T;
+      size[1] = Z;
+      size[2] = Y;
+      size[3] = X;
+
+      int total_points = T * Z * Y * X;
+
+      g.colors[level] = NULL;
+      MALLOC(g.colors[level], int, total_points);
+      if(level == 0){
+
+        g.num_colors[level] = g.nc;
+
+        // Set all colors to -1 (not assigned)
+        for (int i = 0; i < total_points; i++) {
+          g.colors[level][i] = -1;
+        }
+
+        // Iterate over all lattice sites
+        for (int t = 0; t < T; t++) {
+          for (int z = 0; z < Z; z++) {
+            for (int y = 0; y < Y; y++) {
+              for (int x = 0; x < X; x++) {
+                int index = lex_index(t, z, y, x, size);
+
+                // Skip if the site has already been assigned a color
+                if (g.colors[level][index] != -1) {
+                  continue;
+                }
+
+                //c(x) = \sum_{i = 1}^d i*x_i mod g.nc  ---> lattice dimensions labeled from 1 to d
+                //int col = t + 2*z + 3*y + 4*x;
+		int col = g.sigma[0]*t + g.sigma[1]*z + g.sigma[2]*y + g.sigma[3]*x;
+
+                g.colors[level][index] = col%g.nc;
+
+              }
+            }
+          }
+        }
+
+        for (int i = 0; i < total_points; i++) {
+          g.colors[level][i]++;
+        }
+
+
+      }
+      else{
+        g.num_colors[level] = 1;
+
+        for(int i = 0; i < total_points; i++)
+          g.colors[level][i] = 1;
+      }
+    }
+
+    double end_time = MPI_Wtime();
+
+    time_taken = end_time - start_time;
+
+    printf("\nTime for coloring: %f seconds\n", time_taken);
+    for (int level = 0; level < g.num_levels; level++){
+       printf("\n Colors at depth %d : \t %d \n", level, g.num_colors[level]);
+    }
+
+ /* 
+    FILE *file = fopen("print_files/colors.txt", "w");
+
+    for(int i = 0; i < g.num_levels; i++){
+        fprintf(file, "\nColors at level %d\n [", i+1);
+
+        int T = g.global_lattice[i][0];
+        int Z = g.global_lattice[i][1];
+        int Y = g.global_lattice[i][2];
+        int X = g.global_lattice[i][3];
+
+        int size = T*Z*Y*X;
+
+        for(int j = 0; j < size; j++){
+                fprintf(file, " %d ", g.colors[i][j]);
+        }
+
+        fprintf(file, " ]\n");
+    }
+
+    fclose(file);
+*/
+
+
+  }
+    MPI_Barrier(MPI_COMM_WORLD);
+    setup_local_colors();
+}
