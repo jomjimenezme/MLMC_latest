@@ -119,6 +119,11 @@ void iterative_PRECISION_setup( int setup_iter, level_struct *l, struct Thread *
       case 4: read_tv_from_file_PRECISION( l, threading ); break;
       default: inv_iter_2lvl_extension_setup_PRECISION( setup_iter, l, threading ); break;
     }
+  if (l->depth == 0 && g.write_tv ==1){
+    printf0("\n ----- Saving test vectors: START----- \n"); fflush(0);
+    vector_io_single_file( NULL, NULL, g.tv_io_file_name, _WRITE, l->num_eig_vect, "test vectors", l );
+    printf0("\n ----- Saving test vectors: DONE ----- \n"); fflush(0);
+    }
   }
 
   level_struct *lp = l;

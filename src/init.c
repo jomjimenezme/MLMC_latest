@@ -1003,6 +1003,16 @@ void read_geometry_data( FILE *in, int ls ) {
       g.interpolation_vectors = 0;
       save_pt = &(g.interpolation_vectors);
       read_parameter(&save_pt, "interpolation vectors:", "%d", 1, in, _DEFAULT_SET);
+
+      // write test vectors
+      g.write_tv = 0;
+      save_pt = &(g.write_tv);
+      read_parameter(&save_pt, "store test vectors:", "%d", 1, in, _DEFAULT_SET);
+
+      if(g.write_tv == 1){
+        save_pt = &(g.tv_io_file_name);
+        read_parameter( &save_pt, "test vector io file name:", "%s", 1, in, _NO_DEFAULT_SET );
+      }
   }
 
 
