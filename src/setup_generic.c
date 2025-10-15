@@ -26,7 +26,7 @@
 void inv_iter_2lvl_extension_setup_PRECISION( int setup_iter, level_struct *l, struct Thread *threading );
 void inv_iter_inv_fcycle_PRECISION( int setup_iter, level_struct *l, struct Thread *threading );
 void testvector_analysis_PRECISION( vector_PRECISION *test_vectors, level_struct *l, struct Thread *threading );
-void testvector_max_residual_PRECISION( vector_PRECISION *test_vectors, PRECISION *largest_eigen_res, level_struct *l, struct Thread *threading );
+void testvector_max_residual_PRECISION( vector_PRECISION *test_vectors, PRECISION *largest_eigen_res, int order, level_struct *l, struct Thread *threading );
 void read_tv_from_file_PRECISION( level_struct *l, struct Thread *threading );
 
 void coarse_grid_correction_PRECISION_setup( level_struct *l, struct Thread *threading ) {
@@ -786,7 +786,7 @@ void inv_iter_inv_fcycle_PRECISION( int setup_iter, level_struct *l, struct Thre
       if ( l->depth == 0 && !default_setup ) {
         rayleigh_ritz_extraction_PRECISION( l, threading );
         //testvector_analysis_PRECISION( l->is_PRECISION.test_vector, l, threading );
-        testvector_max_residual_PRECISION( l->is_PRECISION.test_vector, &largest_eigen_res, l, threading );
+        testvector_max_residual_PRECISION( l->is_PRECISION.test_vector, &largest_eigen_res, 0, l, threading );
       }
 
       START_MASTER(threading)
@@ -802,6 +802,7 @@ void inv_iter_inv_fcycle_PRECISION( int setup_iter, level_struct *l, struct Thre
       j++;
       printf0("-- Inverse Iterations with acelerated Rayleigh Ritz = %d\n", j);
     }
+    testvector_max_residual_PRECISION( l->is_PRECISION.test_vector, &largest_eigen_res, 1, l, threading );
     if ( l->depth > 0 && l->next_level->level > 0 ) {
       inv_iter_inv_fcycle_PRECISION( MAX(1, round((double)(l->next_level->setup_iter*setup_iter)/
       ((double)l->setup_iter))), l->next_level, threading );
@@ -846,7 +847,7 @@ void testvector_analysis_PRECISION( vector_PRECISION *test_vectors, level_struct
 }
 
 
-void testvector_max_residual_PRECISION( vector_PRECISION *test_vectors, PRECISION *largest_eigen_res, level_struct *l, struct Thread *threading ) {
+void testvector_max_residual_PRECISION( vector_PRECISION *test_vectors, PRECISION *largest_eigen_res, int order, level_struct *l, struct Thread *threading ) {
 #ifdef TESTVECTOR_ANALYSIS
   START_UNTHREADED_FUNCTION(threading)
   PRECISION max_mu = 0.0;
@@ -854,6 +855,18 @@ void testvector_max_residual_PRECISION( vector_PRECISION *test_vectors, PRECISIO
   if ( l->depth == 0 ) {
     complex_PRECISION lambda;
     PRECISION mu;
+
+    // keep |lambda| for optional ordering
+    int n = l->num_eig_vect;
+    PRECISION *lambda_abs = NULL;
+    int *perm = NULL;
+    MALLOC( lambda_abs, PRECISION, n );
+    MALLOC( perm, int, n );
+    for ( int i=0; i<n; ++i ) perm[i] = i;
+
+    // store full lambda too so we can print after sorting
+    complex_PRECISION *lambdas = NULL;                  // new
+    if (order) MALLOC( lambdas, complex_PRECISION, n ); // new
 
     printf0("--------------------------------------- depth: %d ----------------------------------------\n", l->depth );
     for ( int i=0; i<l->num_eig_vect; i++ ) {
@@ -871,6 +884,10 @@ void testvector_max_residual_PRECISION( vector_PRECISION *test_vectors, PRECISIO
       lambda /= global_inner_product_PRECISION( test_vectors[i], test_vectors[i],
                                                 0, l->inner_vector_size, l, no_threading );
 
+      // save |lambda| for this vector (for sorting later)
+      lambda_abs[i] = cabs(lambda);
+      if (order) lambdas[i] = lambda;                    // new
+
       vector_PRECISION_saxpy( l->vbuf_PRECISION[1], l->vbuf_PRECISION[3], test_vectors[i],
                               -lambda, 0, l->inner_vector_size, l );
 
@@ -885,8 +902,49 @@ void testvector_max_residual_PRECISION( vector_PRECISION *test_vectors, PRECISIO
       }
     }
 
+    // if requested, reorder test vectors in ascending |lambda|
+    if (order) {
+      // sort an index permutation by lambda_abs
+      for (int i=0; i<n-1; ++i) {
+        int min_i = i;
+        for (int j=i+1; j<n; ++j)
+          if (lambda_abs[perm[j]] < lambda_abs[perm[min_i]]) min_i = j;
+        if (min_i != i) { int tmp=perm[i]; perm[i]=perm[min_i]; perm[min_i]=tmp; }
+      }
+
+      // reorder test vectors
+      vector_PRECISION *tmp = NULL;
+      MALLOC( tmp, vector_PRECISION, n );
+      for (int i=0; i<n; ++i) {
+        tmp[i] = NULL;
+        MALLOC( tmp[i], complex_PRECISION, l->inner_vector_size );
+        vector_PRECISION_copy( tmp[i], test_vectors[perm[i]], 0, l->inner_vector_size, l );
+      }
+      for (int i=0; i<n; ++i)
+        vector_PRECISION_copy( test_vectors[i], tmp[i], 0, l->inner_vector_size, l );
+      for (int i=0; i<n; ++i)
+        FREE( tmp[i], complex_PRECISION, l->inner_vector_size );
+      FREE( tmp, vector_PRECISION, n );
+
+      // print the ordered list of eigenvalues and their magnitudes
+      printf0("Ordered eigenvalues (ascending |lambda|):\n");
+      for (int i=0; i<n; ++i) {
+        int k = perm[i];
+        printf0("  %02d: %+lf%+lfi  |lambda| = %le\n",
+                i+1,
+                (double)creal(lambdas[k]),
+                (double)cimag(lambdas[k]),
+                (double)lambda_abs[k]);
+      }
+    }
+
     printf0("Maximum residual (mu) among eigenvectors: %le\n", (double)max_mu );
     printf0("--------------------------------------- depth: %d ----------------------------------------\n", l->depth );
+
+    // cleanup buffers
+    if (order) FREE( lambdas, complex_PRECISION, n );   // new
+    FREE( lambda_abs, PRECISION, n );
+    FREE( perm, int, n );
   }
 
   if (largest_eigen_res) {
@@ -896,6 +954,8 @@ void testvector_max_residual_PRECISION( vector_PRECISION *test_vectors, PRECISIO
   END_UNTHREADED_FUNCTION(threading)
 #endif
 }
+
+
 
 
 
