@@ -855,7 +855,9 @@ void testvector_max_residual_PRECISION( vector_PRECISION *test_vectors, PRECISIO
   if ( l->depth == 0 ) {
     complex_PRECISION lambda;
     PRECISION mu;
-
+    PRECISION *mus = NULL;
+    MALLOC(mus, PRECISION, l->num_eig_vect);
+   
     // keep |lambda| for optional ordering
     int n = l->num_eig_vect;
     PRECISION *lambda_abs = NULL;
@@ -865,16 +867,15 @@ void testvector_max_residual_PRECISION( vector_PRECISION *test_vectors, PRECISIO
     for ( int i=0; i<n; ++i ) perm[i] = i;
 
     // store full lambda too so we can print after sorting
-    complex_PRECISION *lambdas = NULL;                  // new
-    if (order) MALLOC( lambdas, complex_PRECISION, n ); // new
+    complex_PRECISION *lambdas = NULL;
+    MALLOC( lambdas, complex_PRECISION, n ); 
 
     printf0("--------------------------------------- depth: %d ----------------------------------------\n", l->depth );
     for ( int i=0; i<l->num_eig_vect; i++ ) {
-      printf0("vector #%02d: ", i+1 );
-
+      
       apply_operator_PRECISION( l->vbuf_PRECISION[3], test_vectors[i],
                                 &(l->p_PRECISION), l, no_threading );
-      //NOTE: This function is called at finest only
+      // NOTE: This function is called at finest only
       if (g.interpolation_vectors == 1) {
         gamma5_PRECISION(l->vbuf_PRECISION[3], l->vbuf_PRECISION[3], l, no_threading);
       }
@@ -886,33 +887,49 @@ void testvector_max_residual_PRECISION( vector_PRECISION *test_vectors, PRECISIO
 
       // save |lambda| for this vector (for sorting later)
       lambda_abs[i] = cabs(lambda);
-      if (order) lambdas[i] = lambda;                    // new
+      lambdas[i] = lambda;
 
       vector_PRECISION_saxpy( l->vbuf_PRECISION[1], l->vbuf_PRECISION[3], test_vectors[i],
                               -lambda, 0, l->inner_vector_size, l );
 
       mu = global_norm_PRECISION( l->vbuf_PRECISION[1], 0, l->inner_vector_size, l, no_threading )
          / cabs(lambda);
+      
+      // for sorting and storing later
+      mus[i] = mu;
 
-      printf0("Rayleigh quotient: %+lf%+lfi, Approximate eigenvector precision: %le\n",
-              (double)creal(lambda), (double)cimag(lambda), (double)mu );
-
+      // no per-vector print here; we'll print after sorting by |lambda|
       if (mu > max_mu) {
         max_mu = mu;
       }
     }
 
-    // if requested, reorder test vectors in ascending |lambda|
-    if (order) {
-      // sort an index permutation by lambda_abs
-      for (int i=0; i<n-1; ++i) {
-        int min_i = i;
-        for (int j=i+1; j<n; ++j)
-          if (lambda_abs[perm[j]] < lambda_abs[perm[min_i]]) min_i = j;
-        if (min_i != i) { int tmp=perm[i]; perm[i]=perm[min_i]; perm[min_i]=tmp; }
-      }
+    int k = g.num_stored_tv;
+    PRECISION *mus_sorted = NULL;
+    MALLOC(mus_sorted, PRECISION, n);
+    for (int i = 0; i < n; ++i) mus_sorted[i] = mus[i];
 
-      // reorder test vectors
+    // sort mus in descending order to pick the k-th smallest (n-k)-th index
+    for (int i = 0; i < n-1; ++i)
+      for (int j = i+1; j < n; ++j)
+        if (mus_sorted[j] > mus_sorted[i]) {
+          PRECISION tmp = mus_sorted[i];
+          mus_sorted[i] = mus_sorted[j];
+          mus_sorted[j] = tmp;
+        }
+
+    PRECISION cutoff_mu = mus_sorted[n - k];
+    
+    // build permutation by ascending |lambda| (used for printing and, optionally, reordering)
+    for (int i=0; i<n-1; ++i) {
+      int min_i = i;
+      for (int j=i+1; j<n; ++j)
+        if (lambda_abs[perm[j]] < lambda_abs[perm[min_i]]) min_i = j;
+      if (min_i != i) { int tmp=perm[i]; perm[i]=perm[min_i]; perm[min_i]=tmp; }
+    }
+
+    // reorder test vectors in memory if requested
+    if (order) {
       vector_PRECISION *tmp = NULL;
       MALLOC( tmp, vector_PRECISION, n );
       for (int i=0; i<n; ++i) {
@@ -925,30 +942,42 @@ void testvector_max_residual_PRECISION( vector_PRECISION *test_vectors, PRECISIO
       for (int i=0; i<n; ++i)
         FREE( tmp[i], complex_PRECISION, l->inner_vector_size );
       FREE( tmp, vector_PRECISION, n );
-
-      // print the ordered list of eigenvalues and their magnitudes
-      printf0("Ordered eigenvalues (ascending |lambda|):\n");
-      for (int i=0; i<n; ++i) {
-        int k = perm[i];
-        printf0("  %02d: %+lf%+lfi  |lambda| = %le\n",
-                i+1,
-                (double)creal(lambdas[k]),
-                (double)cimag(lambdas[k]),
-                (double)lambda_abs[k]);
-      }
     }
 
-    printf0("Maximum residual (mu) among eigenvectors: %le\n", (double)max_mu );
+    // print the ordered list of eigenvalues (ascending |lambda|) with their mu
+    printf0("Ordered eigenvalues (ascending |lambda|) with their mu:\n");
+    for (int i = 0; i < n; ++i) {
+      int idx = perm[i]; // original index of the i-th by |lambda|
+      printf0("  %02d: %+lf%+lfi  |lambda| = %le  mu = %le\n",
+              i+1, (double)creal(lambdas[idx]), (double)cimag(lambdas[idx]),
+              (double)lambda_abs[idx], (double)mus[idx]);
+    }
+
+    printf0("Maximum residual (mu) among the %d smallest eigenresiduals: %le\n", g.num_stored_tv, (double) cutoff_mu);
+    int idx_min_abs_lambda = 0;  // index of min |lambda|
+    for (int i = 1; i < n; ++i)
+      if (lambda_abs[i] < lambda_abs[idx_min_abs_lambda])
+        idx_min_abs_lambda = i;
+
+    printf0("Minimum |lambda|: %+lf%+lfi  |lambda| = %le  mu = %le\n",
+            (double)creal(lambdas[idx_min_abs_lambda]),
+            (double)cimag(lambdas[idx_min_abs_lambda]),
+            (double)lambda_abs[idx_min_abs_lambda],
+            (double)mus[idx_min_abs_lambda]);
     printf0("--------------------------------------- depth: %d ----------------------------------------\n", l->depth );
 
+    FREE( mus_sorted, PRECISION, n );
+    FREE( mus, PRECISION, n );
+
+    printf0("Cutoff residual (k = %d of n = %d): %le\n", k, n, (double)cutoff_mu);
+    if (largest_eigen_res) {
+      *largest_eigen_res = cutoff_mu;
+    }
+
     // cleanup buffers
-    if (order) FREE( lambdas, complex_PRECISION, n );   // new
+    FREE( lambdas, complex_PRECISION, n );
     FREE( lambda_abs, PRECISION, n );
     FREE( perm, int, n );
-  }
-
-  if (largest_eigen_res) {
-    *largest_eigen_res = max_mu;
   }
 
   END_UNTHREADED_FUNCTION(threading)

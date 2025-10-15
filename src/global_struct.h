@@ -49,6 +49,8 @@ typedef struct global_struct
     int interpolation_vectors;
     // store the test vectors 1: yes, 0:no
     int write_tv;
+    // number of stored test vectors
+    int num_stored_tv;
 
     // profiling, analysis, output
     int coarse_iter_count, iter_count, iterator, print, conf_flag, setup_flag, in_setup;

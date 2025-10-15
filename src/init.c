@@ -1008,10 +1008,15 @@ void read_geometry_data( FILE *in, int ls ) {
       g.write_tv = 0;
       save_pt = &(g.write_tv);
       read_parameter(&save_pt, "store test vectors:", "%d", 1, in, _DEFAULT_SET);
+      
+      g.num_stored_tv = g.num_eig_vect[i];
 
       if(g.write_tv == 1){
         save_pt = &(g.tv_io_file_name);
         read_parameter( &save_pt, "test vector io file name:", "%s", 1, in, _NO_DEFAULT_SET );
+        
+        save_pt = &(g.num_stored_tv);
+        read_parameter(&save_pt, "number store test vectors:", "%d", 1, in, _DEFAULT_SET);
       }
   }
 
