@@ -989,13 +989,13 @@ void vector_io_single_file( double *psi, double *lambda, char *filename, const i
       } while ( strcmp( cur_line, "</header>\n" ) );
       FREE( cur_line, char, STRINGLENGTH );
     }
-    
+
     for ( j=0; j<n; j++ ) {
       if ( g.my_rank == 0 ) {
         ASSERT( fread( buffer_pt->data, sizeof(double), bar_size, file ) );
       }
 
-      phi=(double *) (l->x);
+      phi=(double *) (l->p_double.x);
       phi_pt=phi;
       for ( t=0; t<gl[T]; t++ )
         for ( z=0; z<gl[Z]; z++ )
@@ -1034,7 +1034,7 @@ void vector_io_single_file( double *psi, double *lambda, char *filename, const i
         if ( g.mixed_precision )
           trans_float(l->is_float.test_vector[j], l->x, l->s_float.op.translation_table, l, no_threading);
         else
-          trans_double(l->is_double.test_vector[j], l->x, l->s_double.op.translation_table, l, no_threading);
+          trans_double(l->is_double.test_vector[j], l->p_double.x, l->s_double.op.translation_table, l, no_threading);
       } else {
         vector_double_copy( ((vector_double)psi)+j*l->inner_vector_size, l->x, 0, l->inner_vector_size, l );
       }
@@ -1053,11 +1053,11 @@ void vector_io_single_file( double *psi, double *lambda, char *filename, const i
         if ( g.mixed_precision )
           trans_back_float( l->x, l->is_float.test_vector[j], l->s_float.op.translation_table, l, no_threading );
         else
-          trans_back_double( l->x, l->is_double.test_vector[j], l->s_double.op.translation_table, l, no_threading );
+          trans_back_double( l->p_double.x, l->is_double.test_vector[j], l->s_double.op.translation_table, l, no_threading );
       } else {
         vector_double_copy( l->x, ((complex_double*)psi)+j*l->inner_vector_size, 0, l->inner_vector_size, l );
       }
-      phi=(double *)(l->x);
+      phi=(double *)(l->p_double.x);
       phi_pt=phi;
       for ( t=0; t<gl[T]; t++ )
         for ( z=0; z<gl[Z]; z++ )

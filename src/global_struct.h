@@ -41,9 +41,16 @@ typedef struct global_struct
         *trace_max_iters, *trace_min_iters, time_slice, trace_op_type, time_slice_inner_connected;
     double tol, coarse_tol, kcycle_tol, csw, rho, *relax_fac;
 
+    // Improved setup 1: yes, 0:no
     int default_setup;
+    // Eigentol in improved Setup
     double eigen_tol;
+    // test vectors: 0: from D,  1; from Q
     int interpolation_vectors;
+    // store the test vectors 1: yes, 0:no
+    int write_tv;
+    // number of stored test vectors
+    int num_stored_tv;
 
     // profiling, analysis, output
     int coarse_iter_count, iter_count, iterator, print, conf_flag, setup_flag, in_setup;
