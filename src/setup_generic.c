@@ -708,7 +708,7 @@ void inv_iter_inv_fcycle_PRECISION( int setup_iter, level_struct *l, struct Thre
     PRECISION target_eigen_res = g.eigen_tol;
     int default_setup = g.default_setup;
 
-    while ( (l->depth > 0 && j < setup_iter) || (l->depth == 0 && !default_setup && largest_eigen_res > target_eigen_res )  || (l->depth == 0 && default_setup && j < setup_iter) ) {
+    while ((j < setup_iter && (l->depth > 0 || (l->depth == 0 && default_setup == 1))) || (l->depth == 0 && default_setup == 0 && largest_eigen_res > target_eigen_res)) {
       int pc = 0, pi = 1, pn = l->num_eig_vect*l->post_smooth_iter;
 
       START_LOCKED_MASTER(threading)
@@ -716,7 +716,7 @@ void inv_iter_inv_fcycle_PRECISION( int setup_iter, level_struct *l, struct Thre
       if ( g.print > 0 ) { printf0("\033[0;42m\033[1;37m|"); if ( g.my_rank == 0 ) fflush(0); }
       END_LOCKED_MASTER(threading)
 
-      if( default_setup){
+      if( default_setup == 1 ){
         gram_schmidt_PRECISION( l->is_PRECISION.test_vector, buffer, 0, l->num_eig_vect, l, threading );
       }
 
@@ -759,6 +759,7 @@ void inv_iter_inv_fcycle_PRECISION( int setup_iter, level_struct *l, struct Thre
           //vector_double_copy( rhs, l->is_PRECISION.test_vector[i], start, end, l );
           trans_back_PRECISION( rhs, l->is_PRECISION.test_vector[i], l->s_PRECISION.op.translation_table, l, threading );
 
+          PRECISION t0 = MPI_Wtime();
           int buffx = g.print;
           g.print = -1;
           iter = fgmres_PRECISION( &(g.p), l, threading );
@@ -766,8 +767,8 @@ void inv_iter_inv_fcycle_PRECISION( int setup_iter, level_struct *l, struct Thre
 
           trans_PRECISION( l->p_PRECISION.x, sol, l->s_PRECISION.op.translation_table, l, threading );
           //vector_double_copy( l->p_PRECISION.x, sol, start, end, l );
-          printf0("-- just did a fine-grid solve, iters = %d\n", iter);
-
+          PRECISION t1 = MPI_Wtime();
+          printf0("-- just did a fine-grid solve, iters = %d, time = %f \n", iter, t1-t0);
         }
 
 #endif
@@ -779,11 +780,14 @@ void inv_iter_inv_fcycle_PRECISION( int setup_iter, level_struct *l, struct Thre
         END_MASTER(threading)
       }
 
-      gram_schmidt_PRECISION( l->is_PRECISION.test_vector, buffer, 0, l->num_eig_vect, l, threading );
-      gram_schmidt_PRECISION( l->is_PRECISION.test_vector, buffer, 0, l->num_eig_vect, l, threading );
 
       // do the Rayleigh-Ritz extraction here!
       if ( l->depth == 0 && !default_setup ) {
+        PRECISION t0 = MPI_Wtime();
+        gram_schmidt_PRECISION( l->is_PRECISION.test_vector, buffer, 0, l->num_eig_vect, l, threading );
+        PRECISION t1 = MPI_Wtime();
+        printf0("\n -- Time for one Gram-Schmidt call = %f ", t1-t0);
+
         rayleigh_ritz_extraction_PRECISION( l, threading );
         //testvector_analysis_PRECISION( l->is_PRECISION.test_vector, l, threading );
         testvector_max_residual_PRECISION( l->is_PRECISION.test_vector, &largest_eigen_res, 0, l, threading );
@@ -800,7 +804,7 @@ void inv_iter_inv_fcycle_PRECISION( int setup_iter, level_struct *l, struct Thre
         ((double)setup_iter) )), l->next_level, threading );
       }
       j++;
-      printf0("-- Inverse Iterations with acelerated Rayleigh Ritz = %d\n", j);
+      printf0("-- Inverse Iterations with acelerated Rayleigh Ritz = %d\n", j); fflush(0);
     }
     testvector_max_residual_PRECISION( l->is_PRECISION.test_vector, &largest_eigen_res, 1, l, threading );
     if ( l->depth > 0 && l->next_level->level > 0 ) {
@@ -948,7 +952,7 @@ void testvector_max_residual_PRECISION( vector_PRECISION *test_vectors, PRECISIO
     printf0("Ordered eigenvalues (ascending |lambda|) with their mu:\n");
     for (int i = 0; i < n; ++i) {
       int idx = perm[i]; // original index of the i-th by |lambda|
-      printf0("  %02d: %+lf%+lfi  |lambda| = %le  mu = %le\n",
+      printf0("  %02d: %+.12f%+.12fi  |lambda| = %le  mu = %le\n",
               i+1, (double)creal(lambdas[idx]), (double)cimag(lambdas[idx]),
               (double)lambda_abs[idx], (double)mus[idx]);
     }
