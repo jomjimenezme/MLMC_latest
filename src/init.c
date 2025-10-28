@@ -771,10 +771,10 @@ void read_global_info( FILE *in ) {
 
     save_pt = &(g.coloring_method); g.coloring_method = 0;
     read_parameter( &save_pt, "coloring:", "%d", 1, in, _DEFAULT_SET);
-
-    save_pt = &(g.dilution); g.dilution = 1;
-    read_parameter( &save_pt, "dilution:", "%d", 1, in, _DEFAULT_SET);
   }
+  
+  save_pt = &(g.dilution); g.dilution = 1;
+  read_parameter( &save_pt, "dilution:", "%d", 1, in, _DEFAULT_SET);
 
   // Note: There is actually no default set for the three following values
   // Though, when using the code as a library, no configuration paths are required.

@@ -146,6 +146,7 @@ int main( int argc, char **argv ) {
     int coloring_flag = 0; //Prevents the coloring to be done at every timeslice in 4D coloring case
     //for(g.time_slice = 0; g.time_slice < g.global_lattice[0][0]; g.time_slice++){
     for(g.time_slice = 0; g.time_slice < 1; g.time_slice++){
+      if(g.time_slice > 0) continue;
       if(g.my_rank==0) printf("\n\n Timeslice %d\n\n",  g.time_slice);
 
       if(g.probing){
@@ -153,10 +154,14 @@ int main( int argc, char **argv ) {
           graph_coloring();
        }else {
          MALLOC(g.num_colors, int, g.num_levels);
-	 MALLOC(g.dilution_ml, int, g.num_levels);
+	     MALLOC(g.dilution_ml, int, g.num_levels);
          for(int i = 0; i<g.num_levels; i++){
             g.num_colors[i] = 1;
-	    g.dilution_ml[i] = 1;
+            
+            if(i == 0) 
+              g.dilution_ml[i] = g.dilution;
+            else
+	          g.dilution_ml[i] = 1;
          }
       }
       

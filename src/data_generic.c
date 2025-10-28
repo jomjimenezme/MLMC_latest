@@ -84,12 +84,12 @@ void vector_PRECISION_define_random_rademacher( vector_PRECISION phi, int start,
     int dof = l->num_lattice_site_var;
 
     for ( i=start; i<end; i++ ){
+      int dilution_idx = compute_dilution_idx_PRECISION(l, i, dof);
       if(g.probing){
 
          if(i%dof == 0 && i > 0)
             j++;
 
-	 int dilution_idx = compute_dilution_idx_PRECISION(l, i, dof);
 
          if(g.local_colors[l->depth][j] == g.coloring_count && dilution_idx == g.dilution_count){
             if(   (PRECISION)((double)rand()<(double)RAND_MAX/2.0)   ) phi[i]=  (double) (-1);
@@ -98,8 +98,12 @@ void vector_PRECISION_define_random_rademacher( vector_PRECISION phi, int start,
             phi[i] = 0.0;
          }
       }else{
-        if(   (PRECISION)((double)rand()<(double)RAND_MAX/2.0)   ) phi[i]=  (double) (-1);
-        else phi[i]= (PRECISION)(1);
+        if(dilution_idx == g.dilution_count){
+            if(   (PRECISION)((double)rand()<(double)RAND_MAX/2.0)   ) phi[i]=  (double) (-1);
+            else phi[i]= (PRECISION)(1);
+         }else{
+            phi[i] = 0.0;
+         }
       }
     }
   } else {
