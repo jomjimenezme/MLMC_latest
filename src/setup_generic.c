@@ -806,7 +806,7 @@ void inv_iter_inv_fcycle_PRECISION( int setup_iter, level_struct *l, struct Thre
       j++;
       printf0("-- Inverse Iterations with acelerated Rayleigh Ritz = %d\n", j); fflush(0);
     }
-    testvector_max_residual_PRECISION( l->is_PRECISION.test_vector, &largest_eigen_res, 1, l, threading );
+    //testvector_max_residual_PRECISION( l->is_PRECISION.test_vector, &largest_eigen_res, 1, l, threading );
     if ( l->depth > 0 && l->next_level->level > 0 ) {
       inv_iter_inv_fcycle_PRECISION( MAX(1, round((double)(l->next_level->setup_iter*setup_iter)/
       ((double)l->setup_iter))), l->next_level, threading );

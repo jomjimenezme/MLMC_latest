@@ -287,8 +287,12 @@ complex_PRECISION g5_3D_hutchinson_driver_PRECISION( level_struct *l, struct Thr
       }
     }
   } else {
-    estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
-    trace += estimate.acc_trace / estimate.sample_size;
+      
+      for(g.dilution_count = 1; g.dilution_count < g.dilution + 1; g.dilution_count++){
+        if(g.my_rank == 0) printf("\nDilution %d", g.dilution_count);
+        estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
+        trace += estimate.acc_trace / estimate.sample_size;
+      }
   }
 
   // if deflation vectors are available
@@ -319,8 +323,11 @@ complex_PRECISION g5_3D_connected_hutchinson_driver_PRECISION( level_struct *l, 
 	}
       }
     } else {
-      estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
-      trace += estimate.acc_trace / estimate.sample_size;
+        for(g.dilution_count = 1; g.dilution_count < g.dilution + 1; g.dilution_count++){
+          if(g.my_rank == 0) printf("\nDilution %d", g.dilution_count);
+          estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
+          trace += estimate.acc_trace / estimate.sample_size;
+	}
     }
     // estimate = hutchinson_blind_PRECISION( lx, h, 0, threading );
     // trace += estimate.acc_trace/estimate.sample_size;
@@ -1315,8 +1322,11 @@ complex_PRECISION g5_3D_mlmc_hutchinson_driver_PRECISION( level_struct *l, struc
 	}
       }
     } else {
-      estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
-      trace += estimate.acc_trace / estimate.sample_size;
+        for(g.dilution_count = 1; g.dilution_count < g.dilution_ml[i] + 1; g.dilution_count++){
+          if(g.my_rank == 0) printf("\nLevel %d Dilution %d", i, g.dilution_count);
+          estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
+          trace += estimate.acc_trace / estimate.sample_size;
+	  }
     }
     
     //if deflation vectors are available
@@ -1339,8 +1349,11 @@ complex_PRECISION g5_3D_mlmc_hutchinson_driver_PRECISION( level_struct *l, struc
      }
   }
   } else {
-      estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
-      trace += estimate.acc_trace / estimate.sample_size;
+      for(g.dilution_count = 1; g.dilution_count < g.dilution_ml[i] + 1; g.dilution_count++){
+        if(g.my_rank == 0) printf("\nLevel %d Dilution %d", i, g.dilution_count);
+        estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
+        trace += estimate.acc_trace / estimate.sample_size;
+     }
   }
   //if deflation vectors are available
   //if(g.trace_deflation_type[lx->depth] != 0){
@@ -1380,8 +1393,11 @@ complex_PRECISION g5_3D_connected_mlmc_driver_PRECISION( level_struct *l, struct
 	     }
           }
         } else {
-          estimate = hutchinson_blind_PRECISION(h->finest_level, h, 0, threading);
-          trace += estimate.acc_trace / estimate.sample_size;
+          for(g.dilution_count = 1; g.dilution_count < g.dilution_ml[i] + 1; g.dilution_count++){
+              if(g.my_rank == 0) printf("\nLevel %d Dilution %d", i,  g.dilution_count);
+              estimate = hutchinson_blind_PRECISION(h->finest_level, h, 0, threading);
+              trace += estimate.acc_trace / estimate.sample_size;
+	     }
         }
       }
       
@@ -2544,8 +2560,11 @@ complex_PRECISION g5_3D_connected_split_driver_PRECISION( level_struct *l, struc
 	        }
               }
             } else {
-                estimate = hutchinson_blind_PRECISION(h->finest_level, h, 0, threading);
-                trace += estimate.acc_trace / estimate.sample_size;
+                for(g.dilution_count = 1; g.dilution_count < g.dilution_ml[i] + 1; g.dilution_count++){
+                  if(g.my_rank == 0) printf("\nLevel %d Dilution %d", i, g.coloring_count, g.dilution_count);
+                  estimate = hutchinson_blind_PRECISION(h->finest_level, h, 0, threading);
+                  trace += estimate.acc_trace / estimate.sample_size;
+	        }
               }
            }
 
