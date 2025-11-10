@@ -1405,7 +1405,7 @@ complex_PRECISION g5_3D_connected_mlmc_driver_PRECISION( level_struct *l, struct
       global_connected_trace += trace;
       //int nlevs = g.num_levels;
       //int idx = h->lx_i->depth * nlevs + h->lx_j->depth;  
-      if (g.my_rank == 0) printf("\n Trace of G_{%d, %d}(t=%d) = %f +%f\n", h->lx_i->depth, h->lx_j->depth, g.time_slice, CSPLIT(trace));
+      if (g.my_rank == 0) printf("\n Trace of G_{%d, %d}(t=%d) = %f +%f\n", h->lx_i->depth, h->lx_j->depth, g.time_slice, CSPLIT(global_connected_trace));
       
       if (j < g.num_levels - 1)    
         h->lx_j = h->lx_j->next_level;
