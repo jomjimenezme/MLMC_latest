@@ -238,17 +238,22 @@ struct sample hutchinson_blind_PRECISION( level_struct *l, hutchinson_PRECISION_
       variance = variance / j;
       START_MASTER(threading);
       if(g.my_rank==0) {
-        printf("[%d, trace: %f+%f, variance: %f] ", i, creal(trace), cimag(trace), creal(variance));
+        printf("[%d, trace: %e %c i%e, variance: %e] ", 
+        i, creal(trace),
+        (cimag(trace) < 0) ? '-' : '+',
+        fabs(cimag(trace)),
+        creal(variance));
+        
         fflush(0);
 
-      if(i == h->max_iters[l->depth] - 1 && g.trace_op_type != 7)
-        g.variances[l->depth] += creal(variance);
+        if(i == h->max_iters[l->depth] - 1 && g.trace_op_type != 7)
+          g.variances[l->depth] += creal(variance);
 
-      if(i == h->max_iters[l->depth] - 1 && g.trace_op_type == 7){
-        int nlevs = g.num_levels;
-        int idx = h->lx_i->depth*nlevs + h->lx_j->depth;
-        g.variances[idx] += creal(variance);
-      }
+        if(i == h->max_iters[l->depth] - 1 && g.trace_op_type == 7){
+          int nlevs = g.num_levels;
+          int idx = h->lx_i->depth*nlevs + h->lx_j->depth;
+          g.variances[idx] += creal(variance);
+        }
       }
       END_MASTER(threading);
       RMSD = sqrt(creal(variance)/j);
