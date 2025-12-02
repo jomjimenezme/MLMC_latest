@@ -821,10 +821,10 @@ void hierarchical_coloring(){
 
         fprintf(file, " ]\n");
     }
-    */
+    
 
     fclose(file);
-
+    */
 
 
   }
