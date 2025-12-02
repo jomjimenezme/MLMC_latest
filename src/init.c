@@ -533,7 +533,7 @@ void method_finalize( level_struct *l ) {
   
   int ls = MAX(g.num_desired_levels,2);
 
-  if(g.probing){
+  if(g.probing != 0){
     int num_processes;
     MPI_Comm_size(MPI_COMM_WORLD, &num_processes);
     for(int level = 0; level < g.num_levels; level++){
@@ -761,7 +761,7 @@ void read_global_info( FILE *in ) {
   save_pt = &(g.probing); g.probing = 0;
   read_parameter( &save_pt, "probing selection:", "%d", 1, in, _DEFAULT_SET);
 
-  if(g.probing){
+  if(g.probing != 0){
     save_pt = &(g.probing_dimension); g.probing_dimension = 0;
     read_parameter( &save_pt, "timeslice coloring:", "%d", 1, in, _DEFAULT_SET);
 
@@ -771,6 +771,9 @@ void read_global_info( FILE *in ) {
 
     save_pt = &(g.coloring_method); g.coloring_method = 0;
     read_parameter( &save_pt, "coloring:", "%d", 1, in, _DEFAULT_SET);
+
+    save_pt = &(g.k); g.k = 1;
+    read_parameter( &save_pt, "hierarchy step:", "%d", 1, in, _DEFAULT_SET);
   }
   
   save_pt = &(g.dilution); g.dilution = 1;

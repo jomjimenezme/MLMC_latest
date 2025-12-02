@@ -133,10 +133,11 @@ typedef struct global_struct
     double avg_crst;
 
 
-    int probing; //contains information on whether probing is performed or not
+    int probing; //0 - no probing, 1 - classical, 2 - hierarchical
     int probing_dimension; // 4D or 3D coloring
-    int coloring_distance;
+    int coloring_distance; // for classical
     int coloring_method;
+    int k; // for hierarchical
 
     int **colors; //colors of the lattice
     int **local_colors; //colors of every MPI process
