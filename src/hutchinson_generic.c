@@ -97,8 +97,6 @@ complex_PRECISION hutchinson_driver_PRECISION( level_struct *l, struct Thread *t
   return trace;
 }
 
-
-
 void rademacher_create_PRECISION( level_struct *l, hutchinson_PRECISION_struct* h, int type, struct Thread *threading ){
   if( type==0 ){
     START_MASTER(threading)
@@ -275,6 +273,7 @@ struct sample hutchinson_blind_PRECISION( level_struct *l, hutchinson_PRECISION_
 
   return estimate;
 }
+
 
 // this is the driver for plain Hutchinson
 complex_PRECISION g5_3D_hutchinson_driver_PRECISION( level_struct *l, struct Thread *threading ){
@@ -2641,6 +2640,69 @@ complex_PRECISION hutchinson_plain_PRECISION( int type_appl, level_struct *l, hu
     return aux;  
   }
 }
+
+complex_PRECISION g5_hutchinson_plain_PRECISION( int type_appl, level_struct *l, hutchinson_PRECISION_struct* h, struct Thread *threading ){
+  complex_PRECISION aux = 0.0;
+  {
+    int start, end;
+    gmres_PRECISION_struct* p = get_p_struct_PRECISION( l );
+    compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
+
+    if ( type_appl==-1 ) {
+      vector_PRECISION_copy( p->b, h->rademacher_vector, start, end, l );
+    }
+    
+    // Apply Gamma_5
+    gamma5_PRECISION( p->b, p->b, l, threading );
+  }
+
+  {
+    apply_solver_PRECISION( l, threading );
+  }
+  
+    
+  // subtract the results and perform dot product
+  {
+    int start, end;
+    gmres_PRECISION_struct* p = get_p_struct_PRECISION( l );
+    compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
+
+    if ( type_appl==-1 ) {
+      aux = global_inner_product_PRECISION( h->rademacher_vector, p->x, p->v_start, p->v_end, l, threading );
+    }
+
+    return aux;  
+  }
+}
+
+complex_PRECISION g5_hutchinson_driver_PRECISION( level_struct *l, struct Thread *threading ){
+  complex_PRECISION trace = 0.0;
+  struct sample estimate;
+  hutchinson_PRECISION_struct* h = &(l->h_PRECISION);
+  level_struct* lx = l;
+
+  // set the pointer to the finest-level Hutchinson estimator
+  h->hutch_compute_one_sample = g5_hutchinson_plain_PRECISION;
+
+  if (g.probing) {
+    for (g.coloring_count = 1; g.coloring_count < g.num_colors[0] + 1; g.coloring_count++){
+      for(g.dilution_count = 1; g.dilution_count < g.dilution + 1; g.dilution_count++){
+        if(g.my_rank == 0) printf("\nColor %d, dilution %d", g.coloring_count, g.dilution_count);
+        estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
+        trace += estimate.acc_trace / estimate.sample_size;
+      }
+    }
+  } else {
+    for(g.dilution_count = 1; g.dilution_count < g.dilution + 1; g.dilution_count++){
+        if(g.my_rank == 0) printf("\nColor %d, dilution %d", g.coloring_count, g.dilution_count);
+        estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
+        trace += estimate.acc_trace / estimate.sample_size;
+      }
+  }
+
+  return trace;
+}
+
 
 
 
