@@ -175,6 +175,20 @@ int main( int argc, char **argv ) {
 
       set_probing_variances_to_zero();
       
+      if( g.trace_op_type == 12 ){
+        START_MASTER(threadingx)
+        if(g.my_rank==0) printf("Calling Plain for G5D 4D trace\n"); 
+        END_MASTER(threadingx)
+
+        trace = g5_hutchinson_driver_double( &l, &threading );
+        //trace = hutchinson_driver_double( &l, &threading );
+
+        START_MASTER(threadingx)
+        if(g.my_rank==0) printf("\nResulting trace from calling Plain for G5D 4D trace = %f+i%f\n", CSPLIT(trace)); 
+        fflush(0);
+        END_MASTER(threadingx)
+      }
+      
       if( g.trace_op_type == 11 ){
         START_MASTER(threadingx)
         if(g.my_rank==0) printf("Calling SPLIT MLMC for 4D trace\n"); 
