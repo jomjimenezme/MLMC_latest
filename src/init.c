@@ -441,6 +441,22 @@ void method_init( int *argc, char ***argv, level_struct *l ) {
   MALLOC( g.odd_even_table, int, l->num_inner_lattice_sites );
   define_odd_even_table( l );
 
+  if(g.my_rank==0){
+    g.var_pc = (double**)malloc(g.num_levels * sizeof(double*));
+
+    for(int level = 0; level < g.num_levels; level++){
+      g.var_pc[level] = NULL;
+      MALLOC(g.var_pc[level], double, g.trace_max_iters[level]);
+    }
+
+    for(int level = 0; level < g.num_levels; level++){
+      for(int idx = 0; idx < g.trace_max_iters[level]; idx++){
+        g.var_pc[level][idx] = 0.0;
+      }
+    }
+  }
+
+
 #ifdef CUDA_OPT
 
   // globally-setting some GPU device properties
@@ -546,6 +562,12 @@ void method_finalize( level_struct *l ) {
         int local_size = size/num_processes;
         FREE(g.local_colors[level], int*, local_size);
     }
+  }
+
+
+  if(g.my_rank==0){
+    for(int level = 0; level < g.num_levels; level++)
+      FREE(g.var_pc[level], double*, g.trace_max_iters[level]);
   }
 
   if(g.trace_op_type == 7)

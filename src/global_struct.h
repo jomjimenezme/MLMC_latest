@@ -152,6 +152,7 @@ typedef struct global_struct
     int sigma[4];
 
     double *variances; //variance of the estimator at every level
+    double **var_pc; //variance per color
 
 } global_struct;
 

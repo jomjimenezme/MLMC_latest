@@ -202,6 +202,33 @@ int apply_solver_PRECISION( level_struct* l, struct Thread *threading ){
   return nr_iters;
 }
 
+void print_variance_pc_PRECISION(level_struct *l, int iters){
+
+  double var_avg = 0.0;
+  double var_var = 0.0;
+
+  for(int i = 0; i < iters; i++)
+    var_avg += g.var_pc[l->depth][i];
+
+  var_avg = var_avg/iters;
+
+  for(int i = 0; i < iters; i++){
+    var_var += (g.var_pc[l->depth][i] - var_avg)*(g.var_pc[l->depth][i] - var_avg);
+  }
+
+  var_var = var_var/iters;
+
+  double interval;
+
+  interval = sqrt(var_var/iters);
+
+  if(g.probing =! 0) printf("\nVariance of color %d - dilution index %d = %f +- %f\n", g.coloring_count, g.dilution_count, var_avg, interval);
+  if(g.probing == 0) printf("\nVariance of dilution index %d = %f +- %f\n", g.dilution_count, var_avg, interval);
+
+  for(int i = 0; i < g.trace_max_iters[l->depth]; i ++)
+    g.var_pc[l->depth][i] = 0.0;
+
+}
 
 // type : in case of 0 create Rademacher vectors at level l, in case of 1 create Rademacher vectors at level l->next_level
 // TODO: This function should be void to avoid compiler warning.
@@ -249,6 +276,8 @@ struct sample hutchinson_blind_PRECISION( level_struct *l, hutchinson_PRECISION_
         
         fflush(0);
 
+	if(g.my_rank==0) g.var_pc[l->depth][i] = creal(variance);
+
         if(i == h->max_iters[l->depth] - 1 && g.trace_op_type != 7)
           g.variances[l->depth] += creal(variance);
 
@@ -263,6 +292,8 @@ struct sample hutchinson_blind_PRECISION( level_struct *l, hutchinson_PRECISION_
       if( i > h->min_iters[l->depth] && RMSD < cabs(trace) * h->trace_tol * h->tol_per_level[l->depth]) break;
     }
   }
+
+  if(g.my_rank==0) print_variance_pc_PRECISION(l, h->max_iters[l->depth]);
   double t1 = MPI_Wtime();
   if(g.my_rank==0) {
     printf("\n");

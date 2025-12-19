@@ -181,7 +181,6 @@ int main( int argc, char **argv ) {
         END_MASTER(threadingx)
 
         trace = g5_hutchinson_driver_double( &l, &threading );
-        //trace = hutchinson_driver_double( &l, &threading );
 
         START_MASTER(threadingx)
         if(g.my_rank==0) printf("\nResulting trace from calling Plain for G5D 4D trace = %f+i%f\n", CSPLIT(trace)); 
