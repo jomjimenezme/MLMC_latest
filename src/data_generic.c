@@ -84,7 +84,7 @@ void vector_PRECISION_define_random_rademacher( vector_PRECISION phi, int start,
     int dof = l->num_lattice_site_var;
 
     for ( i=start; i<end; i++ ){
-      int dilution_idx = compute_dilution_idx_PRECISION(l, i, dof);
+      /*int dilution_idx = compute_dilution_idx_PRECISION(l, i, dof);
       if(g.probing){
 
          if(i%dof == 0 && i > 0)
@@ -105,6 +105,9 @@ void vector_PRECISION_define_random_rademacher( vector_PRECISION phi, int start,
             phi[i] = 0.0;
          }
       }
+    */
+      if(   (PRECISION)((double)rand()<(double)RAND_MAX/2.0)   ) phi[i]=  (double) (-1);
+            else phi[i]= (PRECISION)(1);
     }
   } else {
     error0("Error in \"vector_PRECISION_define_random\": pointer is null\n");
