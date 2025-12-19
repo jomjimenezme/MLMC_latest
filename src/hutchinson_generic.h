@@ -37,6 +37,8 @@
 
   complex_PRECISION fs_hutchinson_driver_PRECISION( level_struct *l, struct Thread *threading );
   complex_PRECISION fs_split_hutchinson_driver_PRECISION( level_struct *l, struct Thread *threading );
+  complex_PRECISION fs_mlmc_hutchinson_driver_PRECISION( level_struct *l, struct Thread *threading );
+
 
 
   

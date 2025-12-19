@@ -170,7 +170,21 @@ int main( int argc, char **argv ) {
 
       set_probing_variances_to_zero();
       
-        if( g.trace_op_type == 14 ){
+     if( g.trace_op_type == 15 ){
+        START_MASTER(threadingx)
+        if(g.my_rank==0) printf("Calling freq-split + Obliq for 3D trace\n"); 
+        END_MASTER(threadingx)
+
+        trace = fs_mlmc_hutchinson_driver_double( &l, &threading );
+        //trace = hutchinson_driver_double( &l, &threading );
+
+        START_MASTER(threadingx)
+        if(g.my_rank==0) printf("\nResulting trace from calling freq-split + Obliq for 3D trace = %f+i%f\n", CSPLIT(trace)); 
+        fflush(0);
+        END_MASTER(threadingx)
+      }
+      
+      if( g.trace_op_type == 14 ){
           START_MASTER(threadingx)
           if(g.my_rank==0) printf("Calling freq-split for 3D trace\n");
           END_MASTER(threadingx)
