@@ -3185,6 +3185,42 @@ complex_PRECISION hutchinson_fs_first_PRECISION( int type_appl, level_struct *l,
   }
 }
 
+complex_PRECISION hutchinson_fs_second_PRECISION( int type_appl, level_struct *l, hutchinson_PRECISION_struct* h, struct Thread *threading ){
+
+  PRECISION aux = 0.0;
+
+  {
+    complex_PRECISION m1 = (complex_PRECISION) l->dirac_shift;
+    complex_PRECISION m2 = m1 + 0.1;
+
+    int start, end;
+    compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
+
+    gmres_PRECISION_struct* p = get_p_struct_PRECISION( l );
+
+    // \Pi_t x
+    vector_PRECISION_ghg( h->rademacher_vector, 0, l->inner_vector_size, l );
+    vector_PRECISION_copy( p->b, h->rademacher_vector, start, end, l );
+
+
+    // D_{m2}^{-1} \Pi_t x
+    shift_update( m2, l, threading );
+    apply_solver_PRECISION( l, threading );
+    shift_update( m1, l, threading );
+
+    // \Gamma_5 D_{m2}^{-1} \Pi_t x
+    gamma5_PRECISION( p->x, p->x, l, threading );
+
+
+    // x^H \Pi_t \Gamma_5   D_{m2}^{-1} \Pi_t x
+    if ( type_appl==-1 ) {
+      aux = global_inner_product_PRECISION( h->rademacher_vector, p->x, p->v_start, p->v_end, l, threading );
+    }
+
+    return aux;
+  }
+}
+
 
 complex_PRECISION fs_hutchinson_driver_PRECISION( level_struct *l, struct Thread *threading ){
   int i;
