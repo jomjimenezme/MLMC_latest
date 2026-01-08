@@ -3053,7 +3053,7 @@ complex_PRECISION hutchinson_fs_split_orthogonal_PRECISION( int type_appl, level
 
   {
     complex_PRECISION m1 = (complex_PRECISION) l->dirac_shift;
-    complex_PRECISION m2 = m1 + 0.1;
+    complex_PRECISION m2 = m1 + g.delta_m_fs;
 
     int start, end;
     compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
@@ -3101,7 +3101,7 @@ complex_PRECISION hutchinson_fs_split_orthogonal_PRECISION( int type_appl, level
     compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
      
     complex_PRECISION m1 = (complex_PRECISION) l->dirac_shift;
-    complex_PRECISION m2 = m1 + 0.1;
+    complex_PRECISION m2 = m1 + g.delta_m_fs;
 
     if ( type_appl==-1 ) {
       aux = global_inner_product_PRECISION( h->rademacher_vector, p->x, p->v_start, p->v_end, l, threading );
@@ -3140,7 +3140,7 @@ complex_PRECISION hutchinson_fs_first_PRECISION( int type_appl, level_struct *l,
 
   {
     complex_PRECISION m1 = (complex_PRECISION) l->dirac_shift;
-    complex_PRECISION m2 = m1 + 0.1;
+    complex_PRECISION m2 = m1 + g.delta_m_fs;
 
     int start, end;
     compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
@@ -3175,7 +3175,7 @@ complex_PRECISION hutchinson_fs_first_PRECISION( int type_appl, level_struct *l,
     compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
 
     complex_PRECISION m1 = (complex_PRECISION) l->dirac_shift;
-    complex_PRECISION m2 = m1 + 0.1;
+    complex_PRECISION m2 = m1 + g.delta_m_fs;
 
     if ( type_appl==-1 ) {
       aux = global_inner_product_PRECISION( h->rademacher_vector, p->x, p->v_start, p->v_end, l, threading );
@@ -3191,7 +3191,7 @@ complex_PRECISION hutchinson_fs_second_PRECISION( int type_appl, level_struct *l
 
   {
     complex_PRECISION m1 = (complex_PRECISION) l->dirac_shift;
-    complex_PRECISION m2 = m1 + 0.1;
+    complex_PRECISION m2 = m1 + g.delta_m_fs;
 
     int start, end;
     compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
@@ -3250,7 +3250,7 @@ complex_PRECISION hutchinson_fs_mlmc_difference_PRECISION( int type_appl, level_
 
   {
     complex_PRECISION m1 = (complex_PRECISION) l->dirac_shift;
-    complex_PRECISION m2 = m1 + 0.1;
+    complex_PRECISION m2 = m1 + g.delta_m_fs;
 
     int start, end;
     compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
@@ -3299,7 +3299,7 @@ complex_PRECISION hutchinson_fs_mlmc_difference_PRECISION( int type_appl, level_
     compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
      
     complex_PRECISION m1 = (complex_PRECISION) l->dirac_shift;
-    complex_PRECISION m2 = m1 + 0.1;
+    complex_PRECISION m2 = m1 + g.delta_m_fs;
 
     if ( type_appl==-1 ) {
       aux = global_inner_product_PRECISION( h->rademacher_vector, h->mlmc_b1, p->v_start, p->v_end, l, threading );

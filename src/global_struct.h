@@ -39,6 +39,10 @@ typedef struct global_struct
         interpolation, randomize, *num_eig_vect, num_coarse_eig_vect, kcycle, mixed_precision,
         restart, max_restart, kcycle_restart, kcycle_max_restart, coarse_iter, coarse_restart,
         *trace_max_iters, *trace_min_iters, time_slice, trace_op_type, time_slice_inner_connected;
+
+    // \delta_m for frequency splitting
+    double delta_m_fs;
+
     double tol, coarse_tol, kcycle_tol, csw, rho, *relax_fac;
 
     // Improved setup 1: yes, 0:no

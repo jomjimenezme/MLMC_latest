@@ -1018,6 +1018,12 @@ void read_geometry_data( FILE *in, int ls ) {
         save_pt = &(g.num_stored_tv);
         read_parameter(&save_pt, "number store test vectors:", "%d", 1, in, _DEFAULT_SET);
       }
+
+      // \delta_m for frequency splitting
+      g.delta_m_fs = 0.001;
+      save_pt = &(g.delta_m_fs);
+      read_parameter(&save_pt, "delta m:", "%le", 1, in, _DEFAULT_SET);
+
   }
 
 
