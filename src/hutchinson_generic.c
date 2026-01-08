@@ -3230,28 +3230,32 @@ complex_PRECISION hutchinson_fs_mlmc_difference_PRECISION( int type_appl, level_
 
     // \Gamma_5 \Pi_t D_{m_2}^{-1} x
     vector_PRECISION_ghg( p->x, 0, l->inner_vector_size, l );
-    gamma5_PRECISION( p->x, p->x, l, threading ); 
+    gamma5_PRECISION( p->b, p->x, l, threading );
   }
-   // ( I - P Dc_{m_1}^{-1} P^H) \Gamma_5 \Pi_t D_{m_2}^{-1} x
+   // ( D_{m_1}^{-1} - P Dc_{m_1}^{-1} P^H) \Gamma_5 \Pi_t D_{m_2}^{-1} x
   {
     int start, end;
     gmres_PRECISION_struct* p = get_p_struct_PRECISION( l );
+    gmres_PRECISION_struct* px = get_p_struct_PRECISION( l->next_level );
+
     compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
 
 
     if ( type_appl==-1 ) {
-      apply_R_PRECISION( l->next_level->p_PRECISION.b, p->x, l, threading );
+      apply_R_PRECISION( px->b, p->b, l, threading );
     }
 
     apply_solver_PRECISION( l->next_level, threading );
-    apply_P_PRECISION( h->mlmc_b2, l->next_level->p_PRECISION.x, l, threading );
+    apply_P_PRECISION( h->mlmc_b2, px->x, l, threading );
+
+    apply_solver_PRECISION( l, threading );
 
     if ( type_appl==-1 ) {
       vector_PRECISION_minus( h->mlmc_b1, p->x, h->mlmc_b2, start, end, l );
     }
   }
  
-  //  x^H ( I - P Dc_{m_1}^{-1} P^H) \Gamma_5 \Pi_t D_{m_2}^{-1} x
+  //  x^H (  D_{m_1}^{-1} - P Dc_{m_1}^{-1} P^H) \Gamma_5 \Pi_t D_{m_2}^{-1} x
   {
     int start, end;
     complex_PRECISION aux = 0.0;
