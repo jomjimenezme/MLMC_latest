@@ -3238,7 +3238,10 @@ complex_PRECISION fs_hutchinson_driver_PRECISION( level_struct *l, struct Thread
   estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
   trace += estimate.acc_trace / estimate.sample_size;
 
-  // TODO: Second term
+  h->hutch_compute_one_sample = hutchinson_fs_second_PRECISION;
+
+  estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
+  trace += estimate.acc_trace / estimate.sample_size;
 
   return trace;
 }
