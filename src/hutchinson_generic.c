@@ -3366,6 +3366,7 @@ complex_PRECISION fs_mlmc_hutchinson_driver_PRECISION( level_struct *l, struct T
   trace += estimate.acc_trace / estimate.sample_size;
 
   h->hutch_compute_one_sample = g5_3D_hutchinson_mlmc_coarsest_PRECISION;
+  lx = lx->next_level;
   
   estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
   trace += estimate.acc_trace / estimate.sample_size;
