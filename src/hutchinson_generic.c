@@ -3376,3 +3376,43 @@ complex_PRECISION fs_mlmc_hutchinson_driver_PRECISION( level_struct *l, struct T
   return trace;
 }
 
+
+
+void fs_shitf_scan_driver_PRECISION( level_struct *l, struct Thread *threading ){
+  
+  hutchinson_PRECISION_struct* h = &(l->h_PRECISION);
+  vector_PRECISION_define_random_rademacher( h->rademacher_vector, 0, l->inner_vector_size, l);
+  
+  PRECISION m1 = (complex_PRECISION) l->dirac_shift;
+  PRECISION m2 = 0.0;
+  
+  int start, end;
+  compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
+  gmres_PRECISION_struct* p = get_p_struct_PRECISION( l );
+  
+  for (int i=0; i<=200; i++){
+    
+    PRECISION step = 0.0001;
+    m2 = m1 + step*i;
+        
+    
+    // D_{m_2}^{-1} x
+    shift_update( m2, l, threading );
+    
+    PRECISION t0 = MPI_Wtime();
+    for(int j = 0; j<5; j++){
+      vector_PRECISION_define_random( p->b, 0, l->inner_vector_size, l );
+      apply_solver_PRECISION( l, threading );
+    }
+    PRECISION t1 = MPI_Wtime();
+    
+    shift_update( m1, l, threading );
+    
+    
+    if(g.my_rank == 0){
+      printf("i %d, delta: %f, \t m2: %f, \t solve time: %f\n", i, step*i, m2, (t1-t0)/5.0);
+    }
+  }
+  
+}
+

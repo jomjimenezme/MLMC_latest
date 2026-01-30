@@ -170,6 +170,20 @@ int main( int argc, char **argv ) {
 
       set_probing_variances_to_zero();
       
+      if( g.trace_op_type == 16 ){
+        START_MASTER(threadingx)
+        if(g.my_rank==0) printf("Calling fs shift scan\n"); 
+        END_MASTER(threadingx)
+
+        fs_shitf_scan_driver_double( &l, &threading );
+
+        START_MASTER(threadingx)
+        if(g.my_rank==0) printf("\nFinished fs shift scan\n", CSPLIT(trace)); 
+        fflush(0);
+        END_MASTER(threadingx)
+      }
+      
+      
      if( g.trace_op_type == 15 ){
         START_MASTER(threadingx)
         if(g.my_rank==0) printf("Calling freq-split + Obliq for 3D trace\n"); 
