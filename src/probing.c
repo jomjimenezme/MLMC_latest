@@ -663,6 +663,18 @@ void coloring_scheme(){
     setup_local_colors();
 }
 
+void stop_hadamard(){
+
+  int size = g.global_lattice[0][0]*g.global_lattice[0][1]*g.global_lattice[0][2]*g.global_lattice[0][3];
+
+  for(int i=0; i<size; i++){
+    if(g.colors[0][i] > g.n_had)
+      g.colors[0][i] = g.n_had;
+  }
+
+  g.num_colors[0] = max(g.colors[0], size);
+}
+
 void hierarchical_coloring(){
 
   MALLOC(g.num_colors, int, g.num_levels);
@@ -792,6 +804,10 @@ void hierarchical_coloring(){
       }
     }
 
+    if(g.interrupt == 1)
+      stop_hadamard();
+    
+
     double end_time = MPI_Wtime();
 
     time_taken = end_time - start_time;
@@ -825,7 +841,6 @@ void hierarchical_coloring(){
 
     fclose(file);
     */
-
 
   }
     MPI_Barrier(MPI_COMM_WORLD);
