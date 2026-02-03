@@ -796,6 +796,13 @@ void read_global_info( FILE *in ) {
 
     save_pt = &(g.k); g.k = 1;
     read_parameter( &save_pt, "hierarchy step:", "%d", 1, in, _DEFAULT_SET);
+
+    save_pt = &(g.interrupt); g.interrupt = 0;
+    read_parameter( &save_pt, "interrupt:", "%d", 1, in, _DEFAULT_SET);
+
+    save_pt = &(g.n_had); g.n_had = 0;
+    read_parameter( &save_pt, "num hadamard:", "%d", 1, in, _DEFAULT_SET);
+
   }
   
   save_pt = &(g.dilution); g.dilution = 1;
