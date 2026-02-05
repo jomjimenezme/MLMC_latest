@@ -550,6 +550,8 @@ void test_vector_PRECISION_update( int i, level_struct *l, struct Thread *thread
 
 void rayleigh_ritz_extraction_PRECISION( level_struct *l, struct Thread *threading ) {
 
+  #ifdef GCRODR 
+
   int m = l->num_eig_vect;
 
   // allocate the buffers to multiply D times the test vectors
@@ -661,6 +663,7 @@ void rayleigh_ritz_extraction_PRECISION( level_struct *l, struct Thread *threadi
   FREE( eigslvr.vr, complex_PRECISION, m*m );
   FREE( eigslvr.w, complex_PRECISION, m );
 
+ #endif
 }
 
 

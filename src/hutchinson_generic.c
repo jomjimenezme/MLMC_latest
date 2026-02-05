@@ -3394,7 +3394,7 @@ void fs_shitf_scan_driver_PRECISION( level_struct *l, struct Thread *threading )
   
   for (int i=0; i<=200; i++){
     
-    PRECISION step = 0.0001;
+    PRECISION step = 0.001;
     m2 = m1 + step*i;
         
     
@@ -3402,7 +3402,7 @@ void fs_shitf_scan_driver_PRECISION( level_struct *l, struct Thread *threading )
     shift_update( m2, l, threading );
     
     PRECISION t0 = MPI_Wtime();
-    for(int j = 0; j<5; j++){
+    for(int j = 0; j<1; j++){
       vector_PRECISION_define_random( p->b, 0, l->inner_vector_size, l );
       iters = apply_solver_PRECISION( l, threading );
     }
@@ -3412,7 +3412,7 @@ void fs_shitf_scan_driver_PRECISION( level_struct *l, struct Thread *threading )
     
     
     if(g.my_rank == 0){
-      printf("i %d, delta: %f, \t m2: %f, \t solve time: %f \t iters %d\n", i, step*i, m2, (t1-t0)/5.0, iters);
+      printf("i %d, delta: %f, \t m2: %f, \t solve time: %f \t iters %d\n", i, step*i, m2, (t1-t0), iters);
     }
   }
   
