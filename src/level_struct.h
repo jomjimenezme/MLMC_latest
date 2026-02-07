@@ -22,6 +22,9 @@ typedef struct level_struct
   // odd_even
   operator_double_struct oe_op_double;
   operator_float_struct oe_op_float;
+  // self-coupling only
+  operator_double_struct sc_op_double;
+  operator_float_struct sc_op_float;
   // gathered / schwarz
   schwarz_double_struct s_double;
   schwarz_float_struct s_float;

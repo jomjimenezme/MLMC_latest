@@ -3418,3 +3418,51 @@ void fs_shitf_scan_driver_PRECISION( level_struct *l, struct Thread *threading )
   
 }
 
+complex_PRECISION hutchinson_hpe_g5_PRECISION( int type_appl, level_struct *l, hutchinson_PRECISION_struct* h, struct Thread *threading ){
+
+  complex_PRECISION aux = 0.0;
+
+  {
+    complex_PRECISION m1 = (complex_PRECISION) l->dirac_shift;
+    complex_PRECISION m2 = m1 + g.delta_m_fs;
+
+    int start, end;
+    compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
+
+    gmres_PRECISION_struct* p = get_p_struct_PRECISION( l );
+
+    vector_PRECISION_copy( p->b, h->rademacher_vector, start, end, l );
+
+
+
+    // Testing that the functions compile and run
+    shift_update( (-0.5), l, threading );
+    selfcoupling_setup_double( &g.op_double, l );
+    diag_sc_inv_PRECISION( p->b, h->rademacher_vector, &g.op_double, l, start, end+100 );
+
+    exit(0);
+
+    return aux;
+  }
+
+}
+
+
+complex_PRECISION hpe_g5_hutchinson_driver_PRECISION( level_struct *l, struct Thread *threading ){
+
+  complex_PRECISION trace = 0.0;
+  struct sample estimate;
+  hutchinson_PRECISION_struct* h = &(l->h_PRECISION);
+  level_struct* lx=0;
+
+  lx = l;
+  exit(0);
+  h->hutch_compute_one_sample = hutchinson_hpe_g5_PRECISION;
+
+  estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
+  trace += estimate.acc_trace / estimate.sample_size;
+
+  return trace;
+}
+
+

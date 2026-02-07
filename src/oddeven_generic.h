@@ -62,5 +62,12 @@ struct Thread;
   
   void oddeven_PRECISION_test( level_struct *l );
   void block_oddeven_PRECISION_test( level_struct *l, struct Thread *threading );
+
+
+  void selfcoupling_setup_PRECISION( operator_double_struct *in, level_struct *l );
+  void diag_sc_inv_PRECISION( vector_PRECISION y, vector_PRECISION x, operator_PRECISION_struct *op,
+                            level_struct *l, int start, int end );
+  void diag_sc_PRECISION( vector_PRECISION y, vector_PRECISION x, operator_PRECISION_struct *op,
+                        level_struct *l, int start, int end );
   
 #endif

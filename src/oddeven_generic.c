@@ -1543,3 +1543,109 @@ void oddeven_PRECISION_test( level_struct *l ) {
   FREE( f4, complex_PRECISION, l->inner_vector_size );
   FREE( f5, complex_PRECISION, l->inner_vector_size );
 }
+
+
+void selfcoupling_setup_PRECISION( operator_double_struct *in, level_struct *l ) {
+
+/*********************************************************************************
+* Stores the cholesky decomposition of the self coupling term,
+* based on the oddeven_setup_PRECISION function
+*********************************************************************************/
+
+  int mu, t, z, y, x, n = l->num_inner_lattice_sites,
+      sc_size = 42, lu_dec_size = 42, le[4];
+
+  config_double sc_in = in->clover;
+  operator_PRECISION_struct *op = &(l->sc_op_PRECISION);
+  config_PRECISION Asc = NULL;
+
+  for ( mu=0; mu<4; mu++ )
+    le[mu] = l->local_lattice[mu];
+
+
+  if ( g.csw ) {
+    MALLOC( op->clover, complex_PRECISION, lu_dec_size*n );
+    Asc = op->clover;
+
+    for ( t=0; t<le[T]; t++ )
+      for ( z=0; z<le[Z]; z++ )
+        for ( y=0; y<le[Y]; y++ )
+          for ( x=0; x<le[X]; x++ ) {
+            selfcoupling_cholesky_decomposition_PRECISION( Asc, sc_in );
+            Asc   += lu_dec_size;
+            sc_in += sc_size;
+          }
+
+  } else {
+    MALLOC( op->clover, complex_PRECISION, 12*n );
+    Asc = op->clover;
+
+    for ( t=0; t<le[T]; t++ )
+      for ( z=0; z<le[Z]; z++ )
+        for ( y=0; y<le[Y]; y++ )
+          for ( x=0; x<le[X]; x++ ) {
+            FOR12( *Asc = *sc_in; Asc++; sc_in++; )
+          }
+  }
+
+  op->shift = 4 + l->dirac_shift;
+}
+
+
+void diag_sc_inv_PRECISION( vector_PRECISION y, vector_PRECISION x, operator_PRECISION_struct *op,
+                            level_struct *l, int start, int end ) {
+
+/*********************************************************************************
+* Applies the inverse of the self-coupling-only operator (all sites) to a vector.
+* based on the diag_ee_inv_PRECISION function
+*********************************************************************************/
+
+  config_PRECISION sc = op->clover;
+
+  x += start;
+  y += start;
+
+  if ( g.csw ) {
+
+    sc += (start/12)*42;
+
+    for ( int i=start; i<end; i+=12 ) {
+      perform_fwd_bwd_subs_PRECISION( y, x, sc );
+      y  += 12;
+      x  += 12;
+      sc += 42;
+    }
+
+  } else {
+
+    sc += start;
+
+    for ( int i=start; i<end; i+=12 ) {
+      FOR12( *y = (*x)/(*sc); y++; x++; sc++; )
+    }
+  }
+}
+
+void diag_sc_PRECISION( vector_PRECISION y, vector_PRECISION x, operator_PRECISION_struct *op,
+                        level_struct *l, int start, int end )
+{
+  config_PRECISION sc = op->clover;
+
+  x += start;
+  y += start;
+
+  if ( g.csw ) {
+    sc += (start/12)*42;
+    for ( int i=start; i<end; i+=12 ) {
+      LLH_multiply_PRECISION( y, x, sc );
+      y  += 12;
+      x  += 12;
+      sc += 42;
+    }
+  } else {
+    sc += start;
+    for ( int i=start; i<end; i+=12 ) {
+      FOR12( *y = (*x)*(*sc); y++; x++; sc++; )
+    }
+  }
+}
