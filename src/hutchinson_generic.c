@@ -3434,11 +3434,17 @@ complex_PRECISION hutchinson_hpe_g5_PRECISION( int type_appl, level_struct *l, h
     vector_PRECISION_copy( p->b, h->rademacher_vector, start, end, l );
 
 
+    // C^{-1}x
+    diag_sc_inv_PRECISION( p->b, h->rademacher_vector, &g.op_double, l, start, end);
 
-    // Testing that the functions compile and run
+    hopping_only_PRECISION_cpu( h->rademacher_vector, p->b, &g.op_double, l, threading );
+
+
+    /*// Testing that the functions compile and run
     shift_update( (-0.5), l, threading );
     selfcoupling_setup_double( &g.op_double, l );
-    diag_sc_inv_PRECISION( p->b, h->rademacher_vector, &g.op_double, l, start, end+100 );
+    diag_sc_inv_PRECISION( p->b, h->rademacher_vector, &g.op_double, l, start, end);
+*/
 
     exit(0);
 

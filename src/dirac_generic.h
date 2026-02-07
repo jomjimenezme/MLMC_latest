@@ -44,6 +44,9 @@
   void operator_updates_PRECISION( level_struct *l );
   void shift_update_PRECISION( operator_PRECISION_struct *op, complex_PRECISION shift, level_struct *l, struct Thread *threading );
   void g5D_shift_update_PRECISION( operator_PRECISION_struct *op, complex_PRECISION shift, level_struct *l, struct Thread *threading );
+
+
+  void hopping_only_PRECISION_cpu( vector_PRECISION eta, vector_PRECISION phi, operator_PRECISION_struct *op, level_struct *l, struct Thread *threading );
   
   static inline void zero12_PRECISION( const vector_PRECISION phi ) {
     phi[ 0] = _COMPLEX_PRECISION_ZERO;
