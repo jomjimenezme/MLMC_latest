@@ -3425,21 +3425,20 @@ complex_PRECISION hutchinson_hpe_g5_PRECISION( int type_appl, level_struct *l, h
   complex_PRECISION aux = 0.0;
 
   {
-    complex_PRECISION m1 = (complex_PRECISION) l->dirac_shift;
-    complex_PRECISION m2 = m1 + g.delta_m_fs;
-
     int start, end;
     compute_core_start_end(0, l->inner_vector_size, &start, &end, l, threading);
 
-    PRECISION norm_ra = global_norm_PRECISION(h->rademacher_vector, start, end, l, threading);
+    vector_PRECISION_ghg(  h->rademacher_vector, 0, l->inner_vector_size, l );
+
+    gamma5_PRECISION( h->mlmc_testing, h->rademacher_vector, l, threading );
 
     // --- v0 = C^{-1} x ---
-    diag_sc_inv_PRECISION(h->mlmc_b1, h->rademacher_vector, sc, l, start, end);
+    diag_sc_inv_PRECISION(h->mlmc_b1, h->mlmc_testing, sc, l, start, end);
 
     // sum = v0  (include j=0 term)
     vector_PRECISION_copy(h->mlmc_testing, h->mlmc_b1, start, end, l);
 
-    int m = 10; //TODO: read from .ini
+    int m = g.hpe_order;
 
     // --- iterate: v <- - C^{-1} K v, accumulate ---
     for (int j = 1; j < m; j++) {
@@ -3459,12 +3458,12 @@ complex_PRECISION hutchinson_hpe_g5_PRECISION( int type_appl, level_struct *l, h
 
     aux = global_inner_product_PRECISION( h->rademacher_vector, h->mlmc_testing, start, end, l, threading );
 
+    printf("\n");
+
     return aux;
   }
 
 }
-    // \gamma_5 C^{-1} K C^{-1}x
-    //  gamma5_PRECISION( h->mlmc_b1, h->mlmc_b1, l, threading );
 
 
 complex_PRECISION hutchinson_hpe_g5_remainder_PRECISION( int type_appl, level_struct *l, hutchinson_PRECISION_struct* h, struct Thread *threading )
@@ -3475,12 +3474,13 @@ complex_PRECISION hutchinson_hpe_g5_remainder_PRECISION( int type_appl, level_st
   operator_PRECISION_struct *sc = &(l->sc_op_PRECISION);
 
   // HPE order
-  const int m = 10;
+  int m = g.hpe_order;
 
   gmres_PRECISION_struct* p = get_p_struct_PRECISION(l);
 
-  vector_PRECISION_copy(p->b, h->rademacher_vector, start, end, l);
+  vector_PRECISION_ghg(  h->rademacher_vector, 0, l->inner_vector_size, l );
 
+  gamma5_PRECISION( p->b, h->rademacher_vector, l, threading );
 
   // p->x = D^{-1} (b)
   apply_solver_PRECISION(l, threading);
@@ -3509,8 +3509,22 @@ complex_PRECISION hpe_g5_hutchinson_driver_PRECISION( level_struct *l, struct Th
   hutchinson_PRECISION_struct* h = &(l->h_PRECISION);
   level_struct* lx=0;
 
+  if( g.my_rank == 0 ){
+    printf("------ HPE order %d ------ \t ------ shift: %e ------", g.hpe_order, g.delta_m_fs);
+  }
+
+  complex_PRECISION m1 = (complex_PRECISION) l->dirac_shift;
+  complex_PRECISION m2 = m1 + g.delta_m_fs;
+
+  if( fabs(m2 - m1) > 1e-8 ){
+    if( g.my_rank == 0 )
+      printf("------ PERFORMING shift for HPE ------ \n");
+    shift_update( m2, l, threading );
+  }else{
+    printf("------ NO shift for HPE ------ \n");
+  }
+
   lx = l;
-  //TODO: this is the HPE for the 4D operator, both drivers must be modified
   h->hutch_compute_one_sample = hutchinson_hpe_g5_PRECISION;
 
   estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
@@ -3520,6 +3534,13 @@ complex_PRECISION hpe_g5_hutchinson_driver_PRECISION( level_struct *l, struct Th
 
   estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
   trace += estimate.acc_trace / estimate.sample_size;
+
+   if( fabs(m2 - m1) > 1e-8 ){
+    if( g.my_rank == 0 )
+      printf("------ RESTORING shift for HPE ------ \n");
+
+     shift_update( m1, l, threading );
+   }
 
   return trace;
 }

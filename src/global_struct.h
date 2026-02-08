@@ -43,6 +43,9 @@ typedef struct global_struct
     // \delta_m for frequency splitting
     double delta_m_fs;
 
+    // Order of the Hopping parameter expansion
+    int hpe_order;
+
     double tol, coarse_tol, kcycle_tol, csw, rho, *relax_fac;
 
     // Improved setup 1: yes, 0:no

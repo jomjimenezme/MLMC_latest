@@ -1020,9 +1020,14 @@ void read_geometry_data( FILE *in, int ls ) {
       }
 
       // \delta_m for frequency splitting
-      g.delta_m_fs = 0.001;
+      g.delta_m_fs = 0.0;
       save_pt = &(g.delta_m_fs);
       read_parameter(&save_pt, "delta m:", "%le", 1, in, _DEFAULT_SET);
+
+      // Order of the Hopping parameter expansion
+      g.hpe_order = 0;
+      save_pt = &(g.hpe_order);
+      read_parameter(&save_pt, "hpe order:", "%d", 1, in, _DEFAULT_SET);
 
   }
 
