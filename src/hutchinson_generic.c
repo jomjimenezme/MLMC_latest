@@ -3420,6 +3420,8 @@ void fs_shitf_scan_driver_PRECISION( level_struct *l, struct Thread *threading )
 
 complex_PRECISION hutchinson_hpe_g5_PRECISION( int type_appl, level_struct *l, hutchinson_PRECISION_struct* h, struct Thread *threading ){
 
+  operator_PRECISION_struct *sc = &(l->sc_op_PRECISION);
+
   complex_PRECISION aux = 0.0;
 
   {
@@ -3427,34 +3429,80 @@ complex_PRECISION hutchinson_hpe_g5_PRECISION( int type_appl, level_struct *l, h
     complex_PRECISION m2 = m1 + g.delta_m_fs;
 
     int start, end;
-    compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
+    compute_core_start_end(0, l->inner_vector_size, &start, &end, l, threading);
 
-    gmres_PRECISION_struct* p = get_p_struct_PRECISION( l );
+    PRECISION norm_ra = global_norm_PRECISION(h->rademacher_vector, start, end, l, threading);
 
-    vector_PRECISION_copy( p->b, h->rademacher_vector, start, end, l );
+    // --- v0 = C^{-1} x ---
+    diag_sc_inv_PRECISION(h->mlmc_b1, h->rademacher_vector, sc, l, start, end);
 
+    // sum = v0  (include j=0 term)
+    vector_PRECISION_copy(h->mlmc_testing, h->mlmc_b1, start, end, l);
 
-    // C^{-1}x
-    diag_sc_inv_PRECISION( p->b, h->rademacher_vector, &g.op_double, l, start, end);
+    int m = 10; //TODO: read from .ini
 
-    hopping_only_PRECISION_cpu( h->rademacher_vector, p->b, &g.op_double, l, threading );
+    // --- iterate: v <- - C^{-1} K v, accumulate ---
+    for (int j = 1; j < m; j++) {
 
+      // --- apply K: b2 = K v ---
+      hopping_only_PRECISION_cpu(h->mlmc_b2, h->mlmc_b1, &g.op_double, l, threading);
 
-    /*// Testing that the functions compile and run
-    shift_update( (-0.5), l, threading );
-    selfcoupling_setup_double( &g.op_double, l );
-    diag_sc_inv_PRECISION( p->b, h->rademacher_vector, &g.op_double, l, start, end);
-*/
+      // --- apply C^{-1}: v = C^{-1} (K v) ---
+      diag_sc_inv_PRECISION(h->mlmc_b1, h->mlmc_b2, sc, l, start, end);
 
-    exit(0);
+      // explicit minus to build (-C^{-1}K)^j
+      vector_PRECISION_real_scale(h->mlmc_b1, h->mlmc_b1, -1.0, start, end, l);
+
+      // accumulate
+      vector_PRECISION_plus(h->mlmc_testing, h->mlmc_testing, h->mlmc_b1, start, end, l);
+    }
+
+    aux = global_inner_product_PRECISION( h->rademacher_vector, h->mlmc_testing, start, end, l, threading );
 
     return aux;
   }
 
 }
+    // \gamma_5 C^{-1} K C^{-1}x
+    //  gamma5_PRECISION( h->mlmc_b1, h->mlmc_b1, l, threading );
+
+
+complex_PRECISION hutchinson_hpe_g5_remainder_PRECISION( int type_appl, level_struct *l, hutchinson_PRECISION_struct* h, struct Thread *threading )
+{
+  int start, end;
+  compute_core_start_end(0, l->inner_vector_size, &start, &end, l, threading);
+
+  operator_PRECISION_struct *sc = &(l->sc_op_PRECISION);
+
+  // HPE order
+  const int m = 10;
+
+  gmres_PRECISION_struct* p = get_p_struct_PRECISION(l);
+
+  vector_PRECISION_copy(p->b, h->rademacher_vector, start, end, l);
+
+
+  // p->x = D^{-1} (b)
+  apply_solver_PRECISION(l, threading);
+
+  // v = p->x
+  vector_PRECISION_copy(h->mlmc_b1, p->x, start, end, l);
+
+  // Apply T^m where T := -C^{-1}K
+  for (int j = 0; j < m; j++) {
+    hopping_only_PRECISION_cpu(h->mlmc_b2, h->mlmc_b1, &g.op_double, l, threading);  // b2 = K v
+    diag_sc_inv_PRECISION(h->mlmc_b1, h->mlmc_b2, sc, l, start, end);                // b1 = C^{-1} K v
+    vector_PRECISION_real_scale(h->mlmc_b1, h->mlmc_b1, -1.0, start, end, l);        // b1 = - C^{-1} K v
+  }
+
+  // get sample
+  return global_inner_product_PRECISION(h->rademacher_vector, h->mlmc_b1, start, end, l, threading);
+}
 
 
 complex_PRECISION hpe_g5_hutchinson_driver_PRECISION( level_struct *l, struct Thread *threading ){
+
+  selfcoupling_setup_PRECISION(&g.op_double, l);
 
   complex_PRECISION trace = 0.0;
   struct sample estimate;
@@ -3462,8 +3510,13 @@ complex_PRECISION hpe_g5_hutchinson_driver_PRECISION( level_struct *l, struct Th
   level_struct* lx=0;
 
   lx = l;
-  exit(0);
+  //TODO: this is the HPE for the 4D operator, both drivers must be modified
   h->hutch_compute_one_sample = hutchinson_hpe_g5_PRECISION;
+
+  estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
+  trace += estimate.acc_trace / estimate.sample_size;
+
+  h->hutch_compute_one_sample = hutchinson_hpe_g5_remainder_PRECISION;
 
   estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
   trace += estimate.acc_trace / estimate.sample_size;
