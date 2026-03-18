@@ -42,6 +42,7 @@
   void fs_shitf_scan_driver_PRECISION( level_struct *l, struct Thread *threading );
 
   complex_PRECISION hpe_g5_hutchinson_driver_PRECISION( level_struct *l, struct Thread *threading );
+  complex_PRECISION fs_mlmc_second_hpe_driver_PRECISION( level_struct *l, struct Thread *threading );
 
   
   //-------------------- Jose’s code below -----------------------------------------

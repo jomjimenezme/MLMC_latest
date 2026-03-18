@@ -3313,9 +3313,8 @@ complex_PRECISION hutchinson_fs_mlmc_second_PRECISION( int type_appl, level_stru
 
     compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
 
-    vector_PRECISION_copy( p->b, h->rademacher_vector, start, end, l );
 
-    apply_R_PRECISION( px->b, p->b, l, threading );
+    apply_R_PRECISION( px->b, h->rademacher_vector, l, threading );
     apply_solver_PRECISION( l->next_level, threading );
     apply_P_PRECISION( h->mlmc_b2, px->x, l, threading );
 
@@ -3551,3 +3550,160 @@ complex_PRECISION hpe_g5_hutchinson_driver_PRECISION( level_struct *l, struct Th
 }
 
 
+complex_PRECISION hutchinson_fs_mlmc_second_hpe_trunc_PRECISION( int type_appl, level_struct *l, hutchinson_PRECISION_struct* h, struct Thread *threading )
+{
+  complex_PRECISION aux = 0.0;
+
+  complex_PRECISION m1 = (complex_PRECISION) l->dirac_shift;
+  complex_PRECISION m2 = m1 + g.delta_m_fs;
+
+  gmres_PRECISION_struct* p  = get_p_struct_PRECISION( l );
+  gmres_PRECISION_struct* px = get_p_struct_PRECISION( l->next_level );
+
+  int start, end;
+  compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
+
+  // r = G_t^H x
+  vector_PRECISION_ghg( h->rademacher_vector, 0, l->inner_vector_size, l );
+
+  // b = ( I - D_{m1} P D_c^{-1} P^H ) r, same as in hutchinson_fs_mlmc_second_PRECISION
+
+  apply_R_PRECISION( px->b, h->rademacher_vector, l, threading );
+  apply_solver_PRECISION( l->next_level, threading );
+  apply_P_PRECISION( h->mlmc_b2, px->x, l, threading );
+
+  apply_operator_PRECISION( h->mlmc_b1, h->mlmc_b2, p, l, threading );
+  vector_PRECISION_minus( p->b, h->rademacher_vector, h->mlmc_b1, start, end, l );
+
+  // Shift to m2 for the HPE approximation of D_{m2}^{-1}.
+  // sc_op is built for m2 in the driver (so we do NOT rebuild here).
+  shift_update( m2, l, threading );
+  operator_PRECISION_struct *sc = &(l->sc_op_PRECISION);
+  int m = g.hpe_order;
+
+
+   // y = [ sum_{j=0}^{m-1} (-C^{-1}K)^j C^{-1} ] b
+   // j=0 -> C^{-1} b
+
+  diag_sc_inv_PRECISION( h->mlmc_b1, p->b, sc, l, start, end );
+  vector_PRECISION_copy( h->mlmc_testing, h->mlmc_b1, start, end, l );
+
+  for ( int j = 1; j < m; j++ ) {
+    hopping_only_PRECISION_cpu( h->mlmc_b2, h->mlmc_b1, &g.op_double, l, threading ); // b2 = K v
+    diag_sc_inv_PRECISION( h->mlmc_b1, h->mlmc_b2, sc, l, start, end );              // b1 = C^{-1} K v
+    vector_PRECISION_real_scale( h->mlmc_b1, h->mlmc_b1, -1.0, start, end, l );      // b1 = -C^{-1} K v
+    vector_PRECISION_plus( h->mlmc_testing, h->mlmc_testing, h->mlmc_b1, start, end, l );
+  }
+
+  // Restore m1
+  shift_update( m1, l, threading );
+
+  // multiply by Gamma_5
+  gamma5_PRECISION( h->mlmc_testing, h->mlmc_testing, l, threading );
+
+  // sample
+  aux = global_inner_product_PRECISION( h->rademacher_vector, h->mlmc_testing, p->v_start, p->v_end, l, threading );
+
+  return aux;
+}
+
+
+complex_PRECISION hutchinson_fs_mlmc_second_hpe_remainder_PRECISION( int type_appl, level_struct *l, hutchinson_PRECISION_struct* h, struct Thread *threading )
+{
+  complex_PRECISION aux = 0.0;
+
+  complex_PRECISION m1 = (complex_PRECISION) l->dirac_shift;
+  complex_PRECISION m2 = m1 + g.delta_m_fs;
+
+  gmres_PRECISION_struct* p  = get_p_struct_PRECISION( l );
+  gmres_PRECISION_struct* px = get_p_struct_PRECISION( l->next_level );
+
+  int start, end;
+  compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
+
+  //r = G_t^H x
+  vector_PRECISION_ghg( h->rademacher_vector, 0, l->inner_vector_size, l );
+
+
+   // b = ( I - D_{m1} P D_c^{-1} P^H ) r
+  apply_R_PRECISION( px->b, h->rademacher_vector, l, threading );
+  apply_solver_PRECISION( l->next_level, threading );
+  apply_P_PRECISION( h->mlmc_b2, px->x, l, threading );
+
+  apply_operator_PRECISION( h->mlmc_b1, h->mlmc_b2, p, l, threading );
+  vector_PRECISION_minus( p->b, h->rademacher_vector, h->mlmc_b1, start, end, l );
+
+  // Shift to m2 for the HPE approximation of D_{m2}^{-1}.
+  // sc_op is built for m2 in the driver (so we do NOT rebuild here).
+  shift_update( m2, l, threading );
+
+  // v = p->x = D_{m2}^{-1} b
+  apply_solver_PRECISION( l, threading );
+
+
+   // Apply H^m with H = -C^{-1}K
+  operator_PRECISION_struct *sc = &(l->sc_op_PRECISION);
+  int m = g.hpe_order;
+
+  for ( int j = 0; j < m; j++ ) {
+    hopping_only_PRECISION_cpu( h->mlmc_b2, p->x, &g.op_double, l, threading ); // b2 = K v
+    diag_sc_inv_PRECISION( p->x, h->mlmc_b2, sc, l, start, end );              // p->x = C^{-1} K v
+    vector_PRECISION_real_scale( p->x, p->x, -1.0, start, end, l );      // p->x = -C^{-1} K v
+  }
+
+  // Restore m1
+  shift_update( m1, l, threading );
+
+  // Multiply by Gamma_5
+  gamma5_PRECISION( p->x, p->x, l, threading );
+
+  // sample
+  aux = global_inner_product_PRECISION( h->rademacher_vector, p->x,  p->v_start, p->v_end, l, threading );
+
+  return aux;
+}
+
+
+ // Driver for
+ // tr( G_t Gamma5 D_{m2}^{-1} (I - D_{m1} P Dc^{-1} P^H) G_t^H )= trunc(m) + remainder(m)
+ // Important: we build the self-coupling factors for m2 ONCE here, so the
+ // functions can call diag_sc_inv at m2 without rebuilding the factors every sample.
+complex_PRECISION fs_mlmc_second_hpe_driver_PRECISION( level_struct *l, struct Thread *threading )
+{
+  complex_PRECISION trace = 0.0;
+  struct sample estimate;
+  hutchinson_PRECISION_struct* h = &(l->h_PRECISION);
+
+  complex_PRECISION m1 = (complex_PRECISION) l->dirac_shift;
+  complex_PRECISION m2 = m1 + g.delta_m_fs;
+
+  if ( g.my_rank == 0 ) {
+    printf("------ FS-MLMC Heavy with HPE ------  HPE order %d  shift: %e\n", g.hpe_order, g.delta_m_fs);
+  }
+
+  // Build C_{m2}^{-1} factors .
+  // We shift to m2, build sc_op, then back to m1.
+
+  if ( fabs(m2 - m1) > 1e-8 )
+    shift_update( m2, l, threading );
+
+  selfcoupling_setup_PRECISION( &g.op_double, l );
+
+  if ( fabs(m2 - m1) > 1e-8 )
+    shift_update( m1, l, threading );
+
+  // Truncated part
+  h->hutch_compute_one_sample = hutchinson_fs_mlmc_second_hpe_trunc_PRECISION;
+  estimate = hutchinson_blind_PRECISION( l, h, 0, threading );
+  trace += estimate.acc_trace / estimate.sample_size;
+
+  // Remainder part
+  h->hutch_compute_one_sample = hutchinson_fs_mlmc_second_hpe_remainder_PRECISION;
+  estimate = hutchinson_blind_PRECISION( l, h, 0, threading );
+  trace += estimate.acc_trace / estimate.sample_size;
+
+  // rebuild sc_op for the original mass (m1) if needed later.
+  selfcoupling_setup_PRECISION( &g.op_double, l );
+
+  return trace;
+}

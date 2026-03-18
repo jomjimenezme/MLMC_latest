@@ -170,6 +170,19 @@ int main( int argc, char **argv ) {
 
       set_probing_variances_to_zero();
 
+      if( g.trace_op_type == 18 ){
+        START_MASTER(threadingx)
+        if(g.my_rank==0) printf("Calling HPE for MLMC Heavy Finest term - 3D trace\n");
+        END_MASTER(threadingx)
+
+        trace = fs_mlmc_second_hpe_driver_double( &l, &threading );
+
+        START_MASTER(threadingx)
+        if(g.my_rank==0) printf("\nResulting trace from HPE for MLMC Heavy Finest term - 3D trace = %f+i%f\n", CSPLIT(trace));
+        fflush(0);
+        END_MASTER(threadingx)
+      }
+
       if( g.trace_op_type == 17 ){
         START_MASTER(threadingx)
         if(g.my_rank==0) printf("Calling HPE for 3D trace\n");
