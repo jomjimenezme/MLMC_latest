@@ -3502,8 +3502,6 @@ complex_PRECISION hutchinson_hpe_g5_remainder_PRECISION( int type_appl, level_st
 
 complex_PRECISION hpe_g5_hutchinson_driver_PRECISION( level_struct *l, struct Thread *threading ){
 
-  selfcoupling_setup_PRECISION(&g.op_double, l);
-
   complex_PRECISION trace = 0.0;
   struct sample estimate;
   hutchinson_PRECISION_struct* h = &(l->h_PRECISION);
@@ -3521,8 +3519,12 @@ complex_PRECISION hpe_g5_hutchinson_driver_PRECISION( level_struct *l, struct Th
       printf("------ PERFORMING shift for HPE ------ \n");
     shift_update( m2, l, threading );
   }else{
-    printf("------ NO shift for HPE ------ \n");
+    if (g.my_rank == 0)
+      printf("------ NO shift for HPE ------ \n");
   }
+
+  // Setup self Coupling is for the current mass:
+  selfcoupling_setup_PRECISION(&g.op_double, l);
 
   lx = l;
   h->hutch_compute_one_sample = hutchinson_hpe_g5_PRECISION;
@@ -3540,7 +3542,10 @@ complex_PRECISION hpe_g5_hutchinson_driver_PRECISION( level_struct *l, struct Th
       printf("------ RESTORING shift for HPE ------ \n");
 
      shift_update( m1, l, threading );
+     // Restore self Coupling to the original mass:
+    selfcoupling_setup_PRECISION(&g.op_double, l);
    }
+
 
   return trace;
 }

@@ -1562,9 +1562,11 @@ void selfcoupling_setup_PRECISION( operator_double_struct *in, level_struct *l )
   for ( mu=0; mu<4; mu++ )
     le[mu] = l->local_lattice[mu];
 
-
   if ( g.csw ) {
-    MALLOC( op->clover, complex_PRECISION, lu_dec_size*n );
+
+    if ( op->clover == NULL ) {
+      MALLOC( op->clover, complex_PRECISION, lu_dec_size*n );
+    }
     Asc = op->clover;
 
     for ( t=0; t<le[T]; t++ )
@@ -1577,7 +1579,10 @@ void selfcoupling_setup_PRECISION( operator_double_struct *in, level_struct *l )
           }
 
   } else {
-    MALLOC( op->clover, complex_PRECISION, 12*n );
+
+    if ( op->clover == NULL ) {
+      MALLOC( op->clover, complex_PRECISION, 12*n );
+    }
     Asc = op->clover;
 
     for ( t=0; t<le[T]; t++ )
