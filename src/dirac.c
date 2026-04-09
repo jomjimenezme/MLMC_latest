@@ -685,6 +685,9 @@ void shift_update( complex_double shift, level_struct *l, struct Thread *threadi
   g.g5D_shift = shift;
   l->dirac_shift = shift;
   END_LOCKED_MASTER(threading)
+#ifdef GRODR
+  coarsest_level_resets_double( l, threading );
+#endif
 
 #ifdef DEBUG
   test_routine( l, threading );
