@@ -3395,18 +3395,24 @@ void fs_shitf_scan_driver_PRECISION( level_struct *l, struct Thread *threading )
     
     PRECISION step = 0.001;
     m2 = m1 + step*i;
-        
     
+    // Turn cli ON for delta <= 0.002;
+    if( step > 0.002){
+      g.cli_on = 0;
+    }
+        
     // D_{m_2}^{-1} x
     shift_update( m2, l, threading );
     
     PRECISION t0 = MPI_Wtime();
-    for(int j = 0; j<1; j++){
+    for(int j = 0; j<5; j++){
       vector_PRECISION_define_random( p->b, 0, l->inner_vector_size, l );
       iters = apply_solver_PRECISION( l, threading );
     }
     PRECISION t1 = MPI_Wtime();
     
+    // Turn cli ON always for the original mass m1
+    g.cli_on = 1;
     shift_update( m1, l, threading );
     
     

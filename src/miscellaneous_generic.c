@@ -55,6 +55,7 @@ void coarsest_level_resets_PRECISION( level_struct* l, struct Thread* threading 
 
   // calling the coarsest-level solver once on setup
 #if defined(GCRODR)
+if ( g.cli_on == 1){
       {
         level_struct *lx = l;
 
@@ -122,8 +123,8 @@ void coarsest_level_resets_PRECISION( level_struct* l, struct Thread* threading 
         END_MASTER(threading)
 
       }
+}
 #endif
-
   START_MASTER(threading)
   g.avg_b1 = 0.0;
   g.avg_b2 = 0.0;

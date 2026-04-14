@@ -1028,6 +1028,9 @@ void read_geometry_data( FILE *in, int ls ) {
       g.hpe_order = 0;
       save_pt = &(g.hpe_order);
       read_parameter(&save_pt, "hpe order:", "%d", 1, in, _DEFAULT_SET);
+      
+      // Turn Coarsest level improvements at method initialization
+      g.cli_on = 1;
 
   }
 

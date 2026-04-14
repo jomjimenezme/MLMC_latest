@@ -1228,6 +1228,7 @@ void coarse_solve_odd_even_PRECISION( gmres_PRECISION_struct *p, operator_PRECIS
   }
 #endif
 
+if ( g.cli_on == 1){
 #ifdef POLYPREC
   if ( l->level==0 && l->p_PRECISION.polyprec_PRECISION.update_lejas == 1 ) {
     // re-construct Lejas
@@ -1256,7 +1257,9 @@ void coarse_solve_odd_even_PRECISION( gmres_PRECISION_struct *p, operator_PRECIS
 #else
   fgmres_iters = fgmres_PRECISION( p, l, threading );
 #endif
-
+} else {
+  fgmres_iters = fgmres_PRECISION( p, l, threading );
+}
   START_MASTER(threading)
   if ( l->level == 0 ) {
     g.avg_b1 += fgmres_iters;
