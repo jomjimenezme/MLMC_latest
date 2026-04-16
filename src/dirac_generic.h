@@ -31,6 +31,10 @@
   struct Thread;
   
   void gamma5_PRECISION( vector_PRECISION eta, vector_PRECISION phi, level_struct *l, struct Thread *threading );
+  void gamma0_PRECISION( vector_PRECISION eta, vector_PRECISION phi, level_struct *l, struct Thread *threading );
+  void gamma1_PRECISION( vector_PRECISION eta, vector_PRECISION phi, level_struct *l, struct Thread *threading );
+  void gamma2_PRECISION( vector_PRECISION eta, vector_PRECISION phi, level_struct *l, struct Thread *threading );
+  void gamma3_PRECISION( vector_PRECISION eta, vector_PRECISION phi, level_struct *l, struct Thread *threading );
   
   void clover_PRECISION( vector_PRECISION eta, vector_PRECISION phi, config_PRECISION clover, int length,
                          level_struct *l, struct Thread *threading );

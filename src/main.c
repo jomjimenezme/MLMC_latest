@@ -285,7 +285,7 @@ int main( int argc, char **argv ) {
           //trace = hutchinson_driver_double( &l, &threading );
 
           START_MASTER(threadingx)
-          if(g.my_rank==0) printf("\nResulting trace from plain Hutchinson = %f+i%f\n", CSPLIT(trace)); 
+          if(g.my_rank==0) printf("\nResulting trace from Gamma_%d plain Hutchinson = %f+i%f\n", g.gamma_idx, CSPLIT(trace)); 
           if(g.my_rank==0) printf("Resulting variance from plain Hutchinson = %f\n", g.variances[0]);
           fflush(0);
           END_MASTER(threadingx)

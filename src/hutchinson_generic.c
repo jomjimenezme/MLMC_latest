@@ -467,8 +467,21 @@ complex_PRECISION gamma_3D_hutchinson_plain_PRECISION( int type_appl, level_stru
       //vector_PRECISION_copy( p->b, l->powerit_PRECISION.vecs[type_appl], start, end, l );
     }
 
-    // Apply Gamma_5
-    gamma5_PRECISION( p->b, p->b, l, threading );
+    // Apply Gamma
+    if(g.gamma_idx == 5)
+      gamma5_PRECISION( p->b, p->b, l, threading );
+
+    if(g.gamma_idx == 0)
+      gamma0_PRECISION( p->b, p->b, l, threading );
+
+    if(g.gamma_idx == 1)
+      gamma1_PRECISION( p->b, p->b, l, threading );
+
+    if(g.gamma_idx == 2)
+      gamma2_PRECISION( p->b, p->b, l, threading );
+
+    if(g.gamma_idx == 3)
+      gamma3_PRECISION( p->b, p->b, l, threading );
   }
 
   {
