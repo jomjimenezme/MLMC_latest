@@ -3385,43 +3385,79 @@ void fs_shitf_scan_driver_PRECISION( level_struct *l, struct Thread *threading )
   PRECISION m1 = (complex_PRECISION) l->dirac_shift;
   PRECISION m2 = 0.0;
   
-  int start, end;
+  int start, end; 
   compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
   gmres_PRECISION_struct* p = get_p_struct_PRECISION( l );
-  
-  int iters; 
-  
-  for (int i=0; i<=200; i++){
-    
-    PRECISION step = 0.001;
-    m2 = m1 + step*i;
+
+  gmres_PRECISION_struct* px = get_p_struct_PRECISION( l->next_level );
+
+  int iters;
+  int total_solves = 10;
+  PRECISION delta;
+  PRECISION h = 0.001;
+
+  for (int i = 0; i <= 15; i++) {
+    delta = h * i;
+    m2 = m1 + delta;
+    PRECISION avg_iters = 0.0;
     
     // Turn cli ON for delta <= 0.002;
-    if( step > 0.002){
+    if( delta > 0.002){
       g.cli_on = 0;
     }
-        
-    // D_{m_2}^{-1} x
-    shift_update( m2, l, threading );
-    
+
+    fflush(0);
+    shift_update(m2, l, threading);
+    fflush(0);
+
+    MPI_Barrier(MPI_COMM_WORLD);
     PRECISION t0 = MPI_Wtime();
-    for(int j = 0; j<5; j++){
-      vector_PRECISION_define_random( p->b, 0, l->inner_vector_size, l );
-      iters = apply_solver_PRECISION( l, threading );
+    for (int j = 0; j < total_solves; j++) {
+      vector_PRECISION_define_random(p->b, 0, l->inner_vector_size, l);
+      iters = apply_solver_PRECISION(l, threading);
+      avg_iters += iters;
+      fflush(0);
     }
+    MPI_Barrier(MPI_COMM_WORLD);
     PRECISION t1 = MPI_Wtime();
-    
-    // Turn cli ON always for the original mass m1
-    g.cli_on = 1;
-    shift_update( m1, l, threading );
-    
-    
-    if(g.my_rank == 0){
-      printf("i %d, delta: %f, \t m2: %f, \t solve time: %f \t iters %d\n", i, step*i, m2, (t1-t0), iters);
+    fflush(0);
+
+    MPI_Barrier(MPI_COMM_WORLD);
+    PRECISION t0_next = MPI_Wtime();
+    for (int k = 0; k < total_solves; k++) {
+        vector_PRECISION_define_random(px->b, 0, l->next_level->inner_vector_size, l->next_level);
+        apply_solver_PRECISION(l->next_level, threading);
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+    PRECISION t1_next = MPI_Wtime();
+        
+    avg_iters /= total_solves;
+
+    if (g.my_rank == 0) {
+        printf("delta: %f, m2: %f, solve: %f, solve_next: %f, avg iters: %f\n",
+                delta,
+                m2,
+                (t1 - t0) / total_solves,
+                (t1_next - t0_next) / total_solves,
+                avg_iters);
     }
   }
   
+  MPI_Barrier(MPI_COMM_WORLD);
+  PRECISION ts0 = MPI_Wtime();
+  // Turn cli ON always for the original mass m1
+  g.cli_on = 1;
+  fflush(0);
+  shift_update(m1, l, threading);
+  fflush(0);
+  MPI_Barrier(MPI_COMM_WORLD);
+  PRECISION ts1 = MPI_Wtime();
+
+  if (g.my_rank == 0)
+    printf("time for shift = %f\n", ts1 - ts0); 
+
 }
+
 
 complex_PRECISION hutchinson_hpe_g5_PRECISION( int type_appl, level_struct *l, hutchinson_PRECISION_struct* h, struct Thread *threading ){
 
