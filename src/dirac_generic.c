@@ -22,25 +22,6 @@
 #include "main.h"
 #include "profiling.h"
 
-// eta = i * phi  over 6 complex entries: Re(eta) = -Im(phi), Im(eta) = Re(phi)
-#define FOR6_TIMES_I(eta, phi) \
-  do { \
-    for (int _c = 0; _c < 6; _c++) { \
-      *(eta)++ = -cimagf(*(phi));   /* or cimag for double */ \
-      /* actually phi is stored as consecutive re,im pairs */ \
-    } \
-  } while(0)
-
-// Applies i * source block of 6 complex numbers into dest
-// Storage: re0, im0, re1, im1, ... (12 scalars per spinor component)
-#define FOR6_I(dst, src)  \
-    FOR6( *(dst) = -(*(src+1)); *(dst+1) = *(src); (dst)+=2; (src)+=2; )
-
-#define FOR6_mI(dst, src) \
-    FOR6( *(dst) = (*(src+1)); *(dst+1) = -(*(src); (dst)+=2; (src)+=2; )
-
-
-
 void clover_PRECISION( vector_PRECISION eta, vector_PRECISION phi, config_PRECISION clover, int length,
                        level_struct *l, struct Thread *threading ) {
   
@@ -322,197 +303,74 @@ void gamma5_PRECISION( vector_PRECISION eta, vector_PRECISION phi, level_struct 
   }
 }
 
-/*
- * gamma_0 = [[ 0,  0,  0, +i],
- *            [ 0,  0, +i,  0],
- *            [ 0, -i,  0,  0],
- *            [-i,  0,  0,  0]]
- *
- * eta[s=0] = +i * phi[s=3]
- * eta[s=1] = +i * phi[s=2]
- * eta[s=2] = -i * phi[s=1]
- * eta[s=3] = -i * phi[s=0]
- *
- * For i*z where z stored as (re,im) pairs: re(i*z) = -im(z), im(i*z) = re(z)
- * Spinor layout: 6 complex = 12 real scalars per spinor component.
- */
-void gamma0_PRECISION( vector_PRECISION eta, vector_PRECISION phi,
-                       level_struct *l, struct Thread *threading ) {
+void gamma0_PRECISION( vector_PRECISION eta, vector_PRECISION phi, level_struct *l, struct Thread *threading ) {
 
-  int n = threading->end_index[l->depth] - threading->start_index[l->depth];
-  /* n must be a multiple of 4*12 = 48 scalars (4 spinors x 6 complex x 2 real) */
-
-  vector_PRECISION eta_end = eta + n;
-  /* phi is indexed by spinor block; we need random access into phi's 4 blocks */
-  /* Work site-by-site; each site = 4 spinors x 6 complex x 2 real = 48 scalars */
-
-  phi += threading->start_index[l->depth];
+  vector_PRECISION eta_end = eta + threading->end_index[l->depth];
   eta += threading->start_index[l->depth];
+  phi += threading->start_index[l->depth];
 
   while ( eta < eta_end ) {
-    vector_PRECISION phi0 = phi +  0; /* spinor 0: 12 scalars */
-    vector_PRECISION phi1 = phi + 12; /* spinor 1: 12 scalars */
-    vector_PRECISION phi2 = phi + 24; /* spinor 2: 12 scalars */
-    vector_PRECISION phi3 = phi + 36; /* spinor 3: 12 scalars */
+    for (int i = 0; i < 3; i++) eta[i]   = GAMMA_Z_SPIN0_VAL * phi[GAMMA_Z_SPIN0_CO*3 + i];
+    for (int i = 0; i < 3; i++) eta[i+3] = GAMMA_Z_SPIN1_VAL * phi[GAMMA_Z_SPIN1_CO*3 + i];
+    for (int i = 0; i < 3; i++) eta[i+6] = GAMMA_Z_SPIN2_VAL * phi[GAMMA_Z_SPIN2_CO*3 + i];
+    for (int i = 0; i < 3; i++) eta[i+9] = GAMMA_Z_SPIN3_VAL * phi[GAMMA_Z_SPIN3_CO*3 + i];
 
-    /* eta[s=0] = +i * phi[s=3]:  re = -im(phi3), im = re(phi3) */
-    FOR6( *eta = -(*(phi3+1)); eta++; phi3++;
-          *eta =  (*(phi3-0)); eta++; phi3++; )
-
-    /* eta[s=1] = +i * phi[s=2] */
-    FOR6( *eta = -(*(phi2+1)); eta++; phi2++;
-          *eta =  (*(phi2-0)); eta++; phi2++; )
-
-    /* eta[s=2] = -i * phi[s=1]:  re = +im(phi1), im = -re(phi1) */
-    FOR6( *eta =  (*(phi1+1)); eta++; phi1++;
-          *eta = -(*(phi1-0)); eta++; phi1++; )
-
-    /* eta[s=3] = -i * phi[s=0] */
-    FOR6( *eta =  (*(phi0+1)); eta++; phi0++;
-          *eta = -(*(phi0-0)); eta++; phi0++; )
-
-    phi += 48;
+    eta += 12;
+    phi += 12;
   }
 }
 
-/*
- * gamma_1 = [[ 0,  0,  0, -1],
- *            [ 0,  0, +1,  0],
- *            [ 0, +1,  0,  0],
- *            [-1,  0,  0,  0]]
- *
- * eta[s=0] = -phi[s=3]
- * eta[s=1] = +phi[s=2]
- * eta[s=2] = +phi[s=1]
- * eta[s=3] = -phi[s=0]
- */
+void gamma1_PRECISION( vector_PRECISION eta, vector_PRECISION phi, level_struct *l, struct Thread *threading ) {
 
-void gamma1_PRECISION( vector_PRECISION eta, vector_PRECISION phi,
-                       level_struct *l, struct Thread *threading ) {
-
-  int n = threading->end_index[l->depth] - threading->start_index[l->depth];
-  vector_PRECISION eta_end = eta + n;
-
-  phi += threading->start_index[l->depth];
+  vector_PRECISION eta_end = eta + threading->end_index[l->depth];
   eta += threading->start_index[l->depth];
+  phi += threading->start_index[l->depth];
 
   while ( eta < eta_end ) {
-    vector_PRECISION phi0 = phi +  0;
-    vector_PRECISION phi1 = phi + 12;
-    vector_PRECISION phi2 = phi + 24;
-    vector_PRECISION phi3 = phi + 36;
+    for (int i = 0; i < 3; i++) eta[i]   = GAMMA_Y_SPIN0_VAL * phi[GAMMA_Y_SPIN0_CO*3 + i];
+    for (int i = 0; i < 3; i++) eta[i+3] = GAMMA_Y_SPIN1_VAL * phi[GAMMA_Y_SPIN1_CO*3 + i];
+    for (int i = 0; i < 3; i++) eta[i+6] = GAMMA_Y_SPIN2_VAL * phi[GAMMA_Y_SPIN2_CO*3 + i];
+    for (int i = 0; i < 3; i++) eta[i+9] = GAMMA_Y_SPIN3_VAL * phi[GAMMA_Y_SPIN3_CO*3 + i];
 
-    /* eta[s=0] = -phi[s=3] */
-    FOR6( *eta = -(*phi3); phi3++; eta++; )
-    FOR6( *eta = -(*phi3); phi3++; eta++; )
-
-    /* eta[s=1] = +phi[s=2] */
-    FOR6( *eta =  (*phi2); phi2++; eta++; )
-    FOR6( *eta =  (*phi2); phi2++; eta++; )
-
-    /* eta[s=2] = +phi[s=1] */
-    FOR6( *eta =  (*phi1); phi1++; eta++; )
-    FOR6( *eta =  (*phi1); phi1++; eta++; )
-
-    /* eta[s=3] = -phi[s=0] */
-    FOR6( *eta = -(*phi0); phi0++; eta++; )
-    FOR6( *eta = -(*phi0); phi0++; eta++; )
-
-    phi += 48;
+    eta += 12;
+    phi += 12;
   }
 }
 
-/*
- * gamma_2 = [[ 0,  0, +i,  0],
- *            [ 0,  0,  0, -i],
- *            [-i,  0,  0,  0],
- *            [ 0, +i,  0,  0]]
- *
- * eta[s=0] = +i * phi[s=2]
- * eta[s=1] = -i * phi[s=3]
- * eta[s=2] = -i * phi[s=0]
- * eta[s=3] = +i * phi[s=1]
- */
-void gamma2_PRECISION( vector_PRECISION eta, vector_PRECISION phi,
-                       level_struct *l, struct Thread *threading ) {
+void gamma2_PRECISION( vector_PRECISION eta, vector_PRECISION phi, level_struct *l, struct Thread *threading ) {
 
-  int n = threading->end_index[l->depth] - threading->start_index[l->depth];
-  vector_PRECISION eta_end = eta + n;
-
-  phi += threading->start_index[l->depth];
+  vector_PRECISION eta_end = eta + threading->end_index[l->depth];
   eta += threading->start_index[l->depth];
+  phi += threading->start_index[l->depth];
 
   while ( eta < eta_end ) {
-    vector_PRECISION phi0 = phi +  0;
-    vector_PRECISION phi1 = phi + 12;
-    vector_PRECISION phi2 = phi + 24;
-    vector_PRECISION phi3 = phi + 36;
+    for (int i = 0; i < 3; i++) eta[i]   = GAMMA_X_SPIN0_VAL * phi[GAMMA_X_SPIN0_CO*3 + i];
+    for (int i = 0; i < 3; i++) eta[i+3] = GAMMA_X_SPIN1_VAL * phi[GAMMA_X_SPIN1_CO*3 + i];
+    for (int i = 0; i < 3; i++) eta[i+6] = GAMMA_X_SPIN2_VAL * phi[GAMMA_X_SPIN2_CO*3 + i];
+    for (int i = 0; i < 3; i++) eta[i+9] = GAMMA_X_SPIN3_VAL * phi[GAMMA_X_SPIN3_CO*3 + i];
 
-    /* eta[s=0] = +i * phi[s=2] */
-    FOR6( *eta = -(*(phi2+1)); eta++; phi2++;
-          *eta =  (*(phi2-0)); eta++; phi2++; )
-
-    /* eta[s=1] = -i * phi[s=3] */
-    FOR6( *eta =  (*(phi3+1)); eta++; phi3++;
-          *eta = -(*(phi3-0)); eta++; phi3++; )
-
-    /* eta[s=2] = -i * phi[s=0] */
-    FOR6( *eta =  (*(phi0+1)); eta++; phi0++;
-          *eta = -(*(phi0-0)); eta++; phi0++; )
-
-    /* eta[s=3] = +i * phi[s=1] */
-    FOR6( *eta = -(*(phi1+1)); eta++; phi1++;
-          *eta =  (*(phi1-0)); eta++; phi1++; )
-
-    phi += 48;
+    eta += 12;
+    phi += 12;
   }
 }
 
-/*
- * gamma_3 = [[ 0,  0, +1,  0],
- *            [ 0,  0,  0, +1],
- *            [+1,  0,  0,  0],
- *            [ 0, +1,  0,  0]]
- *
- * eta[s=0] = +phi[s=2]
- * eta[s=1] = +phi[s=3]
- * eta[s=2] = +phi[s=0]
- * eta[s=3] = +phi[s=1]
- */
-void gamma3_PRECISION( vector_PRECISION eta, vector_PRECISION phi,
-                       level_struct *l, struct Thread *threading ) {
+void gamma3_PRECISION( vector_PRECISION eta, vector_PRECISION phi, level_struct *l, struct Thread *threading ) {
 
-  int n = threading->end_index[l->depth] - threading->start_index[l->depth];
-  vector_PRECISION eta_end = eta + n;
-
-  phi += threading->start_index[l->depth];
+  vector_PRECISION eta_end = eta + threading->end_index[l->depth];
   eta += threading->start_index[l->depth];
+  phi += threading->start_index[l->depth];
 
   while ( eta < eta_end ) {
-    vector_PRECISION phi0 = phi +  0;
-    vector_PRECISION phi1 = phi + 12;
-    vector_PRECISION phi2 = phi + 24;
-    vector_PRECISION phi3 = phi + 36;
+    for (int i = 0; i < 3; i++) eta[i]   = GAMMA_T_SPIN0_VAL * phi[GAMMA_T_SPIN0_CO*3 + i];
+    for (int i = 0; i < 3; i++) eta[i+3] = GAMMA_T_SPIN1_VAL * phi[GAMMA_T_SPIN1_CO*3 + i];
+    for (int i = 0; i < 3; i++) eta[i+6] = GAMMA_T_SPIN2_VAL * phi[GAMMA_T_SPIN2_CO*3 + i];
+    for (int i = 0; i < 3; i++) eta[i+9] = GAMMA_T_SPIN3_VAL * phi[GAMMA_T_SPIN3_CO*3 + i];
 
-    /* eta[s=0] = +phi[s=2] */
-    FOR6( *eta =  (*phi2); phi2++; eta++; )
-    FOR6( *eta =  (*phi2); phi2++; eta++; )
-
-    /* eta[s=1] = +phi[s=3] */
-    FOR6( *eta =  (*phi3); phi3++; eta++; )
-    FOR6( *eta =  (*phi3); phi3++; eta++; )
-
-    /* eta[s=2] = +phi[s=0] */
-    FOR6( *eta =  (*phi0); phi0++; eta++; )
-    FOR6( *eta =  (*phi0); phi0++; eta++; )
-
-    /* eta[s=3] = +phi[s=1] */
-    FOR6( *eta =  (*phi1); phi1++; eta++; )
-    FOR6( *eta =  (*phi1); phi1++; eta++; )
-
-    phi += 48;
+    eta += 12;
+    phi += 12;
   }
 }
+
 
 void g5D_plus_clover_PRECISION( vector_PRECISION eta, vector_PRECISION phi, operator_PRECISION_struct *op, level_struct *l, struct Thread *threading ) {
   d_plus_clover_PRECISION_cpu( eta, phi, op, l, threading );
