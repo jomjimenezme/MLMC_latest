@@ -2698,7 +2698,20 @@ complex_PRECISION g5_hutchinson_plain_PRECISION( int type_appl, level_struct *l,
     }
     
     // Apply Gamma_5
-    gamma5_PRECISION( p->b, p->b, l, threading );
+    if(g.gamma_idx == 5)
+      gamma5_PRECISION( p->b, p->b, l, threading );
+
+    if(g.gamma_idx == 0)
+      gamma0_PRECISION( p->b, p->b, l, threading );
+
+    if(g.gamma_idx == 1)
+      gamma1_PRECISION( p->b, p->b, l, threading );
+
+    if(g.gamma_idx == 2)
+      gamma2_PRECISION( p->b, p->b, l, threading );
+
+    if(g.gamma_idx == 3)
+      gamma3_PRECISION( p->b, p->b, l, threading );
   }
 
   {
