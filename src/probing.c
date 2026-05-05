@@ -458,6 +458,33 @@ void get_sigma_4D(){
     
     g.nc = 64;
   }
+
+    if(g.coloring_distance == 5){
+    g.sigma[0] = 38;
+    g.sigma[1] = 1;
+    g.sigma[2] = 12;
+    g.sigma[3] = 16;
+
+    g.nc = 128;
+  }
+
+  if(g.coloring_distance == 6){
+    g.sigma[0] = 3;
+    g.sigma[1] = 20;
+    g.sigma[2] = 48;
+    g.sigma[3] = 50;
+
+    g.nc = 320;
+  }
+
+  if(g.coloring_distance == 7){
+    g.sigma[0] = 40;
+    g.sigma[1] = 32;
+    g.sigma[2] = 33;
+    g.sigma[3] = 61;
+
+    g.nc = 512;
+  }
   
 }
 
@@ -497,6 +524,51 @@ void get_sigma_3D(){
     g.sigma[3] = 9;
     
     g.nc = 32;
+  }
+
+    if(g.coloring_distance == 5){
+    g.sigma[0] = 0;
+    g.sigma[1] = 1;
+    g.sigma[2] = 11;
+    g.sigma[3] = 27;
+
+    g.nc = 88;
+  }
+
+  if(g.coloring_distance == 6){
+    g.sigma[0] = 0;
+    g.sigma[1] = 1;
+    g.sigma[2] = 8;
+    g.sigma[3] = 44;
+
+    g.nc = 128;
+  }
+
+  if(g.coloring_distance == 7){
+    g.sigma[0] = 0;
+    g.sigma[1] = 1;
+    g.sigma[2] = 9;
+    g.sigma[3] = 33;
+
+    g.nc = 176;
+  }
+
+  if(g.coloring_distance == 8){
+    g.sigma[0] = 0;
+    g.sigma[1] = 7;
+    g.sigma[2] = 48;
+    g.sigma[3] = 51;
+
+    g.nc = 272;
+  }
+
+  if(g.coloring_distance == 9){
+    g.sigma[0] = 0;
+    g.sigma[1] = 1;
+    g.sigma[2] = 33;
+    g.sigma[3] = 45;
+
+    g.nc = 352;
   }
   
 }
