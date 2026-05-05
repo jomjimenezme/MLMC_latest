@@ -293,7 +293,7 @@ struct sample hutchinson_blind_PRECISION( level_struct *l, hutchinson_PRECISION_
     }
   }
 
-  if(g.my_rank==0) print_variance_pc_PRECISION(l, h->max_iters[l->depth]);
+  //if(g.my_rank==0) print_variance_pc_PRECISION(l, h->max_iters[l->depth]);
   double t1 = MPI_Wtime();
   if(g.my_rank==0) {
     printf("\n");
