@@ -177,13 +177,13 @@ int main( int argc, char **argv ) {
       
       if( g.trace_op_type == 12 ){
         START_MASTER(threadingx)
-        if(g.my_rank==0) printf("Calling Plain for G5D 4D trace\n"); 
+        if(g.my_rank==0) printf("Calling Plain for G%dD 4D trace\n", g.gamma_idx); 
         END_MASTER(threadingx)
 
         trace = g5_hutchinson_driver_double( &l, &threading );
 
         START_MASTER(threadingx)
-        if(g.my_rank==0) printf("\nResulting trace from calling Plain for G5D 4D trace = %f+i%f\n", CSPLIT(trace)); 
+        if(g.my_rank==0) printf("\nResulting trace from calling Plain for G%dD 4D trace = %f+i%f\n", g.gamma_idx, CSPLIT(trace)); 
         fflush(0);
         END_MASTER(threadingx)
       }
@@ -281,11 +281,11 @@ int main( int argc, char **argv ) {
           if(g.my_rank==0) printf("Using plain Hutchinson for computing the trace\n");
           END_MASTER(threadingx)
 
-          trace = g5_3D_hutchinson_driver_double( &l, &threading );
+          trace = gamma_3D_hutchinson_driver_double( &l, &threading );
           //trace = hutchinson_driver_double( &l, &threading );
 
           START_MASTER(threadingx)
-          if(g.my_rank==0) printf("\nResulting trace from plain Hutchinson = %f+i%f\n", CSPLIT(trace)); 
+          if(g.my_rank==0) printf("\nResulting trace from Gamma_%d plain Hutchinson = %f+i%f\n", g.gamma_idx, CSPLIT(trace)); 
           if(g.my_rank==0) printf("Resulting variance from plain Hutchinson = %f\n", g.variances[0]);
           fflush(0);
           END_MASTER(threadingx)

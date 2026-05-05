@@ -303,6 +303,74 @@ void gamma5_PRECISION( vector_PRECISION eta, vector_PRECISION phi, level_struct 
   }
 }
 
+void gamma0_PRECISION( vector_PRECISION eta, vector_PRECISION phi, level_struct *l, struct Thread *threading ) {
+
+  vector_PRECISION eta_end = eta + threading->end_index[l->depth];
+  eta += threading->start_index[l->depth];
+  phi += threading->start_index[l->depth];
+
+  while ( eta < eta_end ) {
+    for (int i = 0; i < 3; i++) eta[i]   = GAMMA_Z_SPIN0_VAL * phi[GAMMA_Z_SPIN0_CO*3 + i];
+    for (int i = 0; i < 3; i++) eta[i+3] = GAMMA_Z_SPIN1_VAL * phi[GAMMA_Z_SPIN1_CO*3 + i];
+    for (int i = 0; i < 3; i++) eta[i+6] = GAMMA_Z_SPIN2_VAL * phi[GAMMA_Z_SPIN2_CO*3 + i];
+    for (int i = 0; i < 3; i++) eta[i+9] = GAMMA_Z_SPIN3_VAL * phi[GAMMA_Z_SPIN3_CO*3 + i];
+
+    eta += 12;
+    phi += 12;
+  }
+}
+
+void gamma1_PRECISION( vector_PRECISION eta, vector_PRECISION phi, level_struct *l, struct Thread *threading ) {
+
+  vector_PRECISION eta_end = eta + threading->end_index[l->depth];
+  eta += threading->start_index[l->depth];
+  phi += threading->start_index[l->depth];
+
+  while ( eta < eta_end ) {
+    for (int i = 0; i < 3; i++) eta[i]   = GAMMA_Y_SPIN0_VAL * phi[GAMMA_Y_SPIN0_CO*3 + i];
+    for (int i = 0; i < 3; i++) eta[i+3] = GAMMA_Y_SPIN1_VAL * phi[GAMMA_Y_SPIN1_CO*3 + i];
+    for (int i = 0; i < 3; i++) eta[i+6] = GAMMA_Y_SPIN2_VAL * phi[GAMMA_Y_SPIN2_CO*3 + i];
+    for (int i = 0; i < 3; i++) eta[i+9] = GAMMA_Y_SPIN3_VAL * phi[GAMMA_Y_SPIN3_CO*3 + i];
+
+    eta += 12;
+    phi += 12;
+  }
+}
+
+void gamma2_PRECISION( vector_PRECISION eta, vector_PRECISION phi, level_struct *l, struct Thread *threading ) {
+
+  vector_PRECISION eta_end = eta + threading->end_index[l->depth];
+  eta += threading->start_index[l->depth];
+  phi += threading->start_index[l->depth];
+
+  while ( eta < eta_end ) {
+    for (int i = 0; i < 3; i++) eta[i]   = GAMMA_X_SPIN0_VAL * phi[GAMMA_X_SPIN0_CO*3 + i];
+    for (int i = 0; i < 3; i++) eta[i+3] = GAMMA_X_SPIN1_VAL * phi[GAMMA_X_SPIN1_CO*3 + i];
+    for (int i = 0; i < 3; i++) eta[i+6] = GAMMA_X_SPIN2_VAL * phi[GAMMA_X_SPIN2_CO*3 + i];
+    for (int i = 0; i < 3; i++) eta[i+9] = GAMMA_X_SPIN3_VAL * phi[GAMMA_X_SPIN3_CO*3 + i];
+
+    eta += 12;
+    phi += 12;
+  }
+}
+
+void gamma3_PRECISION( vector_PRECISION eta, vector_PRECISION phi, level_struct *l, struct Thread *threading ) {
+
+  vector_PRECISION eta_end = eta + threading->end_index[l->depth];
+  eta += threading->start_index[l->depth];
+  phi += threading->start_index[l->depth];
+
+  while ( eta < eta_end ) {
+    for (int i = 0; i < 3; i++) eta[i]   = GAMMA_T_SPIN0_VAL * phi[GAMMA_T_SPIN0_CO*3 + i];
+    for (int i = 0; i < 3; i++) eta[i+3] = GAMMA_T_SPIN1_VAL * phi[GAMMA_T_SPIN1_CO*3 + i];
+    for (int i = 0; i < 3; i++) eta[i+6] = GAMMA_T_SPIN2_VAL * phi[GAMMA_T_SPIN2_CO*3 + i];
+    for (int i = 0; i < 3; i++) eta[i+9] = GAMMA_T_SPIN3_VAL * phi[GAMMA_T_SPIN3_CO*3 + i];
+
+    eta += 12;
+    phi += 12;
+  }
+}
+
 
 void g5D_plus_clover_PRECISION( vector_PRECISION eta, vector_PRECISION phi, operator_PRECISION_struct *op, level_struct *l, struct Thread *threading ) {
   d_plus_clover_PRECISION_cpu( eta, phi, op, l, threading );

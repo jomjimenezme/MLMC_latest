@@ -308,14 +308,14 @@ struct sample hutchinson_blind_PRECISION( level_struct *l, hutchinson_PRECISION_
 }
 
 // this is the driver for plain Hutchinson
-complex_PRECISION g5_3D_hutchinson_driver_PRECISION( level_struct *l, struct Thread *threading ){
+complex_PRECISION gamma_3D_hutchinson_driver_PRECISION( level_struct *l, struct Thread *threading ){
   complex_PRECISION trace = 0.0;
   struct sample estimate;
   hutchinson_PRECISION_struct* h = &(l->h_PRECISION);
   level_struct* lx = l;
 
   // set the pointer to the finest-level Hutchinson estimator
-  h->hutch_compute_one_sample = g5_3D_hutchinson_plain_PRECISION;
+  h->hutch_compute_one_sample = gamma_3D_hutchinson_plain_PRECISION;
 
   if (g.probing != 0) {
     for (g.coloring_count = 1; g.coloring_count < g.num_colors[0] + 1; g.coloring_count++){
@@ -452,7 +452,7 @@ complex_PRECISION g5_3D_connected_hutchinson_plain_PRECISION( int type_appl, lev
   }
 }
 
-complex_PRECISION g5_3D_hutchinson_plain_PRECISION( int type_appl, level_struct *l, hutchinson_PRECISION_struct* h, struct Thread *threading ){
+complex_PRECISION gamma_3D_hutchinson_plain_PRECISION( int type_appl, level_struct *l, hutchinson_PRECISION_struct* h, struct Thread *threading ){
   {
     int start, end;
     gmres_PRECISION_struct* p = get_p_struct_PRECISION( l );
@@ -467,8 +467,21 @@ complex_PRECISION g5_3D_hutchinson_plain_PRECISION( int type_appl, level_struct 
       //vector_PRECISION_copy( p->b, l->powerit_PRECISION.vecs[type_appl], start, end, l );
     }
 
-    // Apply Gamma_5
-    gamma5_PRECISION( p->b, p->b, l, threading );
+    // Apply Gamma
+    if(g.gamma_idx == 5)
+      gamma5_PRECISION( p->b, p->b, l, threading );
+
+    if(g.gamma_idx == 0)
+      gamma0_PRECISION( p->b, p->b, l, threading );
+
+    if(g.gamma_idx == 1)
+      gamma1_PRECISION( p->b, p->b, l, threading );
+
+    if(g.gamma_idx == 2)
+      gamma2_PRECISION( p->b, p->b, l, threading );
+
+    if(g.gamma_idx == 3)
+      gamma3_PRECISION( p->b, p->b, l, threading );
   }
 
   {
@@ -2685,7 +2698,20 @@ complex_PRECISION g5_hutchinson_plain_PRECISION( int type_appl, level_struct *l,
     }
     
     // Apply Gamma_5
-    gamma5_PRECISION( p->b, p->b, l, threading );
+    if(g.gamma_idx == 5)
+      gamma5_PRECISION( p->b, p->b, l, threading );
+
+    if(g.gamma_idx == 0)
+      gamma0_PRECISION( p->b, p->b, l, threading );
+
+    if(g.gamma_idx == 1)
+      gamma1_PRECISION( p->b, p->b, l, threading );
+
+    if(g.gamma_idx == 2)
+      gamma2_PRECISION( p->b, p->b, l, threading );
+
+    if(g.gamma_idx == 3)
+      gamma3_PRECISION( p->b, p->b, l, threading );
   }
 
   {

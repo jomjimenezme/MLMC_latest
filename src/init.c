@@ -808,6 +808,9 @@ void read_global_info( FILE *in ) {
   save_pt = &(g.dilution); g.dilution = 1;
   read_parameter( &save_pt, "dilution:", "%d", 1, in, _DEFAULT_SET);
 
+  save_pt = &(g.gamma_idx); g.gamma_idx = 5;
+  read_parameter( &save_pt, "gamma index:", "%d", 1, in, _DEFAULT_SET);
+
   // Note: There is actually no default set for the three following values
   // Though, when using the code as a library, no configuration paths are required.
   save_pt = &(g.in);
