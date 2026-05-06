@@ -225,6 +225,15 @@ void setup_local_colors(){
 
 }
 
+void get_coloring_dimension(){
+
+  if(g.trace_op_type == 1 || g.trace_op_type == 2 || g.trace_op_type == 6 || g.trace_op_type == 7 || g.trace_op_type == 8)
+    g.probing_dimension = 3;
+
+  if(g.trace_op_type == 9 || g.trace_op_type == 10 || g.trace_op_type == 11 || g.trace_op_type == 12)
+    g.probing_dimension = 4;
+}
+
 void get_sigma_4D(){
   
   if(g.coloring_distance == 1){
@@ -385,25 +394,27 @@ void dilution_check(){
   }
 
   if(g.dilution == 1)
-    printf("\nNo dilution");
+    printf("\nNo dilution\n");
 
   if(g.dilution == 2)
-    printf("\nPartial spin dilution");
+    printf("\nPartial spin dilution\n");
 
   if(g.dilution == 3)
-    printf("\nColor dilution");
+    printf("\nColor dilution\n");
 
   if(g.dilution == 4)
-    printf("\nComplete spin dilution");
+    printf("\nComplete spin dilution\n");
 
   if(g.dilution == 12)
-    printf("\nSpin-Color dilution");
+    printf("\nSpin-Color dilution\n");
 }
 
 void coloring_scheme(){
 
   MALLOC(g.num_colors, int, g.num_levels);
   MALLOC(g.dilution_ml, int, g.num_levels);
+
+  get_coloring_dimension();
 
   if(g.my_rank==0){
 
@@ -412,7 +423,8 @@ void coloring_scheme(){
     printf("\nProbing = %d - Classical probing\n", g.probing);
     printf("Coloring_distance = %d\n", g.coloring_distance);
     printf("Grids to be colored = %d\n", g.colored_grids);
-    
+    printf("Coloring dimension = %d\n", g.probing_dimension);
+
     if(g.probing_dimension == 3)
       get_sigma_3D();
     else
@@ -533,6 +545,8 @@ void hierarchical_coloring(){
   MALLOC(g.num_colors, int, g.num_levels);
   MALLOC(g.dilution_ml, int, g.num_levels);
 
+  get_coloring_dimension();
+
   if(g.my_rank==0){
 
     MALLOC(g.variances, double, g.num_levels);
@@ -540,17 +554,13 @@ void hierarchical_coloring(){
     printf("\nProbing = %d - Hierarchical probing\n", g.probing);
     printf("k = %d\n", g.k);
     printf("Grids to be colored = %d\n", g.colored_grids);
-
-    if(g.probing_dimension == 3){
-      printf("3D coloring for hierarchical probing not implemented");
-      exit(0);
-    }
+    printf("Coloring dimension = %d\n", g.probing_dimension);
 
     g.nc = pow_int(2, 4*(g.k-1) + 1); 
     printf("colors at the finest: %d\n", g.nc);
 
     int Lu = pow_int(2, g.k-1);
-    printf("Elementary color block: %d", Lu);
+    printf("Elementary color block: %d\n", Lu);
 
     dilution_check();
 
