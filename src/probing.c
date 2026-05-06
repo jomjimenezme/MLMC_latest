@@ -411,7 +411,7 @@ void coloring_scheme(){
 
     printf("\nProbing = %d - Classical probing\n", g.probing);
     printf("Coloring_distance = %d\n", g.coloring_distance);
-    printf("Coloring_method = %d\n", g.coloring_method);
+    printf("Grids to be colored = %d\n", g.colored_grids);
     
     if(g.probing_dimension == 3)
       get_sigma_3D();
@@ -539,7 +539,7 @@ void hierarchical_coloring(){
 
     printf("\nProbing = %d - Hierarchical probing\n", g.probing);
     printf("k = %d\n", g.k);
-    printf("Coloring_method = %d\n", g.coloring_method);
+    printf("Grids to be colored = %d\n", g.colored_grids);
 
     if(g.probing_dimension == 3){
       printf("3D coloring for hierarchical probing not implemented");
