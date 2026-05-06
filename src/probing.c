@@ -225,50 +225,6 @@ void setup_local_colors(){
 
 }
 
-void generate_neighbors(int t, int z, int y, int x, int **neighbors, int *num_neighbors, int size[4]) {
-    int T = size[0];
-    int Z = size[1];
-    int Y = size[2];
-    int X = size[3];
-
-    int max_neighbors = 1; // Includes central point
-    for (int delta = 1; delta <= g.coloring_distance; delta++) {
-        max_neighbors += 8 * delta * delta * delta; // Estimate maximum number
-    }
-    *neighbors = (int *)malloc(max_neighbors * sizeof(int));
-    *num_neighbors = 0;
-
-    // Iterate over all displacements combination
-    for (int dt = -g.coloring_distance; dt <= g.coloring_distance; dt++) {
-        for (int dz = -g.coloring_distance; dz <= g.coloring_distance; dz++) {
-            for (int dy = -g.coloring_distance; dy <= g.coloring_distance; dy++) {
-                for (int dx = -g.coloring_distance; dx <= g.coloring_distance; dx++) {
-
-                    //Verify that the distance is the right one
-                    if (abs(dt) + abs(dz) + abs(dy) + abs(dx) > g.coloring_distance) {
-                        continue;
-                    }
-
-                    // Skip central point (0, 0, 0, 0)
-                    if (dt == 0 && dz == 0 && dy == 0 && dx == 0) {
-                        continue;
-                    }
-
-                    // Compute coordinates of the neighbor
-                    int t_neighbor = (t + dt + T) % T;
-                    int z_neighbor = (z + dz + Z) % Z;
-                    int y_neighbor = (y + dy + Y) % Y;
-                    int x_neighbor = (x + dx + X) % X;
-
-                    // Compute the lexicographic index of the neighbor
-                    (*neighbors)[*num_neighbors] = lex_index(t_neighbor, z_neighbor, y_neighbor, x_neighbor, size);
-                    (*num_neighbors)++;
-                }
-            }
-        }
-    }
-}
-
 void get_sigma_4D(){
   
   if(g.coloring_distance == 1){
