@@ -59,6 +59,7 @@ void set_probing_variances_to_zero(){
   }
 }
 
+//PRINT COLORS PER MPI RANK AND PER TIMESLICE
 void print_colors(){
 
   char filename[100];
@@ -81,6 +82,30 @@ void print_colors(){
     fprintf(file, "]\n");
   }
   fclose(file); 
+}
+
+//PRINT COLORS OF ENTIRE LATTICE
+void print_global_colors(){
+
+  FILE *file = fopen("print_files/colors.txt", "w");
+
+  for(int i = 0; i < g.num_levels; i++){
+    fprintf(file, "\nColors at level %d\n [", i+1);
+
+    int T = g.global_lattice[i][0];
+    int Z = g.global_lattice[i][1];
+    int Y = g.global_lattice[i][2];
+    int X = g.global_lattice[i][3];
+
+    int size = T*Z*Y*X;
+
+    for(int j = 0; j < size; j++){
+      fprintf(file, " %d ", g.colors[i][j]);
+    }
+    fprintf(file, " ]\n");
+    }
+
+    fclose(file);
 }
 
 void allocate_variances(){
@@ -526,28 +551,8 @@ void coloring_scheme(){
        printf("\n Colors at depth %d : \t %d \n", level, g.num_colors[level]);
     }
 
- /* 
-    FILE *file = fopen("print_files/colors.txt", "w");
 
-    for(int i = 0; i < g.num_levels; i++){
-        fprintf(file, "\nColors at level %d\n [", i+1);
-
-        int T = g.global_lattice[i][0];
-        int Z = g.global_lattice[i][1];
-        int Y = g.global_lattice[i][2];
-        int X = g.global_lattice[i][3];
-
-        int size = T*Z*Y*X;
-
-        for(int j = 0; j < size; j++){
-                fprintf(file, " %d ", g.colors[i][j]);
-        }
-
-        fprintf(file, " ]\n");
-    }
-
-    fclose(file);
-*/
+    //print_global_colors();
 
 
   }
@@ -706,30 +711,7 @@ void hierarchical_coloring(){
        printf("\n Colors at depth %d : \t %d \n", level, g.num_colors[level]);
     }
 
- 
-    /*
-    FILE *file = fopen("print_files/colors.txt", "w");
-
-    for(int i = 0; i < g.num_levels; i++){
-        fprintf(file, "\nColors at level %d\n [", i+1);
-
-        int T = g.global_lattice[i][0];
-        int Z = g.global_lattice[i][1];
-        int Y = g.global_lattice[i][2];
-        int X = g.global_lattice[i][3];
-
-        int size = T*Z*Y*X;
-
-        for(int j = 0; j < size; j++){
-                fprintf(file, " %d ", g.colors[i][j]);
-        }
-
-        fprintf(file, " ]\n");
-    }
-    
-
-    fclose(file);
-    */
+    //print_global_colors();
 
   }
     MPI_Barrier(MPI_COMM_WORLD);
