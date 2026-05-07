@@ -219,7 +219,7 @@ void setup_local_colors(){
     MPI_Barrier(MPI_COMM_WORLD);
     //MPI_Bcast(g.num_colors, g.num_levels, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(g.num_colors, g.num_levels, MPI_INT, 0, g.comm_cart);
-    MPI_Bcast(g.dilution_ml, g.num_levels, MPI_INT, 0, g.comm_cart);
+    MPI_Bcast(g.dilution, g.num_levels, MPI_INT, 0, g.comm_cart);
     //print_colors();
     MPI_Barrier(MPI_COMM_WORLD);
 
@@ -386,27 +386,27 @@ void get_sigma_3D(){
   
 }
 */
-void dilution_check(){
+void dilution_check(int level){
 
-  if(g.dilution != 1 && g.dilution != 2 && g.dilution != 3 && g.dilution != 4 && g.dilution != 12){
-    printf("\nError: choose a correct dilution value (1, 2, 3, 4, 12)");
+  if(g.dilution[level] != 1 && g.dilution[level] != 2 && g.dilution[level] != 3 && g.dilution[level] != 4 && g.dilution[level] != 12){
+    printf("\nError: choose a correct dilution value (1, 2, 3, 4, 12) at level %d", level);
     exit(1);
   }
 
-  if(g.dilution == 1)
-    printf("\nNo dilution\n");
+  if(g.dilution[level] == 1)
+    printf("\nNo dilution at level %d\n", level);
 
-  if(g.dilution == 2)
-    printf("\nPartial spin dilution\n");
+  if(g.dilution[level] == 2)
+    printf("\nPartial spin dilution at level %d\n", level);
 
-  if(g.dilution == 3)
-    printf("\nColor dilution\n");
+  if(g.dilution[level] == 3)
+    printf("\nColor dilution at level %d\n", level);
 
-  if(g.dilution == 4)
-    printf("\nComplete spin dilution\n");
+  if(g.dilution[level] == 4)
+    printf("\nComplete spin dilution at level %d\n", level);
 
-  if(g.dilution == 12)
-    printf("\nSpin-Color dilution\n");
+  if(g.dilution[level] == 12)
+    printf("\nSpin-Color dilution at level %d\n", level);
 }
 /*
 void coloring_scheme(){
@@ -543,8 +543,6 @@ void stop_hadamard(int level){
 
 void hierarchical_coloring(){
 
-  MALLOC(g.dilution_ml, int, g.num_levels);
-
   get_coloring_dimension();
 
   if(g.my_rank==0){
@@ -554,8 +552,6 @@ void hierarchical_coloring(){
     printf("\nProbing = %d - Hierarchical probing\n", g.probing);
     printf("Grids to be colored = %d\n", g.colored_grids);
     printf("Coloring dimension = %d\n", g.probing_dimension);
-
-    dilution_check();
 
     double time_taken;
     double start_time = MPI_Wtime();
@@ -573,7 +569,7 @@ void hierarchical_coloring(){
       int Lu = pow_int(2, g.k[level]-1);
       printf("Elementary color block at level %d: %d\n", level, Lu);
 
-      g.dilution_ml[level] = g.dilution;
+      dilution_check(level);
 
       int T = g.global_lattice[level][0];
       int Z = g.global_lattice[level][1];

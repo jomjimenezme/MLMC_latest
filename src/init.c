@@ -575,7 +575,6 @@ void method_finalize( level_struct *l ) {
   else
      FREE(g.variances, double, g.num_levels);
 
-  FREE(g.dilution_ml, int, g.num_levels);
   
   operator_double_free( &(g.op_double), _ORDINARY, l );
   FREE( g.odd_even_table, int, l->num_inner_lattice_sites );
@@ -599,6 +598,7 @@ void method_finalize( level_struct *l ) {
   FREE( g.num_colors, int, ls );
   FREE( g.interrupt, int, ls );
   FREE( g.n_had, int, ls );
+  FREE( g.dilution, int, ls );
 
 #ifdef CUDA_OPT
   FREE( g.CUDA_threads_per_CUDA_block_type1, int, ls );
@@ -796,9 +796,6 @@ void read_global_info( FILE *in ) {
     read_parameter( &save_pt, "colored grids:", "%d", 1, in, _DEFAULT_SET);
 
   }
-  
-  save_pt = &(g.dilution); g.dilution = 1;
-  read_parameter( &save_pt, "dilution:", "%d", 1, in, _DEFAULT_SET);
 
   save_pt = &(g.gamma_idx); g.gamma_idx = 5;
   read_parameter( &save_pt, "gamma index:", "%d", 1, in, _DEFAULT_SET);
@@ -1067,6 +1064,10 @@ void read_geometry_data( FILE *in, int ls ) {
 
     sprintf( inputstr, "d%d num hadamard:", i );
     save_pt = &(g.n_had[i]); g.n_had[i] = 0;
+    read_parameter( &save_pt, inputstr, "%d", 1, in, _DEFAULT_SET );
+
+    sprintf( inputstr, "d%d dilution:", i );
+    save_pt = &(g.dilution[i]); g.dilution[i] = 1;
     read_parameter( &save_pt, inputstr, "%d", 1, in, _DEFAULT_SET );
 
 #ifdef CUDA_OPT
@@ -1448,6 +1449,7 @@ void allocate_for_global_struct_after_read_global_info( int ls ) {
   MALLOC( g.num_colors, int, ls );
   MALLOC( g.interrupt, int, ls );
   MALLOC( g.n_had, int, ls );
+  MALLOC( g.dilution, int, ls );
 #ifdef CUDA_OPT
   MALLOC( g.CUDA_threads_per_CUDA_block_type1, int, ls );
   MALLOC( g.CUDA_threads_per_lattice_site_type1, int, ls );

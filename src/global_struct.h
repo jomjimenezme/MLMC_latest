@@ -144,8 +144,7 @@ typedef struct global_struct
     int *num_colors; //number of colors at every level
     int coloring_count;
     
-    int dilution;
-    int *dilution_ml;
+    int *dilution;
     int dilution_count;
 
     int sigma[4];

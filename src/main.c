@@ -153,12 +153,10 @@ int main( int argc, char **argv ) {
         if(coloring_flag == 0) 
           graph_coloring();	
        }else {
-	 MALLOC(g.dilution_ml, int, g.num_levels);
          for(int i = 0; i<g.num_levels; i++){
             g.num_colors[i] = 1;
-            g.dilution_ml[i] = g.dilution;
+            dilution_check(i);
          }
-
       }
       
       if(g.probing == 1 && g.probing_dimension == 4)
