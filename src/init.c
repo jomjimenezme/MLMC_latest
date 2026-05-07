@@ -784,15 +784,12 @@ void read_global_info( FILE *in ) {
   read_parameter( &save_pt, "probing selection:", "%d", 1, in, _DEFAULT_SET);
 
   if(g.probing != 0){
-    save_pt = &(g.probing_dimension); g.probing_dimension = 0;
-    read_parameter( &save_pt, "timeslice coloring:", "%d", 1, in, _DEFAULT_SET);
-
     //Setting the coloring distance
     save_pt = &(g.coloring_distance); g.coloring_distance = 0;
     read_parameter( &save_pt, "coloring distance:", "%d", 1, in, _DEFAULT_SET);
 
-    save_pt = &(g.coloring_method); g.coloring_method = 0;
-    read_parameter( &save_pt, "coloring:", "%d", 1, in, _DEFAULT_SET);
+    save_pt = &(g.colored_grids); g.colored_grids = 1;
+    read_parameter( &save_pt, "colored grids:", "%d", 1, in, _DEFAULT_SET);
 
     save_pt = &(g.k); g.k = 1;
     read_parameter( &save_pt, "hierarchy step:", "%d", 1, in, _DEFAULT_SET);
