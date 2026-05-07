@@ -90,7 +90,7 @@ void print_global_colors(){
   FILE *file = fopen("print_files/colors.txt", "w");
 
   for(int i = 0; i < g.num_levels; i++){
-    fprintf(file, "\nColors at level %d\n [", i+1);
+    fprintf(file, "\nColors at level %d\n [", i);
 
     int T = g.global_lattice[i][0];
     int Z = g.global_lattice[i][1];
@@ -233,7 +233,7 @@ void get_coloring_dimension(){
   if(g.trace_op_type == 9 || g.trace_op_type == 10 || g.trace_op_type == 11 || g.trace_op_type == 12)
     g.probing_dimension = 4;
 }
-
+/*
 void get_sigma_4D(){
   
   if(g.coloring_distance == 1){
@@ -385,7 +385,7 @@ void get_sigma_3D(){
   }
   
 }
-
+*/
 void dilution_check(){
 
   if(g.dilution != 1 && g.dilution != 2 && g.dilution != 3 && g.dilution != 4 && g.dilution != 12){
@@ -408,7 +408,7 @@ void dilution_check(){
   if(g.dilution == 12)
     printf("\nSpin-Color dilution\n");
 }
-
+/*
 void coloring_scheme(){
 
   MALLOC(g.num_colors, int, g.num_levels);
@@ -527,22 +527,22 @@ void coloring_scheme(){
     MPI_Barrier(MPI_COMM_WORLD);
     setup_local_colors();
 }
+*/
 
-void stop_hadamard(){
+void stop_hadamard(int level){
 
-  int size = g.global_lattice[0][0]*g.global_lattice[0][1]*g.global_lattice[0][2]*g.global_lattice[0][3];
+  int size = g.global_lattice[level][0]*g.global_lattice[level][1]*g.global_lattice[level][2]*g.global_lattice[level][3];
 
   for(int i=0; i<size; i++){
-    if(g.colors[0][i] > g.n_had)
-      g.colors[0][i] = g.n_had;
+    if(g.colors[level][i] > g.n_had[level])
+      g.colors[level][i] = g.n_had[level];
   }
 
-  g.num_colors[0] = max(g.colors[0], size);
+  g.num_colors[level] = max(g.colors[level], size);
 }
 
 void hierarchical_coloring(){
 
-  MALLOC(g.num_colors, int, g.num_levels);
   MALLOC(g.dilution_ml, int, g.num_levels);
 
   get_coloring_dimension();
@@ -552,20 +552,12 @@ void hierarchical_coloring(){
     MALLOC(g.variances, double, g.num_levels);
 
     printf("\nProbing = %d - Hierarchical probing\n", g.probing);
-    printf("k = %d\n", g.k);
     printf("Grids to be colored = %d\n", g.colored_grids);
     printf("Coloring dimension = %d\n", g.probing_dimension);
-
-    g.nc = pow_int(2, 4*(g.k-1) + 1); 
-    printf("colors at the finest: %d\n", g.nc);
-
-    int Lu = pow_int(2, g.k-1);
-    printf("Elementary color block: %d\n", Lu);
 
     dilution_check();
 
     double time_taken;
-
     double start_time = MPI_Wtime();
 
     g.colors = (int**)malloc(g.num_levels * sizeof(int*));
@@ -574,6 +566,12 @@ void hierarchical_coloring(){
         error0("Allocation error0\n");
 
     for(int level = 0; level < g.num_levels; level++){
+
+      printf("Level %d: k = %d\n", level, g.k[level]);
+      g.num_colors[level] = pow_int(2, 4*(g.k[level]-1) + 1);
+      printf("Colors at level %d: %d\n", level, g.num_colors[level]);
+      int Lu = pow_int(2, g.k[level]-1);
+      printf("Elementary color block at level %d: %d\n", level, Lu);
 
       g.dilution_ml[level] = g.dilution;
 
@@ -593,14 +591,12 @@ void hierarchical_coloring(){
 
       g.colors[level] = NULL;
       MALLOC(g.colors[level], int, total_points);
-      if(level == 0){
-
-	g.num_colors[level] = g.nc;
+      if(level <= g.colored_grids-1){
 
 	int *arrlc;
-	MALLOC(arrlc, int, g.nc);
+	MALLOC(arrlc, int, g.num_colors[level]);
         
-	for(int i = 0; i < g.nc; i++)
+	for(int i = 0; i < g.num_colors[level]; i++)
 	  arrlc[i] = i+1; //array of all possible colors from 1 to nc
 
 
@@ -648,13 +644,10 @@ void hierarchical_coloring(){
             }
           }
         }
-
-	/*
-        for (int i = 0; i < total_points; i++) {
-          g.colors[level][i]++;
-        }
-
-*/
+        //for (int i = 0; i < total_points; i++)
+          //g.colors[level][i]++;
+        if(g.interrupt[level] == 1)
+          stop_hadamard(level);
       }
       else{
         g.num_colors[level] = 1;
@@ -664,19 +657,11 @@ void hierarchical_coloring(){
       }
     }
 
-    if(g.interrupt == 1)
-      stop_hadamard();
-    
-
     double end_time = MPI_Wtime();
 
     time_taken = end_time - start_time;
 
     printf("\nTime for coloring: %f seconds\n", time_taken);
-    for (int level = 0; level < g.num_levels; level++){
-       printf("\n Colors at depth %d : \t %d \n", level, g.num_colors[level]);
-    }
-
     //print_global_colors();
 
   }
@@ -686,7 +671,7 @@ void hierarchical_coloring(){
 
 void graph_coloring(){
 
-  if(g.probing == 1) coloring_scheme();
+  //if(g.probing == 1) coloring_scheme();
   if(g.probing == 2) hierarchical_coloring();
 
 }

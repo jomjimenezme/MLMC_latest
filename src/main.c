@@ -150,14 +150,9 @@ int main( int argc, char **argv ) {
       if(g.my_rank==0) printf("\n\n Timeslice %d\n\n",  g.time_slice);
 
       if(g.probing != 0 ){
-
         if(coloring_flag == 0) 
-          graph_coloring();
-	
-
+          graph_coloring();	
        }else {
-
-         MALLOC(g.num_colors, int, g.num_levels);
 	 MALLOC(g.dilution_ml, int, g.num_levels);
          for(int i = 0; i<g.num_levels; i++){
             g.num_colors[i] = 1;
