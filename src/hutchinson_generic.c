@@ -3394,10 +3394,10 @@ void fs_shitf_scan_driver_PRECISION( level_struct *l, struct Thread *threading )
   int iters;
   int total_solves = 10;
   PRECISION delta;
-  PRECISION h = 0.001;
+  PRECISION step = 0.001;
 
   for (int i = 0; i <= 15; i++) {
-    delta = h * i;
+    delta = step * i;
     m2 = m1 + delta;
     PRECISION avg_iters = 0.0;
     
