@@ -3141,19 +3141,20 @@ complex_PRECISION hutchinson_fs_first_PRECISION( int type_appl, level_struct *l,
 
     gmres_PRECISION_struct* p = get_p_struct_PRECISION( l );
 
+    // \Pi_t x
+    vector_PRECISION_ghg( h->rademacher_vector, 0, l->inner_vector_size, l );
+
     vector_PRECISION_copy( p->b, h->rademacher_vector, start, end, l );
 
-    // D_{m_2}^{-1} x
+    // D_{m_2}^{-1} \Pi_t x
     shift_update( m2, l, threading );
     apply_solver_PRECISION( l, threading );
     shift_update( m1, l, threading );
     
-    // \Gamma_5 \Pi_t D_{m_2}^{-1} x
-    vector_PRECISION_ghg( p->x, 0, l->inner_vector_size, l );
-    gamma5_PRECISION( p->b, p->x, l, threading );
+    vector_PRECISION_copy( p->b, p->x, start, end, l );
   }
 
-  // D_{m_1}^{-1} \Gamma_5 \Pi_t D_{m_2}^{-1} x
+  // D_{m_1}^{-1} D_{m_2}^{-1} \Pi_t x
   {
     int start, end;
     compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
@@ -3161,7 +3162,7 @@ complex_PRECISION hutchinson_fs_first_PRECISION( int type_appl, level_struct *l,
     apply_solver_PRECISION( l, threading );
   }
 
-  // x^H D_{m_1}^{-1} \Gamma_5 \Pi_t D_{m_2}^{-1} x
+  // x^H \Pi_t \Gamma_5 D_{m_1}^{-1} D_{m_2}^{-1} \Pi_t x
   {
     int start, end;
     gmres_PRECISION_struct* p = get_p_struct_PRECISION( l );
@@ -3169,6 +3170,8 @@ complex_PRECISION hutchinson_fs_first_PRECISION( int type_appl, level_struct *l,
 
     complex_PRECISION m1 = (complex_PRECISION) l->dirac_shift;
     complex_PRECISION m2 = m1 + g.delta_m_fs;
+
+    gamma5_PRECISION( p->x, p->x, l, threading );
 
     aux = global_inner_product_PRECISION( h->rademacher_vector, p->x, p->v_start, p->v_end, l, threading );
     aux = (m2-m1) * aux;
@@ -3249,50 +3252,50 @@ complex_PRECISION hutchinson_fs_mlmc_difference_PRECISION( int type_appl, level_
     compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
 
     gmres_PRECISION_struct* p = get_p_struct_PRECISION( l );
+    gmres_PRECISION_struct* px = get_p_struct_PRECISION( l->next_level );
+
+   // \Pi_t x
+    vector_PRECISION_ghg( h->rademacher_vector, 0, l->inner_vector_size, l );
 
     vector_PRECISION_copy( p->b, h->rademacher_vector, start, end, l );
 
-    // D_{m_2}^{-1} x
+    // D_{m_2}^{-1} ( I - D_{m1} P Dc_{m_1}^{-1} P^H) \Pi_t x
+    apply_R_PRECISION( px->b, p->b, l, threading );
+    apply_solver_PRECISION( l->next_level, threading );
+    apply_P_PRECISION( p->b, px->x, l, threading );
+    apply_operator_PRECISION( h->mlmc_b2, p->b, p, l, threading );
+
+    vector_PRECISION_minus( p->b, h->rademacher_vector, h->mlmc_b2, start, end, l );
+
     shift_update( m2, l, threading );
     apply_solver_PRECISION( l, threading );
     shift_update( m1, l, threading );
 
-    // \Gamma_5 \Pi_t D_{m_2}^{-1} x
-    vector_PRECISION_ghg( p->x, 0, l->inner_vector_size, l );
-    gamma5_PRECISION( p->b, p->x, l, threading );
-  }
-   // ( D_{m_1}^{-1} - P Dc_{m_1}^{-1} P^H) \Gamma_5 \Pi_t D_{m_2}^{-1} x
-  {
-    int start, end;
-    gmres_PRECISION_struct* p = get_p_struct_PRECISION( l );
-    gmres_PRECISION_struct* px = get_p_struct_PRECISION( l->next_level );
-
-    compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
-
-    apply_R_PRECISION( px->b, p->b, l, threading );
-    apply_solver_PRECISION( l->next_level, threading );
-    apply_P_PRECISION( h->mlmc_b2, px->x, l, threading );
-
+    // D_{m_1}^{-1} D_{m_2}^{-1} ( I - D_{m1} P Dc_{m_1}^{-1} P^H) \Pi_t x
+    vector_PRECISION_copy( p->b, p->x, start, end, l );
     apply_solver_PRECISION( l, threading );
 
-    vector_PRECISION_minus( h->mlmc_b1, p->x, h->mlmc_b2, start, end, l );
   }
- 
-  //  x^H (  D_{m_1}^{-1} - P Dc_{m_1}^{-1} P^H) \Gamma_5 \Pi_t D_{m_2}^{-1} x
+
+
+  // (m2-m1) (Pi_t x)^H Gamma5 D_m1^{-1} D_m2^{-1} Pi_b Pi_t x
   {
     int start, end;
     gmres_PRECISION_struct* p = get_p_struct_PRECISION( l );
     compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
-     
+
     complex_PRECISION m1 = (complex_PRECISION) l->dirac_shift;
     complex_PRECISION m2 = m1 + g.delta_m_fs;
 
-    aux = global_inner_product_PRECISION( h->rademacher_vector, h->mlmc_b1, p->v_start, p->v_end, l, threading );
+    gamma5_PRECISION( p->x, p->x, l, threading );
+
+    aux = global_inner_product_PRECISION( h->rademacher_vector, p->x, p->v_start, p->v_end, l, threading );
     aux = (m2-m1) * aux;
   }
-  
+
     return aux;
 }
+
 
 complex_PRECISION hutchinson_fs_mlmc_second_PRECISION( int type_appl, level_struct *l, hutchinson_PRECISION_struct* h, struct Thread *threading ){
 
