@@ -3381,21 +3381,21 @@ complex_PRECISION fs_mlmc_hutchinson_driver_PRECISION( level_struct *l, struct T
 
 
 void fs_shitf_scan_driver_PRECISION( level_struct *l, struct Thread *threading ){
-  
+
   hutchinson_PRECISION_struct* h = &(l->h_PRECISION);
   vector_PRECISION_define_random_rademacher( h->rademacher_vector, 0, l->inner_vector_size, l);
-  
+
   PRECISION m1 = (complex_PRECISION) l->dirac_shift;
   PRECISION m2 = 0.0;
-  
-  int start, end; 
+
+  int start, end;
   compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
   gmres_PRECISION_struct* p = get_p_struct_PRECISION( l );
-
   gmres_PRECISION_struct* px = get_p_struct_PRECISION( l->next_level );
 
   int iters;
   int total_solves = 10;
+  int total_hpe_apps = 5;
   PRECISION delta;
   PRECISION step = 0.001;
 
@@ -3403,7 +3403,7 @@ void fs_shitf_scan_driver_PRECISION( level_struct *l, struct Thread *threading )
     delta = step * i;
     m2 = m1 + delta;
     PRECISION avg_iters = 0.0;
-    
+
     // Turn cli ON for delta <= 0.002;
     if( delta > 0.002){
       g.cli_on = 0;
@@ -3425,39 +3425,90 @@ void fs_shitf_scan_driver_PRECISION( level_struct *l, struct Thread *threading )
     PRECISION t1 = MPI_Wtime();
     fflush(0);
 
+    PRECISION cost_solve = (t1 - t0) / total_solves;
+
     MPI_Barrier(MPI_COMM_WORLD);
     PRECISION t0_next = MPI_Wtime();
     for (int k = 0; k < total_solves; k++) {
-        vector_PRECISION_define_random(px->b, 0, l->next_level->inner_vector_size, l->next_level);
-        apply_solver_PRECISION(l->next_level, threading);
+      vector_PRECISION_define_random(px->b, 0, l->next_level->inner_vector_size, l->next_level);
+      apply_solver_PRECISION(l->next_level, threading);
     }
     MPI_Barrier(MPI_COMM_WORLD);
     PRECISION t1_next = MPI_Wtime();
-        
+
+    PRECISION cost_solve_next = (t1_next - t0_next) / total_solves;
+
     avg_iters /= total_solves;
 
-    if (g.my_rank == 0) {
-        printf("delta: %f, m2: %f, solve: %f, solve_next: %f, avg iters: %f\n",
-                delta,
-                m2,
-                (t1 - t0) / total_solves,
-                (t1_next - t0_next) / total_solves,
-                avg_iters);
+    selfcoupling_setup_PRECISION( &g.op_double, l );
+
+    operator_PRECISION_struct *sc = &(l->sc_op_PRECISION);
+
+    //-------------------- HPE Cost ---------------------
+    // -------------- Cost of one C_m^{-1} application ----------------
+    vector_PRECISION_define_random( h->mlmc_testing, 0, l->inner_vector_size, l );
+
+    MPI_Barrier( MPI_COMM_WORLD );
+    PRECISION t0_cinv = MPI_Wtime();
+
+    for ( int j = 0; j < total_hpe_apps; j++ ) {
+      diag_sc_inv_PRECISION( h->mlmc_b1, h->mlmc_testing, sc, l, start, end );
+    }
+
+    MPI_Barrier( MPI_COMM_WORLD );
+    PRECISION t1_cinv = MPI_Wtime();
+
+    PRECISION cost_Cinv = ( t1_cinv - t0_cinv ) / total_hpe_apps;
+
+    // -------------- Cost of one H_m application: H_m v = - C_m^{-1} K v ----------------
+    vector_PRECISION_define_random( h->mlmc_b1, 0, l->inner_vector_size, l );
+
+    MPI_Barrier( MPI_COMM_WORLD );
+    PRECISION t0_H = MPI_Wtime();
+
+    for ( int j = 0; j < total_hpe_apps; j++ ) {
+      hopping_only_PRECISION_cpu( h->mlmc_b2, h->mlmc_b1, &g.op_double, l, threading );
+      diag_sc_inv_PRECISION( h->mlmc_b1, h->mlmc_b2, sc, l, start, end );
+      vector_PRECISION_real_scale( h->mlmc_b1, h->mlmc_b1, -1.0, start, end, l );
+    }
+
+    MPI_Barrier( MPI_COMM_WORLD );
+    PRECISION t1_H = MPI_Wtime();
+
+    PRECISION cost_H = ( t1_H - t0_H ) / total_hpe_apps;
+
+    if ( g.my_rank == 0 ) {
+      printf(
+        "delta: %f, m2: %f, solve: %f, solve_next: %f, avg iters: %f, Cinv: %f, H: %f\n",
+        delta,
+        m2,
+        cost_solve,
+        cost_solve_next,
+        avg_iters,
+        cost_Cinv,
+        cost_H
+      );
+      fflush(0);
     }
   }
-  
+
   MPI_Barrier(MPI_COMM_WORLD);
   PRECISION ts0 = MPI_Wtime();
+
   // Turn cli ON always for the original mass m1
   g.cli_on = 1;
+
   fflush(0);
   shift_update(m1, l, threading);
   fflush(0);
+
   MPI_Barrier(MPI_COMM_WORLD);
   PRECISION ts1 = MPI_Wtime();
 
+  selfcoupling_setup_PRECISION( &g.op_double, l );
+
   if (g.my_rank == 0)
-    printf("time for shift = %f\n", ts1 - ts0); 
+    printf("time for shift = %f\n", ts1 - ts0);
 
 }
 
