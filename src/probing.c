@@ -1,5 +1,6 @@
 #include "main.h"
 #include "data_layout.h"
+#include "stdbool.h"
 
 //TODO: We need a function that frees the memory allocated by the calls of probing, there are memory leaks
 
@@ -27,6 +28,14 @@ void vector_copy(int *dest, int *src, int size) {
     for (int i = 0; i < size; i++) {
         dest[i] = src[i];
     }
+}
+
+bool contains(int *array, int size, int value) {
+    for (int i = 0; i < size; i++) {
+        if (array[i] == value)
+            return true;
+    }
+    return false;
 }
 
 //TODO: move all the variance related functions here into a new file
@@ -118,6 +127,75 @@ void allocate_variances(){
 
       set_probing_variances_to_zero();
    }
+}
+
+void allocate_colors(){
+
+  g.colors = (int**)malloc(g.num_levels * sizeof(int*));
+
+  if (g.colors == NULL)
+    error0("Allocation error0\n");
+
+  for(int level = 0; level < g.num_levels; level++){
+    int T = g.global_lattice[level][0];
+    int Z = g.global_lattice[level][1];
+    int Y = g.global_lattice[level][2];
+    int X = g.global_lattice[level][3];
+
+    int total_points = T * Z * Y * X;
+
+    g.colors[level] = NULL;
+    MALLOC(g.colors[level], int, total_points);
+  }
+
+  if(contains(g.interrupt, g.num_levels, 1) && g.probing == 2){
+
+    g.prev_hp_colors = (int**)malloc(g.num_levels * sizeof(int*));
+
+    if (g.prev_hp_colors == NULL)
+      error0("Allocation error0\n");
+
+    for(int level = 0; level < g.num_levels; level++){
+      int T = g.global_lattice[level][0];
+      int Z = g.global_lattice[level][1];
+      int Y = g.global_lattice[level][2];
+      int X = g.global_lattice[level][3];
+
+      int total_points = T * Z * Y * X;
+
+      g.prev_hp_colors[level] = NULL;
+      MALLOC(g.prev_hp_colors[level], int, total_points);
+    }
+  }
+
+
+}
+
+void free_colors(){
+
+  for(int level = 0; level < g.num_levels; level++){
+    int T = g.global_lattice[level][0];
+    int Z = g.global_lattice[level][1];
+    int Y = g.global_lattice[level][2];
+    int X = g.global_lattice[level][3];
+
+    int total_points = T * Z * Y * X;
+    FREE(g.colors[level], int, total_points);
+  }
+
+  if(contains(g.interrupt, g.num_levels, 1) && g.probing == 2){
+
+    for(int level = 0; level < g.num_levels; level++){
+      int T = g.global_lattice[level][0];
+      int Z = g.global_lattice[level][1];
+      int Y = g.global_lattice[level][2];
+      int X = g.global_lattice[level][3];
+
+      int total_points = T * Z * Y * X;
+      FREE(g.prev_hp_colors[level], int, total_points);
+    }
+  }
+
 }
 
 void setup_local_colors(){
@@ -233,7 +311,7 @@ void get_coloring_dimension(){
   if(g.trace_op_type == 9 || g.trace_op_type == 10 || g.trace_op_type == 11 || g.trace_op_type == 12)
     g.probing_dimension = 4;
 }
-/*
+
 void get_sigma_4D(){
   
   if(g.coloring_distance == 1){
@@ -242,7 +320,7 @@ void get_sigma_4D(){
     g.sigma[2] = 1;
     g.sigma[3] = 1;
     
-    g.nc = 2;
+    g.num_colors[0] = 2;
   }
   
   if(g.coloring_distance == 2){
@@ -251,7 +329,7 @@ void get_sigma_4D(){
     g.sigma[2] = 3;
     g.sigma[3] = 4;
     
-    g.nc = 10;
+    g.num_colors[0] = 10;
   }
   
   if(g.coloring_distance == 3){
@@ -260,7 +338,7 @@ void get_sigma_4D(){
     g.sigma[2] = 55;
     g.sigma[3] = 61;
     
-    g.nc = 16;
+    g.num_colors[0] = 16;
   }
   
   if(g.coloring_distance == 4){
@@ -269,7 +347,7 @@ void get_sigma_4D(){
     g.sigma[2] = 12;
     g.sigma[3] = 18;
     
-    g.nc = 64;
+    g.num_colors[0] = 64;
   }
 
     if(g.coloring_distance == 5){
@@ -278,7 +356,7 @@ void get_sigma_4D(){
     g.sigma[2] = 12;
     g.sigma[3] = 16;
 
-    g.nc = 128;
+    g.num_colors[0] = 128;
   }
 
   if(g.coloring_distance == 6){
@@ -287,7 +365,7 @@ void get_sigma_4D(){
     g.sigma[2] = 48;
     g.sigma[3] = 50;
 
-    g.nc = 320;
+    g.num_colors[0] = 320;
   }
 
   if(g.coloring_distance == 7){
@@ -296,7 +374,7 @@ void get_sigma_4D(){
     g.sigma[2] = 33;
     g.sigma[3] = 61;
 
-    g.nc = 512;
+    g.num_colors[0] = 512;
   }
   
 }
@@ -309,7 +387,7 @@ void get_sigma_3D(){
     g.sigma[2] = 1;
     g.sigma[3] = 1;
     
-    g.nc = 2;
+    g.num_colors[0] = 2;
   }
   
   if(g.coloring_distance == 2){
@@ -318,7 +396,7 @@ void get_sigma_3D(){
     g.sigma[2] = 2;
     g.sigma[3] = 3;
     
-    g.nc = 8;
+    g.num_colors[0] = 8;
   }
   
   if(g.coloring_distance == 3){
@@ -327,7 +405,7 @@ void get_sigma_3D(){
     g.sigma[2] = 3;
     g.sigma[3] = 5;
     
-    g.nc = 16;
+    g.num_colors[0] = 16;
   }
   
   if(g.coloring_distance == 4){
@@ -336,7 +414,7 @@ void get_sigma_3D(){
     g.sigma[2] = 6;
     g.sigma[3] = 9;
     
-    g.nc = 32;
+    g.num_colors[0] = 32;
   }
 
     if(g.coloring_distance == 5){
@@ -345,7 +423,7 @@ void get_sigma_3D(){
     g.sigma[2] = 11;
     g.sigma[3] = 27;
 
-    g.nc = 88;
+    g.num_colors[0] = 88;
   }
 
   if(g.coloring_distance == 6){
@@ -354,7 +432,7 @@ void get_sigma_3D(){
     g.sigma[2] = 8;
     g.sigma[3] = 44;
 
-    g.nc = 128;
+    g.num_colors[0] = 128;
   }
 
   if(g.coloring_distance == 7){
@@ -363,7 +441,7 @@ void get_sigma_3D(){
     g.sigma[2] = 9;
     g.sigma[3] = 33;
 
-    g.nc = 176;
+    g.num_colors[0] = 176;
   }
 
   if(g.coloring_distance == 8){
@@ -372,7 +450,7 @@ void get_sigma_3D(){
     g.sigma[2] = 48;
     g.sigma[3] = 51;
 
-    g.nc = 272;
+    g.num_colors[0] = 272;
   }
 
   if(g.coloring_distance == 9){
@@ -381,11 +459,11 @@ void get_sigma_3D(){
     g.sigma[2] = 33;
     g.sigma[3] = 45;
 
-    g.nc = 352;
+    g.num_colors[0] = 352;
   }
   
 }
-*/
+
 void dilution_check(int level){
 
   if(g.dilution[level] != 1 && g.dilution[level] != 2 && g.dilution[level] != 3 && g.dilution[level] != 4 && g.dilution[level] != 12){
@@ -408,11 +486,8 @@ void dilution_check(int level){
   if(g.dilution[level] == 12)
     printf("\nSpin-Color dilution at level %d\n", level);
 }
-/*
-void coloring_scheme(){
 
-  MALLOC(g.num_colors, int, g.num_levels);
-  MALLOC(g.dilution_ml, int, g.num_levels);
+void coloring_scheme(){
 
   get_coloring_dimension();
 
@@ -431,27 +506,21 @@ void coloring_scheme(){
       get_sigma_4D();
 
     printf("sigma: %d %d %d %d\n", g.sigma[0], g.sigma[1], g.sigma[2], g.sigma[3]);
-    printf("colors at the finest: %d\n", g.nc);
-
-    dilution_check();
 
     double time_taken;
 
     double start_time = MPI_Wtime();
 
-    g.colors = (int**)malloc(g.num_levels * sizeof(int*));
-
-    if (g.colors == NULL)
-        error0("Allocation error0\n");
-
     for(int level = 0; level < g.num_levels; level++){
 
-      g.dilution_ml[level] = g.dilution;
+      dilution_check(level);
 
       int T = g.global_lattice[level][0];
       int Z = g.global_lattice[level][1];
       int Y = g.global_lattice[level][2];
       int X = g.global_lattice[level][3];
+
+      int total_points = T * Z * Y * X;
 
       int size[4];
 
@@ -460,13 +529,7 @@ void coloring_scheme(){
       size[2] = Y;
       size[3] = X;
 
-      int total_points = T * Z * Y * X;
-
-      g.colors[level] = NULL;
-      MALLOC(g.colors[level], int, total_points);
       if(level == 0){
-
-        g.num_colors[level] = g.nc;
 
         // Set all colors to -1 (not assigned)
         for (int i = 0; i < total_points; i++) {
@@ -489,7 +552,7 @@ void coloring_scheme(){
                 //int col = t + 2*z + 3*y + 4*x;
 		int col = g.sigma[0]*t + g.sigma[1]*z + g.sigma[2]*y + g.sigma[3]*x;
 
-                g.colors[level][index] = col%g.nc;
+                g.colors[level][index] = col%g.num_colors[0];
 
               }
             }
@@ -526,8 +589,10 @@ void coloring_scheme(){
   }
     MPI_Barrier(MPI_COMM_WORLD);
     setup_local_colors();
+    if(g.my_rank == 0) free_colors();
+    MPI_Barrier(MPI_COMM_WORLD);
 }
-*/
+
 
 void stop_hadamard(int level){
 
@@ -556,11 +621,6 @@ void hierarchical_coloring(){
     double time_taken;
     double start_time = MPI_Wtime();
 
-    g.colors = (int**)malloc(g.num_levels * sizeof(int*));
-
-    if (g.colors == NULL)
-        error0("Allocation error0\n");
-
     for(int level = 0; level < g.num_levels; level++){
 
       printf("Level %d: k = %d\n", level, g.k[level]);
@@ -576,6 +636,8 @@ void hierarchical_coloring(){
       int Y = g.global_lattice[level][2];
       int X = g.global_lattice[level][3];
 
+      int total_points = T * Z * Y * X;
+
       int size[4];
 
       size[0] = T;
@@ -583,10 +645,6 @@ void hierarchical_coloring(){
       size[2] = Y;
       size[3] = X;
 
-      int total_points = T * Z * Y * X;
-
-      g.colors[level] = NULL;
-      MALLOC(g.colors[level], int, total_points);
       if(level <= g.colored_grids-1){
 
 	int *arrlc;
@@ -663,11 +721,14 @@ void hierarchical_coloring(){
   }
     MPI_Barrier(MPI_COMM_WORLD);
     setup_local_colors();
+    if(g.my_rank == 0) free_colors();
+    MPI_Barrier(MPI_COMM_WORLD);
 }
 
 void graph_coloring(){
 
-  //if(g.probing == 1) coloring_scheme();
+  if(g.my_rank == 0) allocate_colors();
+  if(g.probing == 1) coloring_scheme();
   if(g.probing == 2) hierarchical_coloring();
 
 }
