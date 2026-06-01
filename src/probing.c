@@ -16,6 +16,18 @@ int max(int v[], int size) {
     return max;
 }
 
+int min(int v[], int size) {
+    int min = v[0];
+
+    for (int i = 1; i < size; i++) {
+        if (v[i] < min) {
+            min = v[i];
+        }
+    }
+
+    return min;
+}
+
 int pow_int(int base, int exp) {
     int res = 1;
     for (int i = 0; i < exp; ++i) {
@@ -209,6 +221,43 @@ void free_colors(){
 
 }
 
+void shift_down(int *v, int size){
+    // find unique sorted values
+    int *unique = (int*)malloc(size * sizeof(int));
+    int unique_count = 0;
+
+    for(int i = 0; i < size; i++){
+        int found = 0;
+        for(int j = 0; j < unique_count; j++){
+            if(unique[j] == v[i]){
+                found = 1;
+                break;
+            }
+        }
+        if(!found)
+            unique[unique_count++] = v[i];
+    }
+
+    // sort unique values (simple bubble sort)
+    for(int i = 0; i < unique_count - 1; i++)
+        for(int j = i+1; j < unique_count; j++)
+            if(unique[i] > unique[j]){
+                int tmp = unique[i];
+                unique[i] = unique[j];
+                unique[j] = tmp;
+            }
+
+    // replace each value with its rank (1-indexed)
+    for(int i = 0; i < size; i++)
+        for(int j = 0; j < unique_count; j++)
+            if(v[i] == unique[j]){
+                v[i] = j + 1;
+                break;
+            }
+
+    free(unique);
+}
+
 void setup_local_colors(){
 
     int num_processes;
@@ -287,7 +336,6 @@ void setup_local_colors(){
     if (g.my_rank != 0){
         FREE(global_colors, int, global_size);
     }
-
         MPI_Barrier(g.comm_cart);
 
     }
@@ -309,7 +357,7 @@ void setup_local_colors(){
     //MPI_Bcast(g.num_colors, g.num_levels, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(g.num_colors, g.num_levels, MPI_INT, 0, g.comm_cart);
     MPI_Bcast(g.dilution, g.num_levels, MPI_INT, 0, g.comm_cart);
-    //print_colors();
+    print_colors();
     MPI_Barrier(MPI_COMM_WORLD);
 
 }
@@ -600,17 +648,109 @@ void coloring_scheme(){
     MPI_Barrier(MPI_COMM_WORLD);
 }
 
+int* find_indices(int *array, int size, int value, int *count){
+    // first pass: count how many matches
+    *count = 0;
+    for(int i = 0; i < size; i++){
+        if(array[i] == value)
+            (*count)++;
+    }
+    // allocate result
+    int *indices = (int*)malloc(*count * sizeof(int));
+    if(indices == NULL)
+        return NULL;
+    // second pass: fill indices
+    int j = 0;
+    for(int i = 0; i < size; i++){
+        if(array[i] == value)
+            indices[j++] = i;
+    }
+    return indices;
+}
 
-void stop_hadamard(int level){
-
+void exhaustive_search(int *full_colors, int *partial_last_color, int level){
   int size = g.global_lattice[level][0]*g.global_lattice[level][1]*g.global_lattice[level][2]*g.global_lattice[level][3];
+  int nc = max(g.prev_hp_colors[level], size);
+  int n_had = g.n_had[level];
+//full_colors*16 + partial_last_color + nc(prev_k) - full_colors - 1 = n_had ---> This must hold
+//full_colors*15 + partial_last_color + nc(prev_k) - 1 = n_had
+  for(int fc = 0; fc < nc; fc++){
+    for(int pl = 1; pl < 16; pl++){
+      if(fc*15 + pl + nc - 1 == n_had){
+        *full_colors = fc;
+        *partial_last_color = pl;
+        printf("\nExhaustive search at level %d completed\n", level);
+        printf("full_colors = %d, partial_last_color = %d\n", fc, pl);
+        return;
+      }
+    }
+  }
+  printf("\nExhaustive search at level %d completed with no results\n", level);
+}
 
-  for(int i=0; i<size; i++){
-    if(g.colors[level][i] > g.n_had[level])
-      g.colors[level][i] = g.n_had[level];
+void increasingOrder(int *v, int n) {
+    for (int i = 0; i < n - 1; i++) {
+        for (int j = 0; j < n - 1 - i; j++) {
+            if (v[j] > v[j + 1]) {
+                int temp = v[j];
+                v[j] = v[j + 1];
+                v[j + 1] = temp;
+            }
+        }
+    }
+}
+
+void stop_hadamard(){
+
+  for(int level = 0; level < g.num_levels; level++){
+    if(g.interrupt[level] != 1) continue;
+    int size = g.global_lattice[level][0]*g.global_lattice[level][1]*g.global_lattice[level][2]*g.global_lattice[level][3];
+    int nc = max(g.prev_hp_colors[level], size);
+    int full_colors, partial_last_color;
+
+    exhaustive_search(&full_colors, &partial_last_color, level);
+    printf("\nIn stop hadamard full_colors = %d, partial_last_color = %d\n", full_colors, partial_last_color);
+    for(int colors = full_colors+1; colors <= nc; colors++){
+      int count;
+      int *idx = find_indices(g.prev_hp_colors[level], size, colors, &count);
+
+      int *elements;
+      MALLOC(elements, int, 16);
+      for(int j=0; j<16; j++)
+        elements[j] = 0;
+
+      int l=0;
+      for(int j=0; j<count; j++){
+        if(!contains(elements, 16, g.colors[level][idx[j]])){
+          elements[l] = g.colors[level][idx[j]];
+          l++;
+        }
+      }
+
+      if(colors==full_colors+1){
+        increasingOrder(elements, 16);
+        int num = elements[partial_last_color-1];
+	printf("\nnum=%d\n", num);
+        for(int j=0; j<count; j++){
+          if(g.colors[level][idx[j]] >= num)
+            g.colors[level][idx[j]] = num;
+        }
+        free(idx);
+        FREE(elements, int, 16);
+      }else{
+        int num = min(elements, 16);
+	for(int j=0; j<count; j++)
+          g.colors[level][idx[j]] = num;
+
+        free(idx);
+        FREE(elements, int, 16);
+
+      }
+
+    }    
+    shift_down(g.colors[level], size);
   }
 
-  g.num_colors[level] = max(g.colors[level], size);
 }
 
 void hierarchical_coloring(int **colors, int *k){
@@ -702,7 +842,7 @@ void hierarchical_coloring(int **colors, int *k){
         }
 	FREE(arrlc, int, num_colors);
         //for (int i = 0; i < total_points; i++)
-          //g.colors[level][i]++;
+          //colors[level][i]++;
       }
       else{
         for(int i = 0; i < total_points; i++)
@@ -727,6 +867,18 @@ void graph_coloring(){
   if(g.probing == 1) coloring_scheme();
   if(g.probing == 2) {
     hierarchical_coloring(g.colors, g.k);
+    if(contains(g.interrupt, g.num_levels, 1)){
+      int *k;
+      MALLOC(k, int, g.num_levels);
+      for(int level = 0; level < g.num_levels; level++)
+        k[level] = g.k[level] - 1;
+
+      if(contains(k, g.num_levels, 0)) error0("k must be at least 2 to perform intermediate hierarchical probing\n");
+
+      hierarchical_coloring(g.prev_hp_colors, k);
+      if(g.my_rank == 0) stop_hadamard();
+
+    }
     for(int level = 0; level < g.num_levels; level++){
       int T = g.global_lattice[level][0];
       int Z = g.global_lattice[level][1];
