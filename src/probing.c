@@ -120,24 +120,7 @@ void print_global_colors(){
     }
     fprintf(file, " ]\n");
   }
-  fclose(file);
-
-   if(contains(g.interrupt, g.num_levels, 1) && g.probing == 2){
-     FILE *file = fopen("print_files/prev_colors.txt", "w");
-     for(int i = 0; i < g.num_levels; i++){
-       fprintf(file, "\nColors at level %d\n [", i);
-       int T = g.global_lattice[i][0];
-       int Z = g.global_lattice[i][1];
-       int Y = g.global_lattice[i][2];
-       int X = g.global_lattice[i][3];
-       int size = T*Z*Y*X;
-       for(int j = 0; j < size; j++){
-         fprintf(file, " %d ", g.prev_hp_colors[i][j]);
-       }
-       fprintf(file, " ]\n");
-    }
-    fclose(file);
-  }  
+  fclose(file);  
 }
 
 void allocate_variances(){
@@ -170,28 +153,6 @@ void allocate_colors(){
     g.colors[level] = NULL;
     MALLOC(g.colors[level], int, total_points);
   }
-
-  if(contains(g.interrupt, g.num_levels, 1) && g.probing == 2){
-
-    g.prev_hp_colors = (int**)malloc(g.num_levels * sizeof(int*));
-
-    if (g.prev_hp_colors == NULL)
-      error0("Allocation error0\n");
-
-    for(int level = 0; level < g.num_levels; level++){
-      int T = g.global_lattice[level][0];
-      int Z = g.global_lattice[level][1];
-      int Y = g.global_lattice[level][2];
-      int X = g.global_lattice[level][3];
-
-      int total_points = T * Z * Y * X;
-
-      g.prev_hp_colors[level] = NULL;
-      MALLOC(g.prev_hp_colors[level], int, total_points);
-    }
-  }
-
-
 }
 
 void free_colors(){
@@ -206,56 +167,6 @@ void free_colors(){
     FREE(g.colors[level], int, total_points);
   }
 
-  if(contains(g.interrupt, g.num_levels, 1) && g.probing == 2){
-
-    for(int level = 0; level < g.num_levels; level++){
-      int T = g.global_lattice[level][0];
-      int Z = g.global_lattice[level][1];
-      int Y = g.global_lattice[level][2];
-      int X = g.global_lattice[level][3];
-
-      int total_points = T * Z * Y * X;
-      FREE(g.prev_hp_colors[level], int, total_points);
-    }
-  }
-
-}
-
-void shift_down(int *v, int size){
-    // find unique sorted values
-    int *unique = (int*)malloc(size * sizeof(int));
-    int unique_count = 0;
-
-    for(int i = 0; i < size; i++){
-        int found = 0;
-        for(int j = 0; j < unique_count; j++){
-            if(unique[j] == v[i]){
-                found = 1;
-                break;
-            }
-        }
-        if(!found)
-            unique[unique_count++] = v[i];
-    }
-
-    // sort unique values (simple bubble sort)
-    for(int i = 0; i < unique_count - 1; i++)
-        for(int j = i+1; j < unique_count; j++)
-            if(unique[i] > unique[j]){
-                int tmp = unique[i];
-                unique[i] = unique[j];
-                unique[j] = tmp;
-            }
-
-    // replace each value with its rank (1-indexed)
-    for(int i = 0; i < size; i++)
-        for(int j = 0; j < unique_count; j++)
-            if(v[i] == unique[j]){
-                v[i] = j + 1;
-                break;
-            }
-
-    free(unique);
 }
 
 void setup_local_colors(){
@@ -357,7 +268,7 @@ void setup_local_colors(){
     //MPI_Bcast(g.num_colors, g.num_levels, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(g.num_colors, g.num_levels, MPI_INT, 0, g.comm_cart);
     MPI_Bcast(g.dilution, g.num_levels, MPI_INT, 0, g.comm_cart);
-    print_colors();
+    //print_colors();
     MPI_Barrier(MPI_COMM_WORLD);
 
 }
@@ -550,6 +461,7 @@ void coloring_scheme(){
 
   if(g.my_rank==0){
 
+    allocate_colors();
     MALLOC(g.variances, double, g.num_levels);
 
     printf("\nProbing = %d - Classical probing\n", g.probing);
@@ -668,233 +580,20 @@ int* find_indices(int *array, int size, int value, int *count){
     return indices;
 }
 
-void exhaustive_search(int *full_colors, int *partial_last_color, int level){
-  int size = g.global_lattice[level][0]*g.global_lattice[level][1]*g.global_lattice[level][2]*g.global_lattice[level][3];
-  int nc = max(g.prev_hp_colors[level], size);
-  int n_had = g.n_had[level];
-//full_colors*16 + partial_last_color + nc(prev_k) - full_colors - 1 = n_had ---> This must hold
-//full_colors*15 + partial_last_color + nc(prev_k) - 1 = n_had
-  for(int fc = 0; fc < nc; fc++){
-    for(int pl = 1; pl < 16; pl++){
-      if(fc*15 + pl + nc - 1 == n_had){
-        *full_colors = fc;
-        *partial_last_color = pl;
-        printf("\nExhaustive search at level %d completed\n", level);
-        printf("full_colors = %d, partial_last_color = %d\n", fc, pl);
-        return;
-      }
-    }
-  }
-  printf("\nExhaustive search at level %d completed with no results\n", level);
-}
-
-void increasingOrder(int *v, int n) {
-    for (int i = 0; i < n - 1; i++) {
-        for (int j = 0; j < n - 1 - i; j++) {
-            if (v[j] > v[j + 1]) {
-                int temp = v[j];
-                v[j] = v[j + 1];
-                v[j + 1] = temp;
-            }
-        }
-    }
-}
-
-void stop_hadamard(){
-
-  for(int level = 0; level < g.num_levels; level++){
-    if(g.interrupt[level] != 1) continue;
-    int size = g.global_lattice[level][0]*g.global_lattice[level][1]*g.global_lattice[level][2]*g.global_lattice[level][3];
-    int nc = max(g.prev_hp_colors[level], size);
-    int full_colors, partial_last_color;
-
-    exhaustive_search(&full_colors, &partial_last_color, level);
-    printf("\nIn stop hadamard full_colors = %d, partial_last_color = %d\n", full_colors, partial_last_color);
-    for(int colors = full_colors+1; colors <= nc; colors++){
-      int count;
-      int *idx = find_indices(g.prev_hp_colors[level], size, colors, &count);
-
-      int *elements;
-      MALLOC(elements, int, 16);
-      for(int j=0; j<16; j++)
-        elements[j] = 0;
-
-      int l=0;
-      for(int j=0; j<count; j++){
-        if(!contains(elements, 16, g.colors[level][idx[j]])){
-          elements[l] = g.colors[level][idx[j]];
-          l++;
-        }
-      }
-
-      if(colors==full_colors+1){
-        increasingOrder(elements, 16);
-        int num = elements[partial_last_color-1];
-	printf("\nnum=%d\n", num);
-        for(int j=0; j<count; j++){
-          if(g.colors[level][idx[j]] >= num)
-            g.colors[level][idx[j]] = num;
-        }
-        free(idx);
-        FREE(elements, int, 16);
-      }else{
-        int num = min(elements, 16);
-	for(int j=0; j<count; j++)
-          g.colors[level][idx[j]] = num;
-
-        free(idx);
-        FREE(elements, int, 16);
-
-      }
-
-    }    
-    shift_down(g.colors[level], size);
-  }
-
-}
-
-void hierarchical_coloring(int **colors, int *k){
-
-  if(g.my_rank==0){
-
-    printf("\nProbing = %d - Hierarchical probing\n", g.probing);
-    printf("Grids to be colored = %d\n", g.colored_grids);
-    printf("Coloring dimension = %d\n", g.probing_dimension);
-
-    double time_taken;
-    double start_time = MPI_Wtime();
-
-    for(int level = 0; level < g.num_levels; level++){
-
-      printf("Level %d: k = %d\n", level, k[level]);
-      int num_colors = pow_int(2, 4*(k[level]-1) + 1);
-      int Lu = pow_int(2, k[level]-1);
-      printf("Elementary color block at level %d: %d\n", level, Lu);
-
-      dilution_check(level);
-
-      int T = g.global_lattice[level][0];
-      int Z = g.global_lattice[level][1];
-      int Y = g.global_lattice[level][2];
-      int X = g.global_lattice[level][3];
-
-      int total_points = T * Z * Y * X;
-
-      int size[4];
-
-      size[0] = T;
-      size[1] = Z;
-      size[2] = Y;
-      size[3] = X;
-
-      if(level <= g.colored_grids-1){
-
-	int *arrlc;
-	MALLOC(arrlc, int, num_colors);
-        
-	for(int i = 0; i < num_colors; i++)
-	  arrlc[i] = i+1; //array of all possible colors from 1 to nc
-
-
-        // Set all colors to -1 (not assigned)
-        for (int i = 0; i < total_points; i++) {
-          colors[level][i] = -1;
-        }
-
-	int coords[4];
-        // Iterate over all lattice sites
-        for (int t = 0; t < T; t++) {
-          for (int z = 0; z < Z; z++) {
-            for (int y = 0; y < Y; y++) {
-              for (int x = 0; x < X; x++) {
-                int index = lex_index(t, z, y, x, size);
-
-                // Skip if the site has already been assigned a color
-                if (colors[level][index] != -1) {
-                  continue;
-                }
-
-		int bx[4];
-		int lx[4];
-		int eo = 0;
-
-		coords[0] = t;
-		coords[1] = z;
-		coords[2] = y;
-		coords[3] = x;
-
-		for(int i = 0; i < 4; i++){
-		  bx[i] = coords[i]/Lu;
-		  eo = eo+bx[i];
-		  lx[i] = coords[i] - Lu*bx[i];
-		}
-
-		eo = eo%2;
-
-		int idx = lx[0] + Lu*(lx[1] + Lu*(lx[2] + Lu*lx[3]));
-		idx = 2*idx + eo;
-
-		colors[level][index] = arrlc[idx];
-
-              }
-            }
-          }
-        }
-	FREE(arrlc, int, num_colors);
-        //for (int i = 0; i < total_points; i++)
-          //colors[level][i]++;
-      }
-      else{
-        for(int i = 0; i < total_points; i++)
-          colors[level][i] = 1;
-      }
-    }
-
-    double end_time = MPI_Wtime();
-
-    time_taken = end_time - start_time;
-
-    printf("\nTime for coloring: %f seconds\n", time_taken);
-  }
-    MPI_Barrier(MPI_COMM_WORLD);
-}
-
 void graph_coloring(){
 
-  if(g.my_rank == 0) allocate_colors();
   get_coloring_dimension();
   if(g.my_rank == 0) MALLOC(g.variances, double, g.num_levels);
   if(g.probing == 1) coloring_scheme();
-  if(g.probing == 2) {
-    hierarchical_coloring(g.colors, g.k);
-    if(contains(g.interrupt, g.num_levels, 1)){
-      int *k;
-      MALLOC(k, int, g.num_levels);
-      for(int level = 0; level < g.num_levels; level++)
-        k[level] = g.k[level] - 1;
 
-      if(contains(k, g.num_levels, 0)) error0("k must be at least 2 to perform intermediate hierarchical probing\n");
-
-      hierarchical_coloring(g.prev_hp_colors, k);
-      if(g.my_rank == 0) stop_hadamard();
-
-    }
-    for(int level = 0; level < g.num_levels; level++){
-      int T = g.global_lattice[level][0];
-      int Z = g.global_lattice[level][1];
-      int Y = g.global_lattice[level][2];
-      int X = g.global_lattice[level][3];
-      int total_points = T * Z * Y * X;
-
-      if(g.my_rank == 0) g.num_colors[level] = max(g.colors[level], total_points);
-      if(g.my_rank == 0) printf("Colors at level %d: %d\n", level, g.num_colors[level]);
-    }
-
-    if(g.my_rank == 0) print_global_colors();
-
-    setup_local_colors();
-    MPI_Barrier(MPI_COMM_WORLD);
-    if(g.my_rank == 0) free_colors();
-  }
-  MPI_Barrier(MPI_COMM_WORLD);
+ if(g.probing == 2){
+   printf("\nProbing = %d - Hierarchical probing\n", g.probing);
+   printf("Applied to num levels = %d\n", g.colored_grids);
+   printf("Probing dimension = %d\n", g.probing_dimension);
+   for(int level = 0; level<g.num_levels; level++){
+     dilution_check(level);
+     g.num_colors[level] = g.n_had[level];
+     if(g.my_rank==0) printf("Number of Hadamard vectors at level %d = %d\n", level, g.num_colors[level]);
+   }
+ }
 }

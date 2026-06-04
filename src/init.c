@@ -596,7 +596,6 @@ void method_finalize( level_struct *l ) {
 
   FREE( g.k, int, ls );
   FREE( g.num_colors, int, ls );
-  FREE( g.interrupt, int, ls );
   FREE( g.n_had, int, ls );
   FREE( g.dilution, int, ls );
 
@@ -1058,10 +1057,6 @@ void read_geometry_data( FILE *in, int ls ) {
     save_pt = &(g.k[i]); g.k[i] = 1;
     read_parameter( &save_pt, inputstr, "%d", 1, in, _DEFAULT_SET );
 
-    sprintf( inputstr, "d%d interrupt:", i );
-    save_pt = &(g.interrupt[i]); g.interrupt[i] = 0;
-    read_parameter( &save_pt, inputstr, "%d", 1, in, _DEFAULT_SET );
-
     sprintf( inputstr, "d%d num hadamard:", i );
     save_pt = &(g.n_had[i]); g.n_had[i] = 0;
     read_parameter( &save_pt, inputstr, "%d", 1, in, _DEFAULT_SET );
@@ -1447,7 +1442,6 @@ void allocate_for_global_struct_after_read_global_info( int ls ) {
   MALLOC( g.trace_min_iters, int, ls );
   MALLOC( g.k, int, ls );
   MALLOC( g.num_colors, int, ls );
-  MALLOC( g.interrupt, int, ls );
   MALLOC( g.n_had, int, ls );
   MALLOC( g.dilution, int, ls );
 #ifdef CUDA_OPT
