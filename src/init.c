@@ -581,8 +581,10 @@ void method_finalize( level_struct *l ) {
   FREE( g.global_lattice[0], int, 4*ls );
   FREE( g.local_lattice[0], int, 4*ls );
   FREE( g.block_lattice[0], int, 4*ls );
+  FREE( g.global_k[0], int, 4*ls );
   FREE( g.global_lattice, int*, ls );
   FREE( g.local_lattice, int*, ls );
+  FREE( g.global_k, int*, ls );
   FREE( g.block_lattice, int*, ls );
   FREE( g.post_smooth_iter, int, ls );
   FREE( g.ncycle, int, ls );
@@ -1426,12 +1428,15 @@ void allocate_for_global_struct_after_read_global_info( int ls ) {
   MALLOC( g.global_lattice, int*, ls );
   MALLOC( g.local_lattice, int*, ls );
   MALLOC( g.block_lattice, int*, ls );
+  MALLOC( g.global_k, int*, ls );
   g.global_lattice[0] = NULL;
   g.local_lattice[0] = NULL;
   g.block_lattice[0] = NULL;
+  g.global_k[0] = NULL;
   MALLOC( g.global_lattice[0], int, 4*ls );
   MALLOC( g.local_lattice[0], int, 4*ls );
   MALLOC( g.block_lattice[0], int, 4*ls );
+  MALLOC( g.global_k[0], int, 4*ls );
   MALLOC( g.post_smooth_iter, int, ls );
   MALLOC( g.ncycle, int, ls );
   MALLOC( g.relax_fac, double, ls );

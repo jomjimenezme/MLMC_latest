@@ -151,6 +151,7 @@ typedef struct global_struct
     int sigma[4];
 
     int *n_had;
+    int **global_k;
 
     int gamma_idx;
 
