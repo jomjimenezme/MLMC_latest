@@ -332,7 +332,9 @@ struct sample hp_hutchinson_blind_PRECISION( level_struct *l, hutchinson_PRECISI
   for( i=0; i<h->max_iters[l->depth];i++ ){
     // 1. create Rademacher vector, stored in h->rademacher_vector
     rademacher_create_PRECISION( l, h, type, threading );
-
+    int start,end;
+    compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
+    vector_PRECISION_copy( h->rademacher_buffer, h->rademacher_vector, start, end, l );
     // 2. apply the operator to the Rademacher vector
     // 3. dot product
     one_sample = h->hutch_compute_one_sample( -1, l, h, threading );
