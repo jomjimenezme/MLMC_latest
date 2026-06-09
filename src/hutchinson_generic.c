@@ -353,10 +353,12 @@ struct sample hp_hutchinson_blind_PRECISION( level_struct *l, hutchinson_PRECISI
     int start,end;
     compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
     vector_PRECISION_copy( h->rademacher_buffer, h->rademacher_vector, start, end, l );
+
     for(g.coloring_count = 0; g.coloring_count < g.num_colors[l->depth]; g.coloring_count++){
       for(g.dilution_count = 1; g.dilution_count < g.dilution[l->depth] + 1; g.dilution_count++){
 	if(g.my_rank == 0) printf("\nHierarchical probing iteration %d, Hadamard vector n. %d, dof = %d\n", i, g.coloring_count+1, g.dilution_count);
 	hadamard_create_PRECISION( l, h, type, threading );
+        hadamard_PRECISION_product( h->rademacher_vector, h->hadamard_vector, start, end, l );
         // 2. apply the operator to the Rademacher vector
         // 3. dot product
         one_sample = h->hutch_compute_one_sample( -1, l, h, threading );
@@ -399,6 +401,7 @@ struct sample hp_hutchinson_blind_PRECISION( level_struct *l, hutchinson_PRECISI
           RMSD = sqrt(creal(variance)/j);
           if( i > h->min_iters[l->depth] && RMSD < cabs(trace) * h->trace_tol * h->tol_per_level[l->depth]) break;
         }
+	vector_PRECISION_copy( h->rademacher_vector, h->rademacher_buffer, start, end, l );
       }
     }
 
