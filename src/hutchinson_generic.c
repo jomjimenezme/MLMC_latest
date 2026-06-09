@@ -335,48 +335,54 @@ struct sample hp_hutchinson_blind_PRECISION( level_struct *l, hutchinson_PRECISI
     int start,end;
     compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
     vector_PRECISION_copy( h->rademacher_buffer, h->rademacher_vector, start, end, l );
-    // 2. apply the operator to the Rademacher vector
-    // 3. dot product
-    one_sample = h->hutch_compute_one_sample( -1, l, h, threading );
+    for(g.coloring_count = 0; g.coloring_count < g.num_colors[l->depth]; g.coloring_count++){
+      for(g.dilution_count = 1; g.dilution_count < g.dilution[l->depth] + 1; g.dilution_count++){
+	if(g.my_rank == 0) printf("\nHierarchical probing iteration %d, Hadamard vector n. %d, dof = %d\n", i, g.coloring_count+1, g.dilution_count);
+        // 2. apply the operator to the Rademacher vector
+        // 3. dot product
+        one_sample = h->hutch_compute_one_sample( -1, l, h, threading );
 
-    samples[i] = one_sample;
+        samples[i] = one_sample;
 
-    // 4. compute estimated trace and variance, print something?
-    estimate.acc_trace += one_sample;
+        // 4. compute estimated trace and variance, print something?
+        estimate.acc_trace += one_sample;
 
-    if( i!=0 ){
-      variance = 0.0;
-      estimate.sample_size = i+1;
-      trace = estimate.acc_trace/estimate.sample_size;
-      for( j=0; j<i; j++ ){
-        variance += conj(samples[j] - trace) * (samples[j] - trace);
-      }
-      variance = variance / j;
-      START_MASTER(threading);
-      if(g.my_rank==0) {
-        printf("[%d, trace: %e %c i%e, variance: %e] ",
-        i, creal(trace),
-        (cimag(trace) < 0) ? '-' : '+',
-        fabs(cimag(trace)),
-        creal(variance));
+        if( i!=0 ){
+          variance = 0.0;
+          estimate.sample_size = i+1;
+          trace = estimate.acc_trace/estimate.sample_size;
+          for( j=0; j<i; j++ ){
+            variance += conj(samples[j] - trace) * (samples[j] - trace);
+          }
+          variance = variance / j;
+          START_MASTER(threading);
+          if(g.my_rank==0) {
+            printf("[%d, trace: %e %c i%e, variance: %e] ",
+            i, creal(trace),
+            (cimag(trace) < 0) ? '-' : '+',
+            fabs(cimag(trace)),
+            creal(variance));
 
-        fflush(0);
+            fflush(0);
 
-        if(g.my_rank==0) g.var_pc[l->depth][i] = creal(variance);
+            if(g.my_rank==0) g.var_pc[l->depth][i] = creal(variance);
 
-        if(i == h->max_iters[l->depth] - 1 && g.trace_op_type != 7)
-          g.variances[l->depth] += creal(variance);
+            if(i == h->max_iters[l->depth] - 1 && g.trace_op_type != 7)
+              g.variances[l->depth] += creal(variance);
 
-        if(i == h->max_iters[l->depth] - 1 && g.trace_op_type == 7){
-          int nlevs = g.num_levels;
-          int idx = h->lx_i->depth*nlevs + h->lx_j->depth;
-          g.variances[idx] += creal(variance);
+            if(i == h->max_iters[l->depth] - 1 && g.trace_op_type == 7){
+              int nlevs = g.num_levels;
+              int idx = h->lx_i->depth*nlevs + h->lx_j->depth;
+              g.variances[idx] += creal(variance);
+            }
+          }
+          END_MASTER(threading);
+          RMSD = sqrt(creal(variance)/j);
+          if( i > h->min_iters[l->depth] && RMSD < cabs(trace) * h->trace_tol * h->tol_per_level[l->depth]) break;
         }
       }
-      END_MASTER(threading);
-      RMSD = sqrt(creal(variance)/j);
-      if( i > h->min_iters[l->depth] && RMSD < cabs(trace) * h->trace_tol * h->tol_per_level[l->depth]) break;
     }
+
   }
 
   //if(g.my_rank==0) print_variance_pc_PRECISION(l, h->max_iters[l->depth]);
