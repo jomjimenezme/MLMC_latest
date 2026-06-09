@@ -1460,6 +1460,7 @@ void allocate_for_global_struct_after_read_global_info( int ls ) {
     g.global_lattice[i] = g.global_lattice[0] + i*4;
     g.local_lattice[i] = g.local_lattice[0] + i*4;
     g.block_lattice[i] = g.block_lattice[0] + i*4;
+    g.global_k[i] = g.global_k[0] + i*4;
   }
 }
 

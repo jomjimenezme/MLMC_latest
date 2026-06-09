@@ -36,6 +36,10 @@ int pow_int(int base, int exp) {
     return res;
 }
 
+int log2_int(unsigned int x) {
+    return __builtin_ctz(x);
+}
+
 void vector_copy(int *dest, int *src, int size) {
     for (int i = 0; i < size; i++) {
         dest[i] = src[i];
@@ -442,19 +446,19 @@ void dilution_check(int level){
   }
 
   if(g.dilution[level] == 1)
-    printf("\nNo dilution at level %d\n", level);
+    if(g.my_rank==0) printf("\nNo dilution at level %d\n", level);
 
   if(g.dilution[level] == 2)
-    printf("\nPartial spin dilution at level %d\n", level);
+    if(g.my_rank==0) printf("\nPartial spin dilution at level %d\n", level);
 
   if(g.dilution[level] == 3)
-    printf("\nColor dilution at level %d\n", level);
+    if(g.my_rank==0) printf("\nColor dilution at level %d\n", level);
 
   if(g.dilution[level] == 4)
-    printf("\nComplete spin dilution at level %d\n", level);
+    if(g.my_rank==0) printf("\nComplete spin dilution at level %d\n", level);
 
   if(g.dilution[level] == 12)
-    printf("\nSpin-Color dilution at level %d\n", level);
+    if(g.my_rank==0) printf("\nSpin-Color dilution at level %d\n", level);
 }
 
 void coloring_scheme(){
@@ -591,9 +595,19 @@ void graph_coloring(){
    if(g.my_rank==0) printf("Applied to num levels = %d\n", g.colored_grids);
    if(g.my_rank==0) printf("Probing dimension = %d\n", g.probing_dimension);
    for(int level = 0; level<g.num_levels; level++){
+     g.global_k[level][0] = log2_int(g.global_lattice[level][0]);
+     g.global_k[level][1] = log2_int(g.global_lattice[level][1]);
+     g.global_k[level][2] = log2_int(g.global_lattice[level][2]);
+     g.global_k[level][3] = log2_int(g.global_lattice[level][3]);
      dilution_check(level);
      g.num_colors[level] = g.n_had[level];
-     if(g.my_rank==0) printf("Number of Hadamard vectors at level %d = %d\n", level, g.num_colors[level]);
+     if(g.my_rank==0){
+       printf("Number of Hadamard vectors at level %d = %d\n", level, g.num_colors[level]);
+       printf("Global k_t at level %d = %d\n", level, g.global_k[level][0]);
+       printf("Global k_z at level %d = %d\n", level, g.global_k[level][1]);
+       printf("Global k_y at level %d = %d\n", level, g.global_k[level][2]);
+       printf("Global k_x at level %d = %d\n", level, g.global_k[level][3]);
+     }
    }
  }
 }
