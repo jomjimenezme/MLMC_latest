@@ -93,7 +93,7 @@ complex_PRECISION hutchinson_driver_PRECISION( level_struct *l, struct Thread *t
         trace += estimate.acc_trace / estimate.sample_size;
       }
   } else if(g.probing == 2){
-      estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
+      estimate = hp_hutchinson_blind_PRECISION(lx, h, 0, threading);
       trace += estimate.acc_trace / estimate.sample_size;
   }
 
@@ -280,6 +280,81 @@ struct sample hutchinson_blind_PRECISION( level_struct *l, hutchinson_PRECISION_
         fflush(0);
 
 	if(g.my_rank==0) g.var_pc[l->depth][i] = creal(variance);
+
+        if(i == h->max_iters[l->depth] - 1 && g.trace_op_type != 7)
+          g.variances[l->depth] += creal(variance);
+
+        if(i == h->max_iters[l->depth] - 1 && g.trace_op_type == 7){
+          int nlevs = g.num_levels;
+          int idx = h->lx_i->depth*nlevs + h->lx_j->depth;
+          g.variances[idx] += creal(variance);
+        }
+      }
+      END_MASTER(threading);
+      RMSD = sqrt(creal(variance)/j);
+      if( i > h->min_iters[l->depth] && RMSD < cabs(trace) * h->trace_tol * h->tol_per_level[l->depth]) break;
+    }
+  }
+
+  //if(g.my_rank==0) print_variance_pc_PRECISION(l, h->max_iters[l->depth]);
+  double t1 = MPI_Wtime();
+  if(g.my_rank==0) {
+    printf("\n");
+    printf("Time for sample computation (Avg.): \t %f\n\n", (t1-t0)/h->max_iters[l->depth]);
+  }
+
+  estimate.sample_size = i;
+
+  free(samples);
+
+  return estimate;
+}
+
+struct sample hp_hutchinson_blind_PRECISION( level_struct *l, hutchinson_PRECISION_struct* h, int type, struct Thread *threading ){
+  int i, j;
+  complex_PRECISION one_sample=0.0, variance=0.0, trace=0.0;
+  double RMSD;
+  struct sample estimate;
+
+  // TODO : move this allocation to some init function
+  complex_PRECISION* samples = (complex_PRECISION*) malloc( h->max_iters[l->depth]*sizeof(complex_PRECISION) );
+  memset( samples, 0.0, h->max_iters[l->depth]*sizeof(complex_PRECISION) );
+
+  estimate.acc_trace = 0.0;
+  double t0 = MPI_Wtime();
+
+  for( i=0; i<h->max_iters[l->depth];i++ ){
+    // 1. create Rademacher vector, stored in h->rademacher_vector
+    rademacher_create_PRECISION( l, h, type, threading );
+
+    // 2. apply the operator to the Rademacher vector
+    // 3. dot product
+    one_sample = h->hutch_compute_one_sample( -1, l, h, threading );
+
+    samples[i] = one_sample;
+
+    // 4. compute estimated trace and variance, print something?
+    estimate.acc_trace += one_sample;
+
+    if( i!=0 ){
+      variance = 0.0;
+      estimate.sample_size = i+1;
+      trace = estimate.acc_trace/estimate.sample_size;
+      for( j=0; j<i; j++ ){
+        variance += conj(samples[j] - trace) * (samples[j] - trace);
+      }
+      variance = variance / j;
+      START_MASTER(threading);
+      if(g.my_rank==0) {
+        printf("[%d, trace: %e %c i%e, variance: %e] ",
+        i, creal(trace),
+        (cimag(trace) < 0) ? '-' : '+',
+        fabs(cimag(trace)),
+        creal(variance));
+
+        fflush(0);
+
+        if(g.my_rank==0) g.var_pc[l->depth][i] = creal(variance);
 
         if(i == h->max_iters[l->depth] - 1 && g.trace_op_type != 7)
           g.variances[l->depth] += creal(variance);
