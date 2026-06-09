@@ -106,7 +106,25 @@ complex_PRECISION hutchinson_driver_PRECISION( level_struct *l, struct Thread *t
   return trace;
 }
 
-
+void hadamard_create_PRECISION( level_struct *l, hutchinson_PRECISION_struct* h, int type, struct Thread *threading ){
+  if( type==0 ){
+    START_MASTER(threading)
+    if(h->hutch_compute_one_sample == g5_3D_hutchinson_mlmc_difference_PRECISION || h->hutch_compute_one_sample == g5_3D_hutchinson_mlmc_coarsest_PRECISION){
+      vector_PRECISION_hadamard( h->hadamard_vector, 0, h->finest_level->inner_vector_size, h->finest_level );
+    }else{
+      vector_PRECISION_hadamard( h->hadamard_vector, 0, l->inner_vector_size, l );
+    }
+    END_MASTER(threading)
+    SYNC_MASTER_TO_ALL(threading)
+  }
+  else if( type==1 ){
+    START_MASTER(threading)
+    vector_PRECISION_hadamard( h->hadamard_vector, 0, l->next_level->inner_vector_size, l->next_level );
+    END_MASTER(threading)
+    SYNC_MASTER_TO_ALL(threading)
+  }
+  else{ error0("Unknown value for type of Rademacher vector in relation to level of creation\n"); }
+}
 
 void rademacher_create_PRECISION( level_struct *l, hutchinson_PRECISION_struct* h, int type, struct Thread *threading ){
   if( type==0 ){
@@ -338,6 +356,7 @@ struct sample hp_hutchinson_blind_PRECISION( level_struct *l, hutchinson_PRECISI
     for(g.coloring_count = 0; g.coloring_count < g.num_colors[l->depth]; g.coloring_count++){
       for(g.dilution_count = 1; g.dilution_count < g.dilution[l->depth] + 1; g.dilution_count++){
 	if(g.my_rank == 0) printf("\nHierarchical probing iteration %d, Hadamard vector n. %d, dof = %d\n", i, g.coloring_count+1, g.dilution_count);
+	hadamard_create_PRECISION( l, h, type, threading );
         // 2. apply the operator to the Rademacher vector
         // 3. dot product
         one_sample = h->hutch_compute_one_sample( -1, l, h, threading );

@@ -71,6 +71,62 @@ int compute_dilution_idx_PRECISION(level_struct *l, int global_idx, int dof){
 
 }
 
+int get_dilution_value_PRECISION(int idx, int level){
+
+    int val = 0;
+
+    if(g.dilution[level] == 1) val = 1;
+
+    if(g.dilution[level] == 2){
+      if(g.dilution_count == 1 && idx <= 5) val = 1;
+      if(g.dilution_count == 2 && idx > 5) val = 1;
+    }
+
+    if(g.dilution[level] == 3){
+      if(g.dilution_count == 1 && (idx == 0 || idx == 3 || idx == 6 || idx == 9)) val = 1;
+      if(g.dilution_count == 2 && (idx == 1 || idx == 4 || idx == 7 || idx == 10)) val = 1;
+      if(g.dilution_count == 3 && (idx == 2 || idx == 5 || idx == 8 || idx == 11)) val = 1;
+    }
+
+    if(g.dilution[level] == 4){
+      if(g.dilution_count == 1 && idx <= 2) val = 1;
+      if(g.dilution_count == 2 && idx > 2 && idx <= 5) val = 1;
+      if(g.dilution_count == 3 && idx > 5 && idx <= 8) val = 1;
+      if(g.dilution_count == 4 && idx > 8) val = 1;
+    }
+
+    if(g.dilution[level] == 12){
+      if(g.dilution_count == idx+1) val=1;
+    }
+
+    return val;
+}
+
+
+void vector_PRECISION_hadamard( vector_PRECISION phi, int start, int end, level_struct *l ) {
+
+  int thread = omp_get_thread_num();
+  if(thread == 0 && start != end)
+  PROF_PRECISION_START( _SET );
+  if ( phi != NULL ) {
+    int i;
+    int global_position = g.my_rank*(end - start);
+    for ( i=start; i<end; i++ ){
+      int global_lattice_idx = (global_position + i)/12; //global index on the lattice
+      int site_inner_idx = global_position + i - global_lattice_idx*12;
+      
+      int e = get_dilution_value_PRECISION(site_inner_idx, l->depth);
+      int hij = build_H(global_lattice_idx, g.coloring_count, l->depth);
+      phi[i] = (PRECISION) hij*e; 
+    }
+  } else {
+    error0("Error in \"vector_PRECISION_define_random\": pointer is null\n");
+  }
+
+  if(thread == 0 && start != end)
+  PROF_PRECISION_STOP( _SET, 1 );
+}
+
 void vector_PRECISION_define_random_rademacher( vector_PRECISION phi, int start, int end, level_struct *l ) {
 
   int thread = omp_get_thread_num();
