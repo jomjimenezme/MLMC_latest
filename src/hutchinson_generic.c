@@ -25,6 +25,8 @@ void hutchinson_diver_PRECISION_init( level_struct *l, struct Thread *threading 
   h->mlmc_b2 =NULL;
   h->mlmc_testing =NULL;
   h->rademacher_vector =NULL;
+  h->rademacher_buffer =NULL;
+  h->hadamard_vector =NULL;
 
   h->finest_level = l;
   h->lx_i = NULL;
@@ -46,6 +48,8 @@ void hutchinson_diver_PRECISION_alloc( level_struct *l, struct Thread *threading
   PUBLIC_MALLOC( h->mlmc_b2, complex_PRECISION, l->inner_vector_size );
   PUBLIC_MALLOC( h->mlmc_testing, complex_PRECISION, l->inner_vector_size );
   PUBLIC_MALLOC( h->rademacher_vector, complex_PRECISION, l->inner_vector_size );
+  PUBLIC_MALLOC( h->rademacher_buffer, complex_PRECISION, l->inner_vector_size );
+  PUBLIC_MALLOC( h->hadamard_vector, complex_PRECISION, l->inner_vector_size );
 
   for ( i=0;i<g.num_levels;i++ ) {
     h->max_iters[i] = g.trace_max_iters[i];
@@ -64,6 +68,8 @@ void hutchinson_diver_PRECISION_free( level_struct *l, struct Thread *threading 
   PUBLIC_FREE( h->mlmc_b2, complex_PRECISION, l->inner_vector_size );
   PUBLIC_FREE( h->mlmc_testing, complex_PRECISION, l->inner_vector_size );
   PUBLIC_FREE( h->rademacher_vector, complex_PRECISION, l->inner_vector_size );
+  PUBLIC_FREE( h->rademacher_buffer, complex_PRECISION, l->inner_vector_size );
+  PUBLIC_FREE( h->hadamard_vector, complex_PRECISION, l->inner_vector_size );
 }
 
 

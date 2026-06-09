@@ -277,6 +277,8 @@ typedef struct {
 
     // to store the Rademacher vector    
     vector_PRECISION rademacher_vector;
+    vector_PRECISION rademacher_buffer;
+    vector_PRECISION hadamard_vector;
 
     complex_PRECISION rt;
     complex_PRECISION trace;
