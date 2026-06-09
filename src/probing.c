@@ -551,7 +551,7 @@ void coloring_scheme(){
        printf("\n Colors at depth %d : \t %d \n", level, g.num_colors[level]);
     }
 
-    print_global_colors();
+    //print_global_colors();
 
   }
     MPI_Barrier(MPI_COMM_WORLD);
@@ -587,9 +587,9 @@ void graph_coloring(){
   if(g.probing == 1) coloring_scheme();
 
  if(g.probing == 2){
-   printf("\nProbing = %d - Hierarchical probing\n", g.probing);
-   printf("Applied to num levels = %d\n", g.colored_grids);
-   printf("Probing dimension = %d\n", g.probing_dimension);
+   if(g.my_rank==0) printf("\nProbing = %d - Hierarchical probing\n", g.probing);
+   if(g.my_rank==0) printf("Applied to num levels = %d\n", g.colored_grids);
+   if(g.my_rank==0) printf("Probing dimension = %d\n", g.probing_dimension);
    for(int level = 0; level<g.num_levels; level++){
      dilution_check(level);
      g.num_colors[level] = g.n_had[level];

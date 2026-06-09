@@ -150,7 +150,6 @@ typedef struct global_struct
 
     int sigma[4];
 
-    int *interrupt;
     int *n_had;
 
     int gamma_idx;

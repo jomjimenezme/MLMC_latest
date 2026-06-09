@@ -78,7 +78,7 @@ complex_PRECISION hutchinson_driver_PRECISION( level_struct *l, struct Thread *t
   // set the pointer to the finest-level Hutchinson estimator
   h->hutch_compute_one_sample = hutchinson_plain_PRECISION;
 
-  if (g.probing != 0) {
+  if (g.probing == 1) {
     for (g.coloring_count = 1; g.coloring_count < g.num_colors[0] + 1; g.coloring_count++){
       for(g.dilution_count = 1; g.dilution_count < g.dilution[0] + 1; g.dilution_count++){
         if(g.my_rank == 0) printf("\nColor %d, dilution %d", g.coloring_count, g.dilution_count);
@@ -86,12 +86,15 @@ complex_PRECISION hutchinson_driver_PRECISION( level_struct *l, struct Thread *t
         trace += estimate.acc_trace / estimate.sample_size;
       }
     }
-  } else {
+  } else if(g.probing == 0){
     for(g.dilution_count = 1; g.dilution_count < g.dilution[0] + 1; g.dilution_count++){
         if(g.my_rank == 0) printf("\nColor %d, dilution %d", g.coloring_count, g.dilution_count);
         estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
         trace += estimate.acc_trace / estimate.sample_size;
       }
+  } else if(g.probing == 2){
+      estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
+      trace += estimate.acc_trace / estimate.sample_size;
   }
 
   return trace;

@@ -85,7 +85,7 @@ void vector_PRECISION_define_random_rademacher( vector_PRECISION phi, int start,
 
     for ( i=start; i<end; i++ ){
       int dilution_idx = compute_dilution_idx_PRECISION(l, i, dof);
-      if(g.probing){
+      if(g.probing == 1){
 
          if(i%dof == 0 && i > 0)
             j++;
@@ -97,13 +97,16 @@ void vector_PRECISION_define_random_rademacher( vector_PRECISION phi, int start,
          }else{
             phi[i] = 0.0;
          }
-      }else{
+      }else if(g.probing == 0){
         if(dilution_idx == g.dilution_count){
             if(   (PRECISION)((double)rand()<(double)RAND_MAX/2.0)   ) phi[i]=  (double) (-1);
             else phi[i]= (PRECISION)(1);
          }else{
             phi[i] = 0.0;
          }
+      }else if(g.probing == 2){
+       if(   (PRECISION)((double)rand()<(double)RAND_MAX/2.0)   ) phi[i]=  (double) (-1);
+       else phi[i]= (PRECISION)(1);
       }
     }
   } else {

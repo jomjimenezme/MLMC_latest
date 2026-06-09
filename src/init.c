@@ -549,7 +549,7 @@ void method_finalize( level_struct *l ) {
   
   int ls = MAX(g.num_desired_levels,2);
 
-  if(g.probing != 0){
+  if(g.probing == 1){
     int num_processes;
     MPI_Comm_size(MPI_COMM_WORLD, &num_processes);
     for(int level = 0; level < g.num_levels; level++){
