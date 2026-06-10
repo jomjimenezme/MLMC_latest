@@ -88,7 +88,7 @@ complex_PRECISION hutchinson_driver_PRECISION( level_struct *l, struct Thread *t
   h->hutch_compute_one_sample = hutchinson_plain_PRECISION;
 
   if (g.probing == 1) {
-    estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
+    estimate = sigma_hutchinson_blind_PRECISION(lx, h, 0, threading);
     trace += estimate.acc_trace / estimate.sample_size;
   } else if(g.probing == 0){
     for(g.dilution_count = 1; g.dilution_count < g.dilution[0] + 1; g.dilution_count++){
@@ -339,6 +339,100 @@ struct sample hutchinson_blind_PRECISION( level_struct *l, hutchinson_PRECISION_
   }
 
   //if(g.my_rank==0) print_variance_pc_PRECISION(l, h->max_iters[l->depth]);
+  double t1 = MPI_Wtime();
+  if(g.my_rank==0) {
+    printf("\n");
+    printf("Time for sample computation (Avg.): \t %f\n\n", (t1-t0)/h->max_iters[l->depth]);
+  }
+
+  estimate.sample_size = i;
+
+  free(samples);
+
+  return estimate;
+}
+
+struct sample sigma_hutchinson_blind_PRECISION( level_struct *l, hutchinson_PRECISION_struct* h, int type, struct Thread *threading ){
+  int i, j;
+  complex_PRECISION one_sample=0.0, variance=0.0, trace=0.0;
+  double RMSD;
+  struct sample estimate;
+
+  // TODO : move this allocation to some init function
+  complex_PRECISION* samples = (complex_PRECISION*) malloc( h->max_iters[l->depth]*sizeof(complex_PRECISION) );
+  memset( samples, 0.0, h->max_iters[l->depth]*sizeof(complex_PRECISION) );
+
+  estimate.acc_trace = 0.0;
+  double t0 = MPI_Wtime();
+
+  for( i=0; i<h->max_iters[l->depth];i++ ){
+    // 1. create Rademacher vector, stored in h->rademacher_vector
+    rademacher_create_PRECISION( l, h, type, threading );
+    int start,end;
+    compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
+    vector_PRECISION_copy( h->rademacher_buffer, h->rademacher_vector, start, end, l );
+
+    complex_PRECISION* traces = (complex_PRECISION*) malloc( g.num_colors[l->depth]*sizeof(complex_PRECISION) );
+    memset( traces, 0.0, g.num_colors[l->depth]*sizeof(complex_PRECISION) );
+
+    for(g.coloring_count = 0; g.coloring_count < g.num_colors[l->depth]; g.coloring_count++){
+      for(g.dilution_count = 1; g.dilution_count < g.dilution[l->depth] + 1; g.dilution_count++){
+        if(g.my_rank == 0) printf("\nHierarchical probing iteration %d, Hadamard vector n. %d, dof = %d\n", i, g.coloring_count+1, g.dilution_count);
+        probing_create_PRECISION( l, h, type, threading );
+        hadamard_PRECISION_product( h->rademacher_vector, h->probing_vector, start, end, l );
+        // 2. apply the operator to the Rademacher vector
+        // 3. dot product
+        one_sample = h->hutch_compute_one_sample( -1, l, h, threading );
+
+        // 4. compute estimated trace and variance
+        if(g.my_rank==0) {
+          printf("[%d, color %d, dof %d out of %d, trace: %e %c i%e]\n",
+          i, g.coloring_count+1, g.dilution_count, g.dilution[l->depth], creal(one_sample),
+          (cimag(one_sample) < 0) ? '-' : '+',
+          fabs(cimag(one_sample)));
+
+          fflush(0);
+        }
+
+        traces[g.coloring_count] += one_sample;
+        estimate.acc_trace += one_sample;
+        vector_PRECISION_copy( h->rademacher_vector, h->rademacher_buffer, start, end, l );
+
+      }
+
+      if(g.my_rank==0){
+          printf("\n[It %d - Trace of col=%d: %e %c i%e]\n",
+          i, g.coloring_count+1, creal(traces[g.coloring_count]),
+          (cimag(traces[g.coloring_count]) < 0) ? '-' : '+',
+          fabs(cimag(traces[g.coloring_count])));
+
+          fflush(0);
+      }
+
+    }
+
+    for(j=0; j<g.num_colors[l->depth]; j++)
+      samples[i] += traces[j];
+ 
+    if(g.my_rank==0) printf("\n[Trace of it %d = %e %c i%e]\n", i, creal(samples[i]), (cimag(samples[i]) < 0) ? '-' : '+', fabs(cimag(samples[i])));
+
+    variance = 0.0;
+    trace = 0.0;
+    if(i != 0){
+      for(j=0; j<=i; j++)
+        trace += samples[j];
+      trace = trace/(i+1);
+
+      for(j=0; j<=i; j++)
+        variance += conj(samples[j] - trace)*(samples[j] - trace);
+      variance = variance/i;
+
+      if(g.my_rank==0) printf("\n[%d, trace: %e %c i%e, variance: %e]\n", i, creal(trace), (cimag(trace) < 0) ? '-' : '+', fabs(cimag(trace)), creal(variance));
+
+    }
+    free(traces);
+  }
+
   double t1 = MPI_Wtime();
   if(g.my_rank==0) {
     printf("\n");
