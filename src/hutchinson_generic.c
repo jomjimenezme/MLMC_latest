@@ -88,13 +88,8 @@ complex_PRECISION hutchinson_driver_PRECISION( level_struct *l, struct Thread *t
   h->hutch_compute_one_sample = hutchinson_plain_PRECISION;
 
   if (g.probing == 1) {
-    for (g.coloring_count = 1; g.coloring_count < g.num_colors[0] + 1; g.coloring_count++){
-      for(g.dilution_count = 1; g.dilution_count < g.dilution[0] + 1; g.dilution_count++){
-        if(g.my_rank == 0) printf("\nColor %d, dilution %d", g.coloring_count, g.dilution_count);
-        estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
-        trace += estimate.acc_trace / estimate.sample_size;
-      }
-    }
+    estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
+    trace += estimate.acc_trace / estimate.sample_size;
   } else if(g.probing == 0){
     for(g.dilution_count = 1; g.dilution_count < g.dilution[0] + 1; g.dilution_count++){
         if(g.my_rank == 0) printf("\nColor %d, dilution %d", g.coloring_count, g.dilution_count);
@@ -107,6 +102,26 @@ complex_PRECISION hutchinson_driver_PRECISION( level_struct *l, struct Thread *t
   }
 
   return trace;
+}
+
+void probing_create_PRECISION( level_struct *l, hutchinson_PRECISION_struct* h, int type, struct Thread *threading ){
+  if( type==0 ){
+    START_MASTER(threading)
+    if(h->hutch_compute_one_sample == g5_3D_hutchinson_mlmc_difference_PRECISION || h->hutch_compute_one_sample == g5_3D_hutchinson_mlmc_coarsest_PRECISION){
+      vector_PRECISION_probing( h->probing_vector, 0, h->finest_level->inner_vector_size, h->finest_level );
+    }else{
+      vector_PRECISION_probing( h->probing_vector, 0, l->inner_vector_size, l );
+    }
+    END_MASTER(threading)
+    SYNC_MASTER_TO_ALL(threading)
+  }
+  else if( type==1 ){
+    START_MASTER(threading)
+    vector_PRECISION_probing( h->probing_vector, 0, l->next_level->inner_vector_size, l->next_level );
+    END_MASTER(threading)
+    SYNC_MASTER_TO_ALL(threading)
+  }
+  else{ error0("Unknown value for type of Rademacher vector in relation to level of creation\n"); }
 }
 
 void hadamard_create_PRECISION( level_struct *l, hutchinson_PRECISION_struct* h, int type, struct Thread *threading ){
@@ -267,7 +282,7 @@ struct sample hutchinson_blind_PRECISION( level_struct *l, hutchinson_PRECISION_
   complex_PRECISION one_sample=0.0, variance=0.0, trace=0.0;
   double RMSD;
   struct sample estimate;
-
+  
   // TODO : move this allocation to some init function
   complex_PRECISION* samples = (complex_PRECISION*) malloc( h->max_iters[l->depth]*sizeof(complex_PRECISION) );
   memset( samples, 0.0, h->max_iters[l->depth]*sizeof(complex_PRECISION) );

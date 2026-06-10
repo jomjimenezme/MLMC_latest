@@ -102,6 +102,36 @@ int get_dilution_value_PRECISION(int idx, int level){
     return val;
 }
 
+void vector_PRECISION_probing( vector_PRECISION phi, int start, int end, level_struct *l ) {
+
+  int thread = omp_get_thread_num();
+  if(thread == 0 && start != end)
+  PROF_PRECISION_START( _SET );
+  if ( phi != NULL ) {
+    int i;
+    int global_position = g.my_rank*(end - start);
+    for ( i=start; i<end; i++ ){
+      int local_lattice_idx = i/12;
+      int pij;
+      if(g.local_colors[l->depth][local_lattice_idx] == g.coloring_count+1)
+        pij = 1;
+      else
+        pij = 0;
+
+      int global_lattice_idx = (global_position + i)/12; //global index on the lattice
+      int site_inner_idx = global_position + i - global_lattice_idx*12;
+
+      int e = get_dilution_value_PRECISION(site_inner_idx, l->depth);
+      phi[i] = (PRECISION) pij*e;
+    }
+  } else {
+    error0("Error in \"vector_PRECISION_define_random\": pointer is null\n");
+  }
+
+  if(thread == 0 && start != end)
+  PROF_PRECISION_STOP( _SET, 1 );
+}
+
 
 void vector_PRECISION_hadamard( vector_PRECISION phi, int start, int end, level_struct *l ) {
 
@@ -142,17 +172,8 @@ void vector_PRECISION_define_random_rademacher( vector_PRECISION phi, int start,
     for ( i=start; i<end; i++ ){
       int dilution_idx = compute_dilution_idx_PRECISION(l, i, dof);
       if(g.probing == 1){
-
-         if(i%dof == 0 && i > 0)
-            j++;
-
-
-         if(g.local_colors[l->depth][j] == g.coloring_count && dilution_idx == g.dilution_count){
-            if(   (PRECISION)((double)rand()<(double)RAND_MAX/2.0)   ) phi[i]=  (double) (-1);
-            else phi[i]= (PRECISION)(1);
-         }else{
-            phi[i] = 0.0;
-         }
+        if(   (PRECISION)((double)rand()<(double)RAND_MAX/2.0)   ) phi[i]=  (double) (-1);
+        else phi[i]= (PRECISION)(1);
       }else if(g.probing == 0){
         if(dilution_idx == g.dilution_count){
             if(   (PRECISION)((double)rand()<(double)RAND_MAX/2.0)   ) phi[i]=  (double) (-1);

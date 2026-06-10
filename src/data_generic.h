@@ -30,5 +30,6 @@
   void print_rademacher_PRECISION( vector_PRECISION phi, level_struct *l);
   
   void vector_PRECISION_hadamard( vector_PRECISION phi, int start, int end, level_struct *l );
+  void vector_PRECISION_probing( vector_PRECISION phi, int start, int end, level_struct *l );
   
 #endif
