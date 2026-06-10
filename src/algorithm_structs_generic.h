@@ -279,6 +279,7 @@ typedef struct {
     vector_PRECISION rademacher_vector;
     vector_PRECISION rademacher_buffer;
     vector_PRECISION hadamard_vector;
+    vector_PRECISION probing_vector;
 
     complex_PRECISION rt;
     complex_PRECISION trace;
