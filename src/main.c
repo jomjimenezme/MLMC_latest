@@ -162,7 +162,7 @@ int main( int argc, char **argv ) {
       if(g.probing == 1 && g.probing_dimension == 4)
         coloring_flag = 1; //If we are doing 4D coloring, set coloring_flag to 1 after coloring the lattice, so at the next timeslice we do not color again
 
-      set_probing_variances_to_zero();
+      set_probing_variances_to_zero();   
       
       if( g.trace_op_type == 12 ){
         START_MASTER(threadingx)

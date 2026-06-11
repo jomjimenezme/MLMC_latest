@@ -146,7 +146,9 @@ void vector_PRECISION_hadamard( vector_PRECISION phi, int start, int end, level_
       int site_inner_idx = global_position + i - global_lattice_idx*12;
       
       int e = get_dilution_value_PRECISION(site_inner_idx, l->depth);
-      int hij = build_H(global_lattice_idx, g.coloring_count, l->depth);
+      int hij;
+      if(g.probing_dimension == 4) hij = build_H(global_lattice_idx, g.coloring_count, l->depth);
+      if(g.probing_dimension == 3) hij = build_H_3d(global_lattice_idx, g.coloring_count, l->depth);
       phi[i] = (PRECISION) hij*e; 
     }
   } else {

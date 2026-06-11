@@ -551,21 +551,19 @@ complex_PRECISION gamma_3D_hutchinson_driver_PRECISION( level_struct *l, struct 
   // set the pointer to the finest-level Hutchinson estimator
   h->hutch_compute_one_sample = gamma_3D_hutchinson_plain_PRECISION;
 
-  if (g.probing != 0) {
-    for (g.coloring_count = 1; g.coloring_count < g.num_colors[0] + 1; g.coloring_count++){
-      for(g.dilution_count = 1; g.dilution_count < g.dilution[0] + 1; g.dilution_count++){
-        if(g.my_rank == 0) printf("\nColor %d, dilution %d", g.coloring_count, g.dilution_count);
-        estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
-        trace += estimate.acc_trace / estimate.sample_size;
-      }
-    }
-  } else {
-      
+  if(g.probing == 1) {
+    estimate = sigma_hutchinson_blind_PRECISION(lx, h, 0, threading);
+    trace += estimate.acc_trace / estimate.sample_size;
+  }
+   else if(g.probing == 0){
       for(g.dilution_count = 1; g.dilution_count < g.dilution[0] + 1; g.dilution_count++){
         if(g.my_rank == 0) printf("\nDilution %d", g.dilution_count);
         estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
         trace += estimate.acc_trace / estimate.sample_size;
       }
+  } else if(g.probing == 2){
+      estimate = hp_hutchinson_blind_PRECISION(lx, h, 0, threading);
+      trace += estimate.acc_trace / estimate.sample_size;
   }
 
   // if deflation vectors are available
