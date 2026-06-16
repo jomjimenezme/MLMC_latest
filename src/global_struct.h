@@ -140,7 +140,6 @@ typedef struct global_struct
     int *k; // for hierarchical
 
     int **colors; //colors of the lattice
-    int **prev_hp_colors;
     int **local_colors; //colors of every MPI process
     int *num_colors; //number of colors at every level
     int coloring_count;

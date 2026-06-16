@@ -108,24 +108,7 @@ void print_global_colors(){
     }
     fprintf(file, " ]\n");
   }
-  fclose(file);
-
-   if(contains(g.interrupt, g.num_levels, 1) && g.probing == 2){
-     FILE *file = fopen("print_files/prev_colors.txt", "w");
-     for(int i = 0; i < g.num_levels; i++){
-       fprintf(file, "\nColors at level %d\n [", i);
-       int T = g.global_lattice[i][0];
-       int Z = g.global_lattice[i][1];
-       int Y = g.global_lattice[i][2];
-       int X = g.global_lattice[i][3];
-       int size = T*Z*Y*X;
-       for(int j = 0; j < size; j++){
-         fprintf(file, " %d ", g.prev_hp_colors[i][j]);
-       }
-       fprintf(file, " ]\n");
-    }
-    fclose(file);
-  }  
+  fclose(file);  
 }
 
 void allocate_variances(){
@@ -158,28 +141,6 @@ void allocate_colors(){
     g.colors[level] = NULL;
     MALLOC(g.colors[level], int, total_points);
   }
-
-  if(contains(g.interrupt, g.num_levels, 1) && g.probing == 2){
-
-    g.prev_hp_colors = (int**)malloc(g.num_levels * sizeof(int*));
-
-    if (g.prev_hp_colors == NULL)
-      error0("Allocation error0\n");
-
-    for(int level = 0; level < g.num_levels; level++){
-      int T = g.global_lattice[level][0];
-      int Z = g.global_lattice[level][1];
-      int Y = g.global_lattice[level][2];
-      int X = g.global_lattice[level][3];
-
-      int total_points = T * Z * Y * X;
-
-      g.prev_hp_colors[level] = NULL;
-      MALLOC(g.prev_hp_colors[level], int, total_points);
-    }
-  }
-
-
 }
 
 void free_colors(){
@@ -193,20 +154,6 @@ void free_colors(){
     int total_points = T * Z * Y * X;
     FREE(g.colors[level], int, total_points);
   }
-
-  if(contains(g.interrupt, g.num_levels, 1) && g.probing == 2){
-
-    for(int level = 0; level < g.num_levels; level++){
-      int T = g.global_lattice[level][0];
-      int Z = g.global_lattice[level][1];
-      int Y = g.global_lattice[level][2];
-      int X = g.global_lattice[level][3];
-
-      int total_points = T * Z * Y * X;
-      FREE(g.prev_hp_colors[level], int, total_points);
-    }
-  }
-
 }
 
 void setup_local_colors(){
@@ -591,7 +538,7 @@ void coloring_scheme(){
        printf("\n Colors at depth %d : \t %d \n", level, g.num_colors[level]);
     }
 
-    print_global_colors();
+    //print_global_colors();
 
   }
     MPI_Barrier(MPI_COMM_WORLD);
@@ -602,7 +549,6 @@ void coloring_scheme(){
 
 
 void stop_hadamard(int level){
-
   int size = g.global_lattice[level][0]*g.global_lattice[level][1]*g.global_lattice[level][2]*g.global_lattice[level][3];
 
   for(int i=0; i<size; i++){
@@ -734,11 +680,13 @@ void graph_coloring(){
       int X = g.global_lattice[level][3];
       int total_points = T * Z * Y * X;
 
+      if(g.interrupt[level] == 1 && g.my_rank==0) stop_hadamard(level);
+
       if(g.my_rank == 0) g.num_colors[level] = max(g.colors[level], total_points);
       if(g.my_rank == 0) printf("Colors at level %d: %d\n", level, g.num_colors[level]);
     }
 
-    if(g.my_rank == 0) print_global_colors();
+    //if(g.my_rank == 0) print_global_colors();
 
     setup_local_colors();
     MPI_Barrier(MPI_COMM_WORLD);
