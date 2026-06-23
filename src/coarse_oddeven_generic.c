@@ -1230,18 +1230,34 @@ void coarse_solve_odd_even_PRECISION( gmres_PRECISION_struct *p, operator_PRECIS
 
 if ( g.cli_on == 1){
 #ifdef POLYPREC
-  if ( l->level==0 && l->p_PRECISION.polyprec_PRECISION.update_lejas == 1 ) {
-    // re-construct Lejas
-    re_construct_lejas_PRECISION( l, threading );
-  }
-#endif
+  int polyprec_status = 1;
 
-#ifdef POLYPREC
-  // TODO : there should be some sort of check after calling re_construct_lejas_PRECISION(...)
-  //        to make sure that we can do the following function pointer assignment
+  if ( l->level == 0 && p->polyprec_PRECISION.update_lejas == 1 ) {
+
+    polyprec_status = re_construct_lejas_PRECISION( l, threading );
+  }
+
   START_MASTER(threading)
   if ( l->level == 0 ) {
-    p->preconditioner = p->polyprec_PRECISION.preconditioner;
+
+    if ( polyprec_status == 1 ) {
+      /*
+       *  Means: a new polynomial was constructed successfully, or
+       *  the existing polynomial is valid, no update needed.
+       */
+      p->preconditioner = p->polyprec_PRECISION.preconditioner;
+
+    } else {
+      /*
+       * Continue solving without polynomial preconditioning,
+       * try construction again on the next coarse solve.
+       */
+      p->preconditioner = NULL;
+
+      warning0(
+          "continuing without polynomial preconditioning.\n"
+      );
+    }
   }
   END_MASTER(threading)
 
