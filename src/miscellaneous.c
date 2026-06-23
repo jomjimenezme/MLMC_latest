@@ -270,7 +270,7 @@ void set_some_coarsest_level_improvs_params_for_setup( level_struct* l, struct T
             lx->p_double.gcrodr_double.k = g.gcrodr_k_setup;
 #endif
 #ifdef POLYPREC
-            lx->p_float.polyprec_float.d_poly = g.polyprec_d_setup;
+            lx->p_double.polyprec_double.d_poly = g.polyprec_d_setup;
 #endif
           }
           else {
