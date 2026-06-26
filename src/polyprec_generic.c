@@ -228,7 +228,12 @@ int update_lejas_PRECISION( gmres_PRECISION_struct *p, level_struct *l, struct T
   if ( fgmres_itersx == p->polyprec_PRECISION.d_poly ) {
     START_MASTER(threading)
     p->polyprec_PRECISION.preconditioner = p->polyprec_PRECISION.preconditioner_bare;
-    l->p_PRECISION.polyprec_PRECISION.update_lejas = 0;
+    /*
+     * Before: l->p_PRECISION.polyprec_PRECISION.update_lejas = 0;
+     * but we will need to access p = &g.p; for the polynomial at
+     * the finest
+     */
+    p->polyprec_PRECISION.update_lejas = 0;
     END_MASTER(threading)
 
     SYNC_MASTER_TO_ALL(threading);
