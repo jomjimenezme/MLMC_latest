@@ -174,6 +174,19 @@ int update_lejas_PRECISION( gmres_PRECISION_struct *p, level_struct *l, struct T
   buff4 = p->x;
   buff5 = g.coarse_tol;
 
+  if ( p->polyprec_PRECISION.d_poly > buff1 ) {
+  START_MASTER(threading)
+  error0(
+      "POLYPREC: polynomial degree %d exceeds the GMRES "
+      "restart length %d used to allocate the Arnoldi workspace.\n",
+      p->polyprec_PRECISION.d_poly,
+      buff1
+  );
+  END_MASTER(threading)
+
+  return -2;
+}
+
   SYNC_MASTER_TO_ALL(threading)
   SYNC_CORES(threading)
 
