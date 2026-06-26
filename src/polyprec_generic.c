@@ -263,21 +263,22 @@ int re_construct_lejas_PRECISION( level_struct *l, struct Thread *threading ) {
 }
 
 
-void apply_polyprec_PRECISION( vector_PRECISION phi, vector_PRECISION Dphi, vector_PRECISION eta,
-                               int res, level_struct *l, struct Thread *threading )
+void apply_polyprec_core_PRECISION( vector_PRECISION phi, vector_PRECISION eta,
+                                    gmres_PRECISION_struct *p, level_struct *l,
+                                    struct Thread *threading )
 {
 
   //printf0("APPLYING POLYNOMIAL\n");
 
   int i, start, end;
 
-  compute_core_start_end(l->p_PRECISION.v_start, l->p_PRECISION.v_end, &start, &end, l, threading);
+  compute_core_start_end(p->v_start, p->v_end, &start, &end, l, threading);
 
-  int d_poly = l->p_PRECISION.polyprec_PRECISION.d_poly;
-  vector_PRECISION accum_prod = l->p_PRECISION.polyprec_PRECISION.accum_prod;
-  vector_PRECISION product = l->p_PRECISION.polyprec_PRECISION.product;
-  vector_PRECISION temp = l->p_PRECISION.polyprec_PRECISION.temp;
-  vector_PRECISION lejas = l->p_PRECISION.polyprec_PRECISION.lejas;
+  int d_poly = p->polyprec_PRECISION.d_poly;
+  vector_PRECISION accum_prod = p->polyprec_PRECISION.accum_prod;
+  vector_PRECISION product = p->polyprec_PRECISION.product;
+  vector_PRECISION temp = p->polyprec_PRECISION.temp;
+  vector_PRECISION lejas = p->polyprec_PRECISION.lejas;
 
   vector_PRECISION_copy( product, eta, start, end, l );
   vector_PRECISION_define(accum_prod, 0.0, start, end, l);
@@ -286,14 +287,14 @@ void apply_polyprec_PRECISION( vector_PRECISION phi, vector_PRECISION Dphi, vect
   for (i = 1; i < d_poly; i++)
   {
 #ifdef PERS_COMMS
-    g.pers_comms_id2 = l->p_PRECISION.restart_length + g.pers_comms_nrZxs;
+    g.pers_comms_id2 = p->restart_length + g.pers_comms_nrZxs;
     g.use_pers_comms1 = 1;
 #endif
 
     SYNC_MASTER_TO_ALL(threading)
     SYNC_CORES(threading)
 
-    apply_operator_PRECISION(temp, product, &l->p_PRECISION, l, threading);
+    apply_operator_PRECISION(temp, product, p, l, threading);
 
 #ifdef PERS_COMMS
     g.pers_comms_id2 = -1;
@@ -308,6 +309,13 @@ void apply_polyprec_PRECISION( vector_PRECISION phi, vector_PRECISION Dphi, vect
 
   SYNC_MASTER_TO_ALL(threading)
   SYNC_CORES(threading)
+}
+
+
+void apply_polyprec_PRECISION( vector_PRECISION phi, vector_PRECISION Dphi, vector_PRECISION eta,
+                               int res, level_struct *l, struct Thread *threading )
+{
+  apply_polyprec_core_PRECISION( phi, eta, &(l->p_PRECISION), l, threading );
 }
 
 #endif
