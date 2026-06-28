@@ -62,6 +62,7 @@ void cpu_fgmres_PRECISION_struct_init( gmres_PRECISION_struct *p ) {
 #endif
 
 #ifdef POLYPREC
+  p->polyprec_PRECISION.capture_H = 0;
   p->polyprec_PRECISION.Hcc = NULL; 
   p->polyprec_PRECISION.L = NULL;
   p->polyprec_PRECISION.col_prods = NULL;
@@ -1589,6 +1590,14 @@ int arnoldi_step_PRECISION( vector_PRECISION *V, vector_PRECISION *Z, vector_PRE
   }
 #elif defined(POLYPREC)
   if (l->dup_H==1 && l->level==0)
+  {
+    memcpy( p->polyprec_PRECISION.eigslvr.Hc[jx], H[jx], sizeof(complex_PRECISION)*(jx+2) );
+    memset( p->polyprec_PRECISION.eigslvr.Hc[jx]+jx+2, 0.0, sizeof(complex_PRECISION)*(p->restart_length + 1 - (jx+2)) );
+  }
+#endif
+
+#ifdef POLYPREC
+  if (p->polyprec_PRECISION.capture_H==1)
   {
     memcpy( p->polyprec_PRECISION.eigslvr.Hc[jx], H[jx], sizeof(complex_PRECISION)*(jx+2) );
     memset( p->polyprec_PRECISION.eigslvr.Hc[jx]+jx+2, 0.0, sizeof(complex_PRECISION)*(p->restart_length + 1 - (jx+2)) );

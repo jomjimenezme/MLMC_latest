@@ -159,6 +159,7 @@ struct Thread;
   typedef struct
   {
     int update_lejas;
+    int capture_H; // Capture H for GMRES polynomial
     int d_poly;
     int syst_size;
       

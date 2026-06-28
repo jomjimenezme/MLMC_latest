@@ -198,7 +198,8 @@ int update_lejas_PRECISION( gmres_PRECISION_struct *p, level_struct *l, struct T
   p->tol = 1E-20;
   g.coarse_tol = 1E-20;
   p->x = p->polyprec_PRECISION.xtmp;
-  l->dup_H = 1;
+  // l->dup_H = 1;  (checks if Arnoldi must copy H)
+  p->polyprec_PRECISION.capture_H = 1;
   vector_PRECISION_define_random( random_rhs, p->v_start, p->v_end, l );
   END_MASTER(threading)
 
@@ -213,7 +214,7 @@ int update_lejas_PRECISION( gmres_PRECISION_struct *p, level_struct *l, struct T
   SYNC_CORES(threading)
 
   START_MASTER(threading)
-  l->dup_H = 0;
+  p->polyprec_PRECISION.capture_H = 0;
   p->b = buff0;
   p->num_restart = buff2;
   p->restart_length = buff1;
