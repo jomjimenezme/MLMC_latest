@@ -196,7 +196,8 @@ int update_lejas_PRECISION( gmres_PRECISION_struct *p, level_struct *l, struct T
   p->restart_length = p->polyprec_PRECISION.d_poly;
   p->preconditioner = NULL;
   p->tol = 1E-20;
-  g.coarse_tol = 1E-20;
+  if ( l->level == 0 )
+    g.coarse_tol = 1E-20;
   p->x = p->polyprec_PRECISION.xtmp;
   // l->dup_H = 1;  (checks if Arnoldi must copy H)
   p->polyprec_PRECISION.capture_H = 1;
@@ -219,7 +220,8 @@ int update_lejas_PRECISION( gmres_PRECISION_struct *p, level_struct *l, struct T
   p->num_restart = buff2;
   p->restart_length = buff1;
   p->tol = buff3;
-  g.coarse_tol = buff5;
+  if ( l->level == 0 )
+    g.coarse_tol = buff5;
   p->x = buff4;
   END_MASTER(threading)
 
