@@ -31,4 +31,9 @@
                                                gmres_PRECISION_struct *p, level_struct *l,
                                                struct Thread *threading );
 
+  #ifdef POLYPREC_CHECK
+  PRECISION check_polyprec_identity_PRECISION( gmres_PRECISION_struct *p, level_struct *l,
+                                               struct Thread *threading );
+  #endif
+
 #endif

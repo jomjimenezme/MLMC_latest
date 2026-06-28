@@ -264,6 +264,15 @@ int update_lejas_PRECISION( gmres_PRECISION_struct *p, level_struct *l, struct T
   SYNC_MASTER_TO_ALL(threading)
   SYNC_CORES(threading)
 
+#ifdef POLYPREC_CHECK
+  PRECISION polyprec_error = check_polyprec_identity_PRECISION(p, l, threading);
+
+  START_MASTER(threading)
+  printf0("POLYPREC: polynomial identity error, p_d(A) eta = eta - A q_{d-1}(A) eta. Error: %le\n",
+          polyprec_error);
+  END_MASTER(threading)
+#endif
+
   return 1;
 }
 
@@ -385,4 +394,35 @@ void apply_polyprec_PRECISION( vector_PRECISION phi, vector_PRECISION Dphi, vect
   apply_polyprec_core_PRECISION( phi, eta, &(l->p_PRECISION), l, threading );
 }
 
+#ifdef POLYPREC_CHECK
+PRECISION check_polyprec_identity_PRECISION( gmres_PRECISION_struct *p, level_struct *l,
+                                             struct Thread *threading )
+  // Check if p_d(A) eta = eta - A q_{d-1}(A) eta
+{
+  int start, end;
+  PRECISION norm_eta, norm_diff;
+
+  vector_PRECISION eta = p->polyprec_PRECISION.random_rhs;
+  vector_PRECISION p_eta = p->polyprec_PRECISION.xtmp;
+  vector_PRECISION q_eta = p->polyprec_PRECISION.accum_prod;
+  vector_PRECISION check = p->polyprec_PRECISION.product;
+  vector_PRECISION temp = p->polyprec_PRECISION.temp;
+
+  compute_core_start_end(p->v_start, p->v_end, &start, &end, l, threading);
+
+  apply_polyprec_residual_core_PRECISION( p_eta, eta, p, l, threading );
+  apply_polyprec_core_PRECISION( q_eta, eta, p, l, threading );
+
+  apply_operator_PRECISION(temp, q_eta, p, l, threading);
+
+  vector_PRECISION_copy( check, eta, start, end, l );
+  vector_PRECISION_saxpy(check, check, temp, -1.0, start, end, l);
+  vector_PRECISION_saxpy(check, check, p_eta, -1.0, start, end, l);
+
+  norm_eta = global_norm_PRECISION( eta, p->v_start, p->v_end, l, threading );
+  norm_diff = global_norm_PRECISION( check, p->v_start, p->v_end, l, threading );
+
+  return norm_diff/norm_eta;
+}
+#endif
 #endif
