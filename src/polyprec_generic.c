@@ -289,16 +289,24 @@ void apply_polyprec_core_PRECISION( vector_PRECISION phi, vector_PRECISION eta,
 
   compute_core_start_end(p->v_start, p->v_end, &start, &end, l, threading);
 
+  // Polynomial degree
   int d_poly = p->polyprec_PRECISION.d_poly;
+  // Accumulates the value of q_{d-1}(A) eta.
   vector_PRECISION accum_prod = p->polyprec_PRECISION.accum_prod;
+  // stores the current product of residual factors ( I - A/theta_j )
   vector_PRECISION product = p->polyprec_PRECISION.product;
+  // stores A times the current product
   vector_PRECISION temp = p->polyprec_PRECISION.temp;
   vector_PRECISION lejas = p->polyprec_PRECISION.lejas;
 
+  // Initialize the first product with eta
   vector_PRECISION_copy( product, eta, start, end, l );
+  // Initialize the accumulated polynomial with zero:
   vector_PRECISION_define(accum_prod, 0.0, start, end, l);
+  // accum_prod = eta/theta_0.
   vector_PRECISION_saxpy(accum_prod, accum_prod, product, 1./lejas[0], start, end, l);
 
+  //Accumulate the remaining terms i = 1,...,d-1.
   for (i = 1; i < d_poly; i++)
   {
 #ifdef PERS_COMMS
@@ -309,6 +317,7 @@ void apply_polyprec_core_PRECISION( vector_PRECISION phi, vector_PRECISION eta,
     SYNC_MASTER_TO_ALL(threading)
     SYNC_CORES(threading)
 
+    // temp = A product
     apply_operator_PRECISION(temp, product, p, l, threading);
 
 #ifdef PERS_COMMS
@@ -316,11 +325,54 @@ void apply_polyprec_core_PRECISION( vector_PRECISION phi, vector_PRECISION eta,
     g.use_pers_comms1 = 0;
 #endif
 
+    // Get next residual factor: (I - A/theta_{i-1}) product
     vector_PRECISION_saxpy(product, product, temp, -1./lejas[i-1], start, end, l);
+    /// Add the next term of the inverse-approximation polynomial:  accum_prod + product/theta_i
     vector_PRECISION_saxpy(accum_prod, accum_prod, product, 1./lejas[i], start, end, l);
   }
 
   vector_PRECISION_copy( phi, accum_prod, start, end, l );
+
+  SYNC_MASTER_TO_ALL(threading)
+  SYNC_CORES(threading)
+}
+
+void apply_polyprec_residual_core_PRECISION( vector_PRECISION phi, vector_PRECISION eta,
+                                             gmres_PRECISION_struct *p, level_struct *l,
+                                             struct Thread *threading )
+{
+  // Evaluate the residual polynomial p_d(A) eta.
+  int i, start, end;
+
+  compute_core_start_end(p->v_start, p->v_end, &start, &end, l, threading);
+
+  int d_poly = p->polyprec_PRECISION.d_poly;
+  vector_PRECISION product = p->polyprec_PRECISION.product;
+  vector_PRECISION temp = p->polyprec_PRECISION.temp;
+  vector_PRECISION lejas = p->polyprec_PRECISION.lejas;
+
+  vector_PRECISION_copy( product, eta, start, end, l );
+
+  for (i = 0; i < d_poly; i++)
+  {
+#ifdef PERS_COMMS
+    g.pers_comms_id2 = p->restart_length + g.pers_comms_nrZxs;
+    g.use_pers_comms1 = 1;
+#endif
+    SYNC_MASTER_TO_ALL(threading)
+    SYNC_CORES(threading)
+
+    apply_operator_PRECISION(temp, product, p, l, threading);
+
+#ifdef PERS_COMMS
+    g.pers_comms_id2 = -1;
+    g.use_pers_comms1 = 0;
+#endif
+
+    vector_PRECISION_saxpy(product, product, temp, -1./lejas[i], start, end, l);
+  }
+
+  vector_PRECISION_copy( phi, product, start, end, l );
 
   SYNC_MASTER_TO_ALL(threading)
   SYNC_CORES(threading)
