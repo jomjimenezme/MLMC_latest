@@ -164,8 +164,9 @@ int update_lejas_PRECISION( gmres_PRECISION_struct *p, level_struct *l, struct T
   PRECISION buff3, buff5;
   vector_PRECISION buff4;
 
-  int buff1, buff2;
+  int buff1, buff2, buff_initial_guess_zero;
   int fgmres_itersx;
+  void (*buff_preconditioner)();
 
   buff0 = p->b;
   buff2 = p->num_restart;
@@ -173,6 +174,12 @@ int update_lejas_PRECISION( gmres_PRECISION_struct *p, level_struct *l, struct T
   buff3 = p->tol;
   buff4 = p->x;
   buff5 = g.coarse_tol;
+
+  // Save the initial guess and preconditioner of the GMRES workspace (p)
+  // Polynomial construction temporarily changes these GMRES settings,
+  // so they must be restored before this function returns.
+  buff_initial_guess_zero = p->initial_guess_zero;
+  buff_preconditioner = p->preconditioner;
 
   if ( p->polyprec_PRECISION.d_poly > buff1 ) {
   START_MASTER(threading)
@@ -195,6 +202,8 @@ int update_lejas_PRECISION( gmres_PRECISION_struct *p, level_struct *l, struct T
   p->num_restart = 1;
   p->restart_length = p->polyprec_PRECISION.d_poly;
   p->preconditioner = NULL;
+  // Do not use the temporary solution vector as an initial guess.
+  p->initial_guess_zero = 1;
   p->tol = 1E-20;
   if ( l->level == 0 )
     g.coarse_tol = 1E-20;
@@ -223,6 +232,9 @@ int update_lejas_PRECISION( gmres_PRECISION_struct *p, level_struct *l, struct T
   if ( l->level == 0 )
     g.coarse_tol = buff5;
   p->x = buff4;
+  // Restore the original GMRES state.
+  p->initial_guess_zero = buff_initial_guess_zero;
+  p->preconditioner = buff_preconditioner;
   END_MASTER(threading)
 
   SYNC_MASTER_TO_ALL(threading);
