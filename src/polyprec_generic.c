@@ -63,6 +63,24 @@ void print_vector_PRECISION( char* desc, vector_PRECISION w, int n)
   printf0( "\n" );
 }
 
+static void apply_polyprec_operator_PRECISION( vector_PRECISION output,
+                                               vector_PRECISION input,
+                                               gmres_PRECISION_struct *p,
+                                               level_struct *l,
+                                               struct Thread *threading )
+{
+  // Apply the operator for which the polynomial was constructed.
+  p->polyprec_PRECISION.eval_target_operator( output, input,
+                                              p->polyprec_PRECISION.target_op,
+                                              l, threading );
+
+  if ( p->shift ) {
+    int start, end;
+    compute_core_start_end_custom(p->v_start, p->v_end, &start, &end,
+                                  l, threading, l->num_lattice_site_var );
+    vector_PRECISION_saxpy( output, output, input, -p->shift, start, end, l );
+  }
+}
 
 void harmonic_ritz_PRECISION( gmres_PRECISION_struct *p )
 {
@@ -175,6 +193,15 @@ int update_lejas_PRECISION( gmres_PRECISION_struct *p, level_struct *l, struct T
   buff4 = p->x;
   buff5 = g.coarse_tol;
 
+  // For polynomial expansion only
+  operator_PRECISION_struct *buff_op;
+  void (*buff_eval_operator)(vector_PRECISION, vector_PRECISION,
+                             operator_PRECISION_struct *,
+                             struct level_struct *, struct Thread *);
+
+  buff_op = p->op;
+  buff_eval_operator = p->eval_operator;
+
   // Save the initial guess and preconditioner of the GMRES workspace (p)
   // Polynomial construction temporarily changes these GMRES settings,
   // so they must be restored before this function returns.
@@ -210,6 +237,11 @@ int update_lejas_PRECISION( gmres_PRECISION_struct *p, level_struct *l, struct T
   p->x = p->polyprec_PRECISION.xtmp;
   // l->dup_H = 1;  (checks if Arnoldi must copy H)
   p->polyprec_PRECISION.capture_H = 1;
+
+  // Use the operator associated with the polynomial
+  p->op = p->polyprec_PRECISION.target_op;
+  p->eval_operator = p->polyprec_PRECISION.eval_target_operator;
+
   vector_PRECISION_define_random( random_rhs, p->v_start, p->v_end, l );
   END_MASTER(threading)
 
@@ -234,7 +266,12 @@ int update_lejas_PRECISION( gmres_PRECISION_struct *p, level_struct *l, struct T
   p->x = buff4;
   // Restore the original GMRES state.
   p->initial_guess_zero = buff_initial_guess_zero;
+
   p->preconditioner = buff_preconditioner;
+  p->op = buff_op;
+
+  // Restore the operator used by the original GMRES workspace
+  p->eval_operator = buff_eval_operator;
   END_MASTER(threading)
 
   SYNC_MASTER_TO_ALL(threading);
@@ -327,8 +364,8 @@ void apply_polyprec_core_PRECISION( vector_PRECISION phi, vector_PRECISION eta,
     SYNC_CORES(threading)
 
     // temp = A product
-    apply_operator_PRECISION(temp, product, p, l, threading);
-
+    //apply_operator_PRECISION(temp, product, p, l, threading);
+    apply_polyprec_operator_PRECISION(temp, product, p, l, threading);
 #ifdef PERS_COMMS
     g.pers_comms_id2 = -1;
     g.use_pers_comms1 = 0;
@@ -371,8 +408,8 @@ void apply_polyprec_residual_core_PRECISION( vector_PRECISION phi, vector_PRECIS
     SYNC_MASTER_TO_ALL(threading)
     SYNC_CORES(threading)
 
-    apply_operator_PRECISION(temp, product, p, l, threading);
-
+    //apply_operator_PRECISION(temp, product, p, l, threading);
+    apply_polyprec_operator_PRECISION(temp, product, p, l, threading);
 #ifdef PERS_COMMS
     g.pers_comms_id2 = -1;
     g.use_pers_comms1 = 0;
@@ -413,7 +450,8 @@ PRECISION check_polyprec_identity_PRECISION( gmres_PRECISION_struct *p, level_st
   apply_polyprec_residual_core_PRECISION( p_eta, eta, p, l, threading );
   apply_polyprec_core_PRECISION( q_eta, eta, p, l, threading );
 
-  apply_operator_PRECISION(temp, q_eta, p, l, threading);
+  //apply_operator_PRECISION(temp, q_eta, p, l, threading);
+  apply_polyprec_operator_PRECISION(temp, q_eta, p, l, threading);
 
   vector_PRECISION_copy( check, eta, start, end, l );
   vector_PRECISION_saxpy(check, check, temp, -1.0, start, end, l);

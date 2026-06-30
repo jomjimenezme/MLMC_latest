@@ -79,6 +79,10 @@ void cpu_fgmres_PRECISION_struct_init( gmres_PRECISION_struct *p ) {
   p->polyprec_PRECISION.dirctslvr.ipiv = NULL;
   p->polyprec_PRECISION.dirctslvr.x = NULL;
   p->polyprec_PRECISION.dirctslvr.b = NULL;
+
+  // For polynomial expansion only
+  p->polyprec_PRECISION.target_op = NULL;
+  p->polyprec_PRECISION.eval_target_operator = NULL;
 #endif
 
 #if defined(SINGLE_ALLREDUCE_ARNOLDI) && defined(PIPELINED_ARNOLDI)
@@ -343,6 +347,10 @@ void cpu_fgmres_PRECISION_struct_alloc( int m, int n, int vl, PRECISION tol, con
   p->polyprec_PRECISION.preconditioner = NULL;
   p->polyprec_PRECISION.preconditioner_bare = p->preconditioner;
   p->polyprec_PRECISION.syst_size = vl;
+
+  // For polynomial expansion only
+  p->polyprec_PRECISION.target_op = p->op;
+  p->polyprec_PRECISION.eval_target_operator = p->eval_operator;
 
   p->polyprec_PRECISION.eigslvr.A = p->polyprec_PRECISION.Hc[0];
 #endif

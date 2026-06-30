@@ -162,7 +162,7 @@ struct Thread;
     int capture_H; // Capture H for GMRES polynomial
     int d_poly;
     int syst_size;
-      
+
     complex_PRECISION **Hc;
     complex_PRECISION *Hcc;
     complex_PRECISION **L;
@@ -171,6 +171,12 @@ struct Thread;
     vector_PRECISION lejas;
     vector_PRECISION random_rhs;
     vector_PRECISION accum_prod, product, temp, xtmp;
+
+    // For polynomial expansion only
+    operator_PRECISION_struct *target_op;
+    void (*eval_target_operator)(vector_PRECISION eta, vector_PRECISION phi,
+                                 operator_PRECISION_struct *op,
+                                 struct level_struct *l, struct Thread *threading);
 
     void (*preconditioner)();
     void (*preconditioner_bare)();
