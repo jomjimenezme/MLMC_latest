@@ -88,6 +88,10 @@ int build_H(int i, int j, int level){
   }
 
   int *pj = dec2Bin(j, total_bits);
+
+  int pj_bits[4];
+  int lsb = (g.k[level]-1)*4 + 1;
+
   int popcount = 0;
   for(int p=0; p<total_bits; p++)
     if(pi[p] == 1 && pj[p] == 1)
