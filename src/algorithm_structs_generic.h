@@ -160,6 +160,9 @@ struct Thread;
   {
     int update_lejas;
     int capture_H; // Capture H for GMRES polynomial
+    /* Hc can be allocated by p->gcrodr or p->polyprec
+     * Hc = 1 means, polyprec allocates and frees H */
+    int owns_Hc;   
     int d_poly;
     int syst_size;
 

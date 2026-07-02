@@ -54,4 +54,11 @@
   void richardson_update_omega_PRECISION( gmres_PRECISION_struct *p, level_struct *l, struct Thread *threading );
 #endif
 
+  //--- START polynomial expansion only ---
+#ifdef POLYPREC
+  void polyprec_PRECISION_struct_alloc( int d_poly, int vl, gmres_PRECISION_struct *p );
+  void polyprec_PRECISION_struct_free( gmres_PRECISION_struct *p );
+#endif
+  //--- END polynomial expansion only ---
+  
 #endif
