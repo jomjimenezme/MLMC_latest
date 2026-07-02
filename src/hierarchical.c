@@ -91,7 +91,7 @@ int build_H(int i, int j, int level){
 
   if(g.anisotropic[level]==1){
     int pj_bits[4];
-    int lsb = (g.k[level]-2)*4;
+    int lsb = (g.k[level]-1)*4;
 
     pj_bits[0]=pj[lsb+1];
     pj_bits[1]=pj[lsb+2];
