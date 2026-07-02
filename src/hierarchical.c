@@ -110,7 +110,7 @@ int build_H(int i, int j, int level){
     free(bin_perm_j);
 
     int j_prime = bin2Dec(pj, total_bits);
-    if(g.my_rank==0) printf("\nOriginal j = %d -> permuted = %d", j, j_prime);
+    //if(g.my_rank==0) printf("\nOriginal j = %d -> permuted = %d", j, j_prime);
   }
 
   int popcount = 0;
