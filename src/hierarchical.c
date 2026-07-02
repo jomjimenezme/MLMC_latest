@@ -89,8 +89,29 @@ int build_H(int i, int j, int level){
 
   int *pj = dec2Bin(j, total_bits);
 
-  int pj_bits[4];
-  int lsb = (g.k[level]-1)*4 + 1;
+  if(g.anisotropic[level]==1){
+    int pj_bits[4];
+    int lsb = (g.k[level]-2)*4;
+
+    pj_bits[0]=pj[lsb+1];
+    pj_bits[1]=pj[lsb+2];
+    pj_bits[2]=pj[lsb+3];
+    pj_bits[3]=pj[lsb+4];
+
+    int dec_pj_bits = 8*pj_bits[3] + 4*pj_bits[2] + 2*pj_bits[1] + pj_bits[0];
+    int perm_j = perm_4D[dec_pj_bits];
+    int *bin_perm_j = dec2Bin(perm_j, 4);
+
+    pj[lsb+1] = bin_perm_j[0];
+    pj[lsb+2] = bin_perm_j[1];
+    pj[lsb+3] = bin_perm_j[2];
+    pj[lsb+4] = bin_perm_j[3];
+
+    free(bin_perm_j);
+
+    int j_prime = bin2Dec(pj, total_bits);
+    if(g.my_rank==0) printf("\nOriginal j = %d -> permuted = %d", j, j_prime);
+  }
 
   int popcount = 0;
   for(int p=0; p<total_bits; p++)
