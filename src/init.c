@@ -599,6 +599,7 @@ void method_finalize( level_struct *l ) {
   FREE( g.k, int, ls );
   FREE( g.num_colors, int, ls );
   FREE( g.n_had, int, ls );
+  FREE( g.anisotropic, int, ls );
   FREE( g.dilution, int, ls );
 
 #ifdef CUDA_OPT
@@ -1063,6 +1064,10 @@ void read_geometry_data( FILE *in, int ls ) {
     save_pt = &(g.n_had[i]); g.n_had[i] = 0;
     read_parameter( &save_pt, inputstr, "%d", 1, in, _DEFAULT_SET );
 
+    sprintf( inputstr, "d%d anisotropic:", i );
+    save_pt = &(g.anisotropic[i]); g.anisotropic[i] = 0;
+    read_parameter( &save_pt, inputstr, "%d", 1, in, _DEFAULT_SET );
+
     sprintf( inputstr, "d%d dilution:", i );
     save_pt = &(g.dilution[i]); g.dilution[i] = 1;
     read_parameter( &save_pt, inputstr, "%d", 1, in, _DEFAULT_SET );
@@ -1448,6 +1453,7 @@ void allocate_for_global_struct_after_read_global_info( int ls ) {
   MALLOC( g.k, int, ls );
   MALLOC( g.num_colors, int, ls );
   MALLOC( g.n_had, int, ls );
+  MALLOC( g.anisotropic, int, ls );
   MALLOC( g.dilution, int, ls );
 #ifdef CUDA_OPT
   MALLOC( g.CUDA_threads_per_CUDA_block_type1, int, ls );
