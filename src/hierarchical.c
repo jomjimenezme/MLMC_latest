@@ -12,6 +12,12 @@ static const unsigned char RB_3D[8] = {
     6, 2, 3, 7
 };
 
+static const unsigned int perm_4D[16] = {
+     0,  8,  4,  12,
+    2,  10,  6, 14,
+    1,  9,  5, 13,
+     3, 11, 7,  15
+};
 
 //result[0]      = LSB  (least significative bit)
 //result[bits-1] = MSB  (most significative bit)

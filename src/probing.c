@@ -607,6 +607,7 @@ void graph_coloring(){
        printf("Global k_z at level %d = %d\n", level, g.global_k[level][1]);
        printf("Global k_y at level %d = %d\n", level, g.global_k[level][2]);
        printf("Global k_x at level %d = %d\n", level, g.global_k[level][3]);
+       printf("Hierarchy at level %d = %d\n", level, g.k[level]);
      }
    }
  }
