@@ -64,6 +64,8 @@ void cpu_fgmres_PRECISION_struct_init( gmres_PRECISION_struct *p ) {
 #ifdef POLYPREC
   p->polyprec_PRECISION.capture_H = 0;
   p->polyprec_PRECISION.Hcc = NULL; 
+  // No polynomial storage is present before allocation.
+  p->polyprec_PRECISION.allocated = 0;
   p->polyprec_PRECISION.L = NULL;
   p->polyprec_PRECISION.col_prods = NULL;
   p->polyprec_PRECISION.accum_prod = NULL;
@@ -250,15 +252,24 @@ void polyprec_PRECISION_struct_alloc( int d_poly, int vl, gmres_PRECISION_struct
 
   // LAPACK reads the copied Hessenberg matrix through A
   p->polyprec_PRECISION.eigslvr.A = p->polyprec_PRECISION.Hc[0];
+  
+  // All polynomial storage is now available
+  p->polyprec_PRECISION.allocated = 1;
 }
 #endif
 
 #ifdef POLYPREC
 void polyprec_PRECISION_struct_free( gmres_PRECISION_struct *p )
 {
-  int m = p->restart_length;
-  int d_poly = p->polyprec_PRECISION.d_poly;
-  int vl = p->polyprec_PRECISION.syst_size;
+  int m, d_poly, vl;
+
+  // Nothing has to be freed for a *p  without polynomial storage
+  if ( p->polyprec_PRECISION.allocated == 0 )
+    return;
+
+  m = p->restart_length;
+  d_poly = p->polyprec_PRECISION.d_poly;
+  vl = p->polyprec_PRECISION.syst_size;
 
   // Free Hc only when it was allocated by POLYPREC
   if ( p->polyprec_PRECISION.owns_Hc == 1 ) {
@@ -286,7 +297,15 @@ void polyprec_PRECISION_struct_free( gmres_PRECISION_struct *p )
   FREE( p->polyprec_PRECISION.dirctslvr.ipiv, int, d_poly );
   FREE( p->polyprec_PRECISION.dirctslvr.x, complex_PRECISION, d_poly );
   FREE( p->polyprec_PRECISION.dirctslvr.b, complex_PRECISION, d_poly );
+  
+  // Remove aliases 
+  p->polyprec_PRECISION.Hc = NULL;
+  p->polyprec_PRECISION.eigslvr.Hc = NULL;
+  p->polyprec_PRECISION.eigslvr.A = NULL;
+
+  // The polynomial no longer owns any allocated storage
   p->polyprec_PRECISION.owns_Hc = 0;
+  p->polyprec_PRECISION.allocated = 0;
 }
 #endif
 //--- END polynomial expansion only ---
@@ -604,46 +623,22 @@ void cpu_fgmres_PRECISION_struct_free( gmres_PRECISION_struct *p, level_struct *
   p->D = NULL;
   p->clover = NULL;
 
+#ifdef POLYPREC
+  // Free polynomial storage when it was allocated for this workspace p
+  polyprec_PRECISION_struct_free( p );
+#endif
+
   // --- COARSEST-LEVEL IMPROVEMENTS
 
-#if defined(GCRODR) || defined(POLYPREC)
-  if (l->level==0) {
-#endif
-
-
 #ifdef GCRODR
-  // GCRO-DR owns the shared Hessenberg copy when it is compiled
-  int m = p->restart_length;
+  if (l->level==0) {
 
-  // Free the Hessenberg storage
-  FREE( p->gcrodr_PRECISION.eigslvr.Hc[0], complex_PRECISION, m*(m+1) );
-  FREE( p->gcrodr_PRECISION.eigslvr.Hc, complex_PRECISION*, m );
-#endif
+    // GCRO-DR owns the shared Hessenberg copy when it is compiled
+    int m = p->restart_length;
 
-#ifdef POLYPREC
-  int d_poly = p->polyprec_PRECISION.d_poly;
-  int vl = p->polyprec_PRECISION.syst_size;
-  FREE( p->polyprec_PRECISION.Hcc, complex_PRECISION, d_poly*d_poly );
-  FREE( p->polyprec_PRECISION.L[0], complex_PRECISION, (d_poly+1)*d_poly );
-  FREE( p->polyprec_PRECISION.L, complex_PRECISION*, d_poly+1 );
-  FREE( p->polyprec_PRECISION.h_ritz,complex_PRECISION, d_poly );
-  FREE( p->polyprec_PRECISION.lejas,complex_PRECISION, d_poly );
-  FREE( p->polyprec_PRECISION.accum_prod, complex_PRECISION, vl );
-  FREE( p->polyprec_PRECISION.product, complex_PRECISION, vl );    
-  FREE( p->polyprec_PRECISION.temp, complex_PRECISION, vl );    
-  FREE( p->polyprec_PRECISION.xtmp, complex_PRECISION, vl );
-  FREE( p->polyprec_PRECISION.random_rhs, complex_PRECISION, vl );
-  FREE( p->polyprec_PRECISION.col_prods, complex_PRECISION, d_poly );
-
-  FREE( p->polyprec_PRECISION.eigslvr.vl,complex_PRECISION, d_poly*d_poly );
-  FREE( p->polyprec_PRECISION.eigslvr.vr,complex_PRECISION, d_poly*d_poly );  
-
-  FREE( p->polyprec_PRECISION.dirctslvr.ipiv, int, d_poly );
-  FREE( p->polyprec_PRECISION.dirctslvr.x, complex_PRECISION, d_poly );
-  FREE( p->polyprec_PRECISION.dirctslvr.b, complex_PRECISION, d_poly );
-#endif
-
-#if defined(GCRODR) || defined(POLYPREC)
+    // Free the Hessenberg storage
+    FREE( p->gcrodr_PRECISION.eigslvr.Hc[0], complex_PRECISION, m*(m+1) );
+    FREE( p->gcrodr_PRECISION.eigslvr.Hc, complex_PRECISION*, m );
   }
 #endif
 
