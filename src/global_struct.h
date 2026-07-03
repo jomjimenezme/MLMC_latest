@@ -138,6 +138,7 @@ typedef struct global_struct
     int coloring_distance; // for classical
     int colored_grids; //grids to be colored in the multilevel decomposition from fine to coarse
     int *k; // for hierarchical
+    int *anisotropic;
 
     int **colors; //colors of the lattice
     int **prev_hp_colors;
