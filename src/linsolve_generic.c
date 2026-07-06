@@ -85,8 +85,13 @@ void cpu_fgmres_PRECISION_struct_init( gmres_PRECISION_struct *p ) {
   //--- START polynomial expansion only ---
   p->polyprec_PRECISION.target_op = NULL;
   p->polyprec_PRECISION.eval_target_operator = NULL;
-  // No polynomial Hessenberg storage is owned before allocation.
+  // No polynomial Hessenberg storage is owned before allocation
   p->polyprec_PRECISION.owns_Hc = 0;
+
+  // No Jacobi or Gauss-Seidel splitting is assigned initially
+  p->polyprec_PRECISION.splitting = _POLYPREC_NONE;
+  // Use the unrelaxed value
+  p->polyprec_PRECISION.omega = 1.0;
   //--- End polynomial expansion only  ---
 #endif
 

@@ -177,6 +177,13 @@ struct Thread;
     vector_PRECISION accum_prod, product, temp, xtmp;
 
     // For polynomial expansion only
+
+    // Splitting for which the polynomial is constructed
+    int splitting;
+
+    // Relaxation parameter used by the splitting
+    PRECISION omega;
+
     operator_PRECISION_struct *target_op;
     void (*eval_target_operator)(vector_PRECISION eta, vector_PRECISION phi,
                                  operator_PRECISION_struct *op,

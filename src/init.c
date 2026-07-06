@@ -190,8 +190,23 @@ void method_setup( vector_double *V, level_struct *l, struct Thread *threading )
     if ( g.mixed_precision == 2 )
       error0("POLYPREC: finest-level polynomial is not supported with mixed_precision = 2.\n");
 
+    // Only the valid splittings allowed (sanity check)
+    if ( g.fine_polyprec_splitting != _POLYPREC_JACOBI &&
+         g.fine_polyprec_splitting != _POLYPREC_GAUSS_SEIDEL )
+      error0("POLYPREC: invalid finest-level splitting %d.\n",
+             g.fine_polyprec_splitting);
+
     // Allocate polynomial storage with the finest vector size
     polyprec_double_struct_alloc( g.fine_polyprec_d, l->inner_vector_size, &(g.p) );
+
+    // Store splitting associated with this polynomial
+    g.p.polyprec_double.splitting = g.fine_polyprec_splitting;
+
+    // Store the omega associated with this polynomial
+    g.p.polyprec_double.omega = g.fine_polyprec_omega;
+
+    // A new polynomial must be constructed for the current fine operator
+    g.p.polyprec_double.update_lejas = 1;
 
     // We need to construct a new polynomial for the fine operator
     g.p.polyprec_double.update_lejas = 1;

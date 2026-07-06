@@ -81,8 +81,9 @@ enum
 };
 enum
 {   // These are the 2 future splittings for polynomial expansion
-    _POLYPREC_JACOBI,
-    _POLYPREC_GAUSS_SEIDEL
+    _POLYPREC_NONE = -1,
+    _POLYPREC_JACOBI = 0,
+    _POLYPREC_GAUSS_SEIDEL = 1
 };
 enum
 {
