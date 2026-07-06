@@ -80,6 +80,11 @@ enum
     _NOTHING
 };
 enum
+{   // These are the 2 future splittings for polynomial expansion
+    _POLYPREC_JACOBI,
+    _POLYPREC_GAUSS_SEIDEL
+};
+enum
 {
     _GIP,
     _PIP,

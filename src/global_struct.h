@@ -114,6 +114,18 @@ typedef struct global_struct
 
 #ifdef POLYPREC
     int polyprec_d, polyprec_d_setup, polyprec_d_solve;
+
+    // Enable the finest-level polynomial expansion
+    int fine_polyprec_enabled;
+
+    // Number of Arnoldi steps and residual-polynomial factors
+    int fine_polyprec_d;
+
+    // Jacobi or Gauss-Seidel splitting
+    int fine_polyprec_splitting;
+
+    // Relaxation parameter of the selected splitting
+    double fine_polyprec_omega;
 #endif
 
 //#ifdef BLOCK_JACOBI

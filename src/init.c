@@ -1165,6 +1165,22 @@ void read_solver_parameters( FILE *in, level_struct *l ) {
   save_pt = &(g.polyprec_d_solve); g.polyprec_d_solve = 5;
   read_parameter( &save_pt, "coarse grid polyprec_d_solve:", "%d", 1, in, _DEFAULT_SET );
   g.polyprec_d_solve++;
+
+  // Keep the finest-level polynomial disabled by default
+  save_pt = &(g.fine_polyprec_enabled); g.fine_polyprec_enabled = 0;
+  read_parameter( &save_pt, "fine grid polyprec enabled:", "%d", 1, in, _DEFAULT_SET );
+
+  // Store d directly as the number of Arnoldi steps and polynomial factors
+  save_pt = &(g.fine_polyprec_d); g.fine_polyprec_d = 5;
+  read_parameter( &save_pt, "fine grid polyprec_d:", "%d", 1, in, _DEFAULT_SET );
+
+  // Use Jacobi unless Gauss-Seidel is explicitly requested
+  save_pt = &(g.fine_polyprec_splitting); g.fine_polyprec_splitting = _POLYPREC_JACOBI;
+  read_parameter( &save_pt, "fine grid polyprec_splitting:", "%d", 1, in, _DEFAULT_SET );
+
+  // Use the unrelaxed splitting by default
+  save_pt = &(g.fine_polyprec_omega); g.fine_polyprec_omega = 1.0;
+  read_parameter( &save_pt, "fine grid polyprec_omega:", "%lf", 1, in, _DEFAULT_SET );
 #endif
 
 //#ifdef BLOCK_JACOBI
