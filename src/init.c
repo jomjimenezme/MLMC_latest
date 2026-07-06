@@ -182,6 +182,27 @@ void method_setup( vector_double *V, level_struct *l, struct Thread *threading )
                                 _GLOBAL_FGMRES, _NOTHING, NULL, d_plus_clover_double, &(g.p), l );
     fine_level_double_alloc( l );
   }
+
+#ifdef POLYPREC
+  if ( g.fine_polyprec_enabled ) {
+
+    // g.p does not contain a complete Arnoldi workspace in this mode
+    if ( g.mixed_precision == 2 )
+      error0("POLYPREC: finest-level polynomial is not supported with mixed_precision = 2.\n");
+
+    // Allocate polynomial storage with the finest vector size
+    polyprec_double_struct_alloc( g.fine_polyprec_d, l->inner_vector_size, &(g.p) );
+
+    // We need to construct a new polynomial for the fine operator
+    g.p.polyprec_double.update_lejas = 1;
+    g.p.polyprec_double.preconditioner = NULL;
+    g.p.polyprec_double.preconditioner_bare = NULL;
+    // The Jacobi or Gauss-Seidel operator is assigned later
+    g.p.polyprec_double.target_op = NULL;
+    g.p.polyprec_double.eval_target_operator = NULL;
+  }
+#endif
+
   END_LOCKED_MASTER(threading)
   SYNC_MASTER_TO_ALL(threading)
 
