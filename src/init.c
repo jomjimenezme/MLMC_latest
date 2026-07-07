@@ -209,9 +209,6 @@ void method_setup( vector_double *V, level_struct *l, struct Thread *threading )
     // Store the omega associated with this polynomial
     g.p.polyprec_double.omega = g.fine_polyprec_omega;
 
-    // A new polynomial must be constructed for the current fine operator
-    g.p.polyprec_double.update_lejas = 1;
-
     // We need to construct a new polynomial for the fine operator
     g.p.polyprec_double.update_lejas = 1;
     g.p.polyprec_double.preconditioner = NULL;

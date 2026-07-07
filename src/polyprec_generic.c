@@ -20,9 +20,9 @@
  */
 
 #include "main.h"
+#include "proxies/dirac_proxy_PRECISION.h"
 
 #ifdef POLYPREC
-
 
 /*-----------------------------------------------*/
 
@@ -61,6 +61,21 @@ void print_vector_PRECISION( char* desc, vector_PRECISION w, int n)
   printf0( "\n %s\n", desc );
   for( j = 0; j < n; j++ ) printf0( " (%6.6f,%6.6f)", creal(w[j]), cimag(w[j]) );
   printf0( "\n" );
+}
+
+void apply_polyprec_jacobi_PRECISION( vector_PRECISION eta, vector_PRECISION phi,
+                                      operator_PRECISION_struct *op, level_struct *l,
+                                      struct Thread *threading )
+{
+  int start, end;
+
+  // Apply the full finest-level Dirac operator: eta = D phi
+  d_plus_clover_PRECISION( eta, phi, op, l, threading );
+
+  compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
+
+  // Apply the inverse self-coupling term: eta = C^{-1} eta = C^{-1} D phi
+  diag_sc_inv_PRECISION( eta, eta, &(l->sc_op_PRECISION), l, start, end );
 }
 
 static void apply_polyprec_operator_PRECISION( vector_PRECISION output,

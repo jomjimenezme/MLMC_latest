@@ -25,6 +25,10 @@
   void apply_polyprec_PRECISION( vector_PRECISION phi, vector_PRECISION Dphi, vector_PRECISION eta,
                                  int res, level_struct *l, struct Thread *threading );
 
+  void apply_polyprec_jacobi_PRECISION( vector_PRECISION eta, vector_PRECISION phi,
+                                        operator_PRECISION_struct *op, level_struct *l,
+                                        struct Thread *threading );
+
   int re_construct_lejas_PRECISION( level_struct *l, struct Thread *threading );
 
   void apply_polyprec_residual_core_PRECISION( vector_PRECISION phi, vector_PRECISION eta,
