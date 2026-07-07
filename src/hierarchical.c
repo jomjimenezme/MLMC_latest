@@ -76,9 +76,9 @@ int build_H(int i, int j, int level){
       int dec = 8*t[k] + 4*z[k] + 2*y[k] + x[k];
       dec = RB_4D[dec];
       int *rb = dec2Bin(dec, 4);
-      for(int for_index=0; for_index<4; for_index++){
-        pi[count]=rb[for_index];
-	count++;
+      for(int for_index = 3; for_index >= 0; for_index--) {
+        pi[count] = rb[for_index];
+        count++;
       }
       free(rb);
     }else{
