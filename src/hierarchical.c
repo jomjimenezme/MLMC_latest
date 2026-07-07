@@ -152,8 +152,8 @@ int build_H_3d(int i, int j, int level){
     int dec = 4*z[k] + 2*y[k] + x[k];
     dec = RB_3D[dec];
     int *rb = dec2Bin(dec, 3);
-    for(int for_index=0; for_index<3; for_index++){
-      pi[count]=rb[for_index];
+    for(int for_index = 2; for_index >= 0; for_index--){
+      pi[count] = rb[for_index];
       count++;
     }
     free(rb);
