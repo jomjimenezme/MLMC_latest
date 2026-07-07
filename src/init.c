@@ -196,6 +196,10 @@ void method_setup( vector_double *V, level_struct *l, struct Thread *threading )
       error0("POLYPREC: invalid finest-level splitting %d.\n",
              g.fine_polyprec_splitting);
 
+    // Only positive Omegas
+    if ( g.fine_polyprec_omega <= 0.0 )
+      error0("POLYPREC: finest-level relaxation parameter must be positive\n");
+
     // Allocate polynomial storage with the finest vector size
     polyprec_double_struct_alloc( g.fine_polyprec_d, l->inner_vector_size, &(g.p) );
 

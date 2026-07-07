@@ -69,16 +69,27 @@ static void apply_polyprec_operator_PRECISION( vector_PRECISION output,
                                                level_struct *l,
                                                struct Thread *threading )
 {
-  // Apply the operator for which the polynomial was constructed.
+  int start, end;
+
+  // Apply the unrelaxed operator associated with the polynomial.
   p->polyprec_PRECISION.eval_target_operator( output, input,
                                               p->polyprec_PRECISION.target_op,
                                               l, threading );
 
-  if ( p->shift ) {
-    int start, end;
+  if ( p->shift || p->polyprec_PRECISION.omega != 1.0 ) {
     compute_core_start_end_custom(p->v_start, p->v_end, &start, &end,
                                   l, threading, l->num_lattice_site_var );
-    vector_PRECISION_saxpy( output, output, input, -p->shift, start, end, l );
+
+    // Include the shift before applying the relaxation factor.
+    if ( p->shift )
+      vector_PRECISION_saxpy( output, output, input, -p->shift,
+                              start, end, l );
+
+    // Convert the unrelaxed application into omega*A.
+    if ( p->polyprec_PRECISION.omega != 1.0 )
+      vector_PRECISION_scale( output, output,
+                              p->polyprec_PRECISION.omega,
+                              start, end, l );
   }
 }
 
@@ -174,7 +185,7 @@ void leja_ordering_PRECISION( gmres_PRECISION_struct *p )
 
 int update_lejas_PRECISION( gmres_PRECISION_struct *p, level_struct *l, struct Thread *threading )
 {
-  int start, end;
+  int i, start, end;
   compute_core_start_end(p->v_start, p->v_end, &start, &end, l, threading);
 
   vector_PRECISION random_rhs, buff0;
@@ -295,6 +306,14 @@ int update_lejas_PRECISION( gmres_PRECISION_struct *p, level_struct *l, struct T
 
   START_MASTER(threading)
   harmonic_ritz_PRECISION(p);
+
+  // The harmonic Ritz values of omega*A are simplyomega times those of A
+  if ( p->polyprec_PRECISION.omega != 1.0 ) {
+    for ( i=0; i<p->polyprec_PRECISION.d_poly; i++ )
+      p->polyprec_PRECISION.h_ritz[i] *=
+        p->polyprec_PRECISION.omega;
+  }
+
   leja_ordering_PRECISION(p);
   END_MASTER(threading)
 
