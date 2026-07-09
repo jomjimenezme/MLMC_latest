@@ -59,10 +59,10 @@ void vector_PRECISION_define_random( vector_PRECISION phi, int start, int end, l
 
 int compute_dilution_idx_PRECISION(level_struct *l, int global_idx, int dof){
   int dilution_idx = 1;
-  int dilution_group = dof/g.dilution_ml[l->depth];
+  int dilution_group = dof/g.dilution[l->depth];
 
   if(g.dilution != 3 && l->depth == 0)
-    dilution_idx = (global_idx/dilution_group)%g.dilution_ml[l->depth] + 1;
+    dilution_idx = (global_idx/dilution_group)%g.dilution[l->depth] + 1;
   
   if(g.dilution == 3 && l->depth == 0)
     dilution_idx = global_idx%3 + 1;

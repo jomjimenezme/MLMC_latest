@@ -137,22 +137,20 @@ typedef struct global_struct
     int probing_dimension; // 4D or 3D coloring
     int coloring_distance; // for classical
     int colored_grids; //grids to be colored in the multilevel decomposition from fine to coarse
-    int k; // for hierarchical
+    int *k; // for hierarchical
 
     int **colors; //colors of the lattice
     int **local_colors; //colors of every MPI process
     int *num_colors; //number of colors at every level
     int coloring_count;
     
-    int dilution;
-    int *dilution_ml;
+    int *dilution;
     int dilution_count;
 
-    int nc;
     int sigma[4];
 
-    int interrupt;
-    int n_had;
+    int *interrupt;
+    int *n_had;
 
     int gamma_idx;
 
