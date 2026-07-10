@@ -834,7 +834,19 @@ void read_global_info( FILE *in ) {
   g.num_desired_levels = g.num_levels;
   save_pt = &(g.anti_pbc); g.anti_pbc = 0;
   read_parameter( &save_pt, "antiperiodic boundary conditions:", "%d", 1, in, _DEFAULT_SET );
-  
+ 
+  g.bc = g.anti_pbc ? 2 : 1;
+  save_pt = &(g.bc);
+  if ( read_parameter( &save_pt, "boundary condition type:", "%d", 1, in, _DEFAULT_SET ) ) {
+    if ( g.bc == 2 )
+      g.anti_pbc = 1;
+    else
+      g.anti_pbc = 0;
+
+    if ( g.bc < 0 || g.bc > 3 )
+      error0("invalid boundary condition type: %d\n", g.bc);
+  }
+
   save_pt = &(g.num_openmp_processes); g.num_openmp_processes = 1;
   read_parameter( &save_pt, "number of openmp threads:", "%d", 1, in, _DEFAULT_SET );
 }
