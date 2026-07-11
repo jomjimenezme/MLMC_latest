@@ -103,61 +103,77 @@ int get_dilution_value_PRECISION(int idx, int level){
 }
 
 void vector_PRECISION_probing( vector_PRECISION phi, int start, int end, level_struct *l ) {
-
   int thread = omp_get_thread_num();
   if(thread == 0 && start != end)
-  PROF_PRECISION_START( _SET );
+    PROF_PRECISION_START( _SET );
+
   if ( phi != NULL ) {
     int i;
-    int global_position = g.my_rank*(end - start);
     for ( i=start; i<end; i++ ){
-      int local_lattice_idx = i/12;
-      int pij;
-      if(g.local_colors[l->depth][local_lattice_idx] == g.coloring_count+1)
-        pij = 1;
-      else
-        pij = 0;
+      int local_lattice_idx = i / 12;
+      int site_inner_idx    = i % 12;
 
-      int global_lattice_idx = (global_position + i)/12; //global index on the lattice
-      int site_inner_idx = global_position + i - global_lattice_idx*12;
+      int pij = (g.local_colors[l->depth][local_lattice_idx] == g.coloring_count+1) ? 1 : 0;
+      int e   = get_dilution_value_PRECISION(site_inner_idx, l->depth);
 
-      int e = get_dilution_value_PRECISION(site_inner_idx, l->depth);
-      phi[i] = (PRECISION) pij*e;
+      phi[i] = (PRECISION)(pij*e);
     }
   } else {
-    error0("Error in \"vector_PRECISION_define_random\": pointer is null\n");
+    error0("Error in \"vector_PRECISION_probing\": pointer is null\n");
   }
 
   if(thread == 0 && start != end)
-  PROF_PRECISION_STOP( _SET, 1 );
+    PROF_PRECISION_STOP( _SET, 1 );
 }
-
 
 void vector_PRECISION_hadamard( vector_PRECISION phi, int start, int end, level_struct *l ) {
-
   int thread = omp_get_thread_num();
   if(thread == 0 && start != end)
-  PROF_PRECISION_START( _SET );
+    PROF_PRECISION_START( _SET );
+
   if ( phi != NULL ) {
     int i;
-    int global_position = g.my_rank*(end - start);
+
+    // local sublattice sizes (T,Z,Y,X) and global sizes at this depth
+    int *ll = l->local_lattice;
+    int *gl = g.global_lattice[l->depth];
+
     for ( i=start; i<end; i++ ){
-      int global_lattice_idx = (global_position + i)/12; //global index on the lattice
-      int site_inner_idx = global_position + i - global_lattice_idx*12;
-      
+
+      int local_site     = i / 12;      // local lexicographic site index
+      int site_inner_idx = i % 12;      // spin-color dof within the site
+
+      // local coordinates: X fastest, T slowest (same convention as index_to_coord)
+      int lc[4];
+      lc[3] =  local_site % ll[3];
+      lc[2] = (local_site /  ll[3]) % ll[2];
+      lc[1] = (local_site / (ll[3]*ll[2])) % ll[1];
+      lc[0] =  local_site / (ll[3]*ll[2]*ll[1]);
+
+      // global coordinates via this rank's position in the process grid
+      int gc[4];
+      for (int mu = 0; mu < 4; mu++)
+        gc[mu] = g.my_coords[mu]*ll[mu] + lc[mu];
+
+      // global lexicographic index (T slowest, X fastest),
+      // consistent with index_to_coord() inside build_H
+      int global_lattice_idx = ((gc[0]*gl[1] + gc[1])*gl[2] + gc[2])*gl[3] + gc[3];
+
       int e = get_dilution_value_PRECISION(site_inner_idx, l->depth);
-      int hij;
+      int hij = 1;
       if(g.probing_dimension == 4) hij = build_H(global_lattice_idx, g.coloring_count, l->depth);
       if(g.probing_dimension == 3) hij = build_H_3d(global_lattice_idx, g.coloring_count, l->depth);
-      phi[i] = (PRECISION) hij*e; 
+
+      phi[i] = (PRECISION)(hij*e);
     }
   } else {
-    error0("Error in \"vector_PRECISION_define_random\": pointer is null\n");
+    error0("Error in \"vector_PRECISION_hadamard\": pointer is null\n");
   }
 
   if(thread == 0 && start != end)
-  PROF_PRECISION_STOP( _SET, 1 );
+    PROF_PRECISION_STOP( _SET, 1 );
 }
+
 
 void vector_PRECISION_define_random_rademacher( vector_PRECISION phi, int start, int end, level_struct *l ) {
 
