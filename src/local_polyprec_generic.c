@@ -20,6 +20,7 @@
  */
 
 #include "main.h"
+#include "algorithm_structs_PRECISION.h"
 
 //#ifdef BLOCK_JACOBI
 #if 0

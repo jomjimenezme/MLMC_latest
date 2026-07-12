@@ -21,6 +21,7 @@
 
 #include "main.h"
 #include "proxies/dirac_proxy_PRECISION.h"
+#include "oddeven_PRECISION.h"
 
 #ifdef POLYPREC
 
@@ -126,7 +127,7 @@ void harmonic_ritz_PRECISION( gmres_PRECISION_struct *p )
 
   for (i=0; i<d; i++)
     p->polyprec_PRECISION.Hc[d-1][i] += h_dd*h_dd*p->polyprec_PRECISION.dirctslvr.x[i];
-    
+
   p->polyprec_PRECISION.eigslvr.eigslvr_PRECISION(&p->polyprec_PRECISION.eigslvr);
 }
 
@@ -357,6 +358,35 @@ int re_construct_lejas_PRECISION( level_struct *l, struct Thread *threading ) {
 
 }
 
+int construct_fine_polyprec_PRECISION( gmres_PRECISION_struct *p,
+                                       level_struct *l,
+                                       struct Thread *threading )
+{
+  // Only the Jacobi splitting is implemented so far
+  if ( p->polyprec_PRECISION.splitting != _POLYPREC_JACOBI )
+    error0("POLYPREC: the selected finest-level splitting is not implemented yet.\n");
+
+  START_LOCKED_MASTER(threading)
+
+  // Construct the factors required to apply C^{-1} (stored in op->clover)
+  selfcoupling_setup_PRECISION( &(g.op_double), l );
+
+  // D (g.op_PRECISION) gives the operator data for the Jacobi application C^{-1}D
+  p->polyprec_PRECISION.target_op = &(g.op_PRECISION);
+
+  // Select the function that applies the Jacobi preconditioned operator
+  p->polyprec_PRECISION.eval_target_operator = apply_polyprec_jacobi_PRECISION;
+
+  // The roots must be constructed for the current operator and splitting!!
+  p->polyprec_PRECISION.update_lejas = 1;
+
+  END_LOCKED_MASTER(threading)
+
+  SYNC_MASTER_TO_ALL(threading)
+  SYNC_CORES(threading)
+
+  return update_lejas_PRECISION( p, l, threading );
+}
 
 void apply_polyprec_core_PRECISION( vector_PRECISION phi, vector_PRECISION eta,
                                     gmres_PRECISION_struct *p, level_struct *l,

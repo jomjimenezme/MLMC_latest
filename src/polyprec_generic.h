@@ -31,6 +31,11 @@
 
   int re_construct_lejas_PRECISION( level_struct *l, struct Thread *threading );
 
+
+  int construct_fine_polyprec_PRECISION( gmres_PRECISION_struct *p,
+                                         level_struct *l,
+                                         struct Thread *threading );
+
   void apply_polyprec_residual_core_PRECISION( vector_PRECISION phi, vector_PRECISION eta,
                                                gmres_PRECISION_struct *p, level_struct *l,
                                                struct Thread *threading );
