@@ -52,16 +52,19 @@
 
 
   #ifdef POLYPREC
-  complex_PRECISION hutchinson_polyprec_g5_trunc_PRECISION( int type_appl, level_struct *l,
-                                                            hutchinson_PRECISION_struct* h,
-                                                            struct Thread *threading );
 
-  complex_PRECISION hutchinson_polyprec_g5_remainder_PRECISION( int type_appl, level_struct *l,
-                                                                hutchinson_PRECISION_struct* h,
-                                                                struct Thread *threading );
+  complex_PRECISION hutchinson_fs_second_polyprec_trunc_PRECISION( int type_appl, level_struct *l,
+                                                                   hutchinson_PRECISION_struct* h,
+                                                                   struct Thread *threading );
 
-  complex_PRECISION polyprec_g5_hutchinson_driver_PRECISION( level_struct *l,
-                                                             struct Thread *threading );
+  complex_PRECISION hutchinson_fs_second_polyprec_remainder_PRECISION( int type_appl, level_struct *l,
+                                                                       hutchinson_PRECISION_struct* h,
+                                                                       struct Thread *threading );
+
+  complex_PRECISION fs_second_polyprec_driver_PRECISION( level_struct *l,
+                                                         struct Thread *threading );
+
+
 #endif
 
 

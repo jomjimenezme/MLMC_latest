@@ -187,8 +187,8 @@ void method_setup( vector_double *V, level_struct *l, struct Thread *threading )
   if ( g.fine_polyprec_enabled ) {
 
     // g.p does not contain a complete Arnoldi workspace in this mode
-    if ( g.mixed_precision == 2 )
-      error0("POLYPREC: finest-level polynomial is not supported with mixed_precision = 2.\n");
+    if ( g.mixed_precision != 0 )
+      error0("POLYPREC: finest-level polynomial currently requires mixed_precision = 0\n");
 
     // Only the valid splittings allowed (sanity check)
     if ( g.fine_polyprec_splitting != _POLYPREC_JACOBI &&
@@ -261,18 +261,6 @@ void method_setup( vector_double *V, level_struct *l, struct Thread *threading )
     printf0("elapsed time: %lf seconds\n", t1-t0 );
     END_LOCKED_MASTER(threading)
   }
-  #ifdef POLYPREC
-  if ( g.fine_polyprec_enabled ) {
-    int polyprec_status;
-
-    // Construct the finest polynomial AFTER the fine operator setup is complete
-    polyprec_status = construct_fine_polyprec_double( &(g.p), l, threading );
-
-    // The expansion cannot proceed without a valid polynomial
-    if ( polyprec_status != 1 )
-      error0("POLYPREC: finest-level polynomial construction failed.\n");
-  }
-#endif
   START_LOCKED_MASTER(threading)
 #ifdef PARAMOUTPUT  
   if ( g.method >= -1 && g.print > 0 && !( g.vt.evaluation && g.vt.re_setup ) ) {

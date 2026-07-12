@@ -170,16 +170,16 @@ int main( int argc, char **argv ) {
 
       set_probing_variances_to_zero();
 
-      #ifdef POLYPREC
+#ifdef POLYPREC
       if( g.trace_op_type == 19 ){
         START_MASTER(threadingx)
-        if(g.my_rank==0) printf("Calling Jacobi polynomial for Gamma5 trace\n");
+        if(g.my_rank==0) printf("Calling Jacobi polynomial for FS Heavy Finest term - 3D trace\n");
         END_MASTER(threadingx)
 
-        trace = polyprec_g5_hutchinson_driver_double( &l, &threading );
+        trace = fs_second_polyprec_driver_double( &l, &threading );
 
         START_MASTER(threadingx)
-        if(g.my_rank==0) printf("\nResulting trace from Jacobi polynomial for Gamma5 trace = %f+i%f\n", CSPLIT(trace));
+        if(g.my_rank==0) printf("\nResulting trace from Jacobi polynomial for FS Heavy Finest term - 3D trace = %f+i%f\n", CSPLIT(trace));
         fflush(0);
         END_MASTER(threadingx)
       }

@@ -3807,93 +3807,119 @@ complex_PRECISION fs_mlmc_second_hpe_driver_PRECISION( level_struct *l, struct T
 
 #ifdef POLYPREC
 
-complex_PRECISION hutchinson_polyprec_g5_trunc_PRECISION( int type_appl, level_struct *l,
-                                                          hutchinson_PRECISION_struct* h,
-                                                          struct Thread *threading )
+complex_PRECISION hutchinson_fs_second_polyprec_trunc_PRECISION( int type_appl, level_struct *l,
+                                                                 hutchinson_PRECISION_struct* h,
+                                                                 struct Thread *threading )
 {
-  int start, end;
-  compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
+  complex_PRECISION aux = 0.0;
 
   gmres_PRECISION_struct* p = get_p_struct_PRECISION( l );
   operator_PRECISION_struct *sc = &(l->sc_op_PRECISION);
 
+  int start, end;
+  compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
+
   // r = G_t^H x
   vector_PRECISION_ghg( h->rademacher_vector, 0, l->inner_vector_size, l );
 
-  // b = Gamma5 r
+  // b = Gamma_5 r
   gamma5_PRECISION( h->mlmc_testing, h->rademacher_vector, l, threading );
 
-  // mlmc_b1 = C^{-1} Gamma5 r
+  // mlmc_b1 = C_{m2}^{-1} Gamma_5 r
   diag_sc_inv_PRECISION( h->mlmc_b1, h->mlmc_testing, sc, l, start, end );
 
-  // mlmc_testing = q(A_omega) C^{-1} Gamma5 r
+  // mlmc_testing = q(A_{m2,omega}) C_{m2}^{-1} Gamma_5 r
   apply_polyprec_core_PRECISION( h->mlmc_testing, h->mlmc_b1, p, l, threading );
 
-  // D^{-1} = omega q(A_omega) C^{-1} + p(A_omega) D^{-1}
+  // D_{m2}^{-1} = omega q(A_{m2,omega}) C_{m2}^{-1} + ...
   if ( p->polyprec_PRECISION.omega != 1.0 )
     vector_PRECISION_scale( h->mlmc_testing, h->mlmc_testing,
                             p->polyprec_PRECISION.omega,
                             start, end, l );
 
-  return global_inner_product_PRECISION( h->rademacher_vector, h->mlmc_testing,
-                                         p->v_start, p->v_end, l, threading );
+  aux = global_inner_product_PRECISION( h->rademacher_vector, h->mlmc_testing,
+                                        p->v_start, p->v_end, l, threading );
+
+  return aux;
 }
 
 
-complex_PRECISION hutchinson_polyprec_g5_remainder_PRECISION( int type_appl, level_struct *l,
-                                                              hutchinson_PRECISION_struct* h,
-                                                              struct Thread *threading )
+complex_PRECISION hutchinson_fs_second_polyprec_remainder_PRECISION( int type_appl, level_struct *l,
+                                                                     hutchinson_PRECISION_struct* h,
+                                                                     struct Thread *threading )
 {
-  int start, end;
-  compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
+  complex_PRECISION aux = 0.0;
 
   gmres_PRECISION_struct* p = get_p_struct_PRECISION( l );
 
   // r = G_t^H x
   vector_PRECISION_ghg( h->rademacher_vector, 0, l->inner_vector_size, l );
 
-  // b = Gamma5 r
+  // p->b = Gamma_5 r
   gamma5_PRECISION( p->b, h->rademacher_vector, l, threading );
 
-  // p->x = D^{-1} Gamma5 r
+  // p->x = D_{m2}^{-1} Gamma_5 r
   apply_solver_PRECISION( l, threading );
 
-  // mlmc_b1 = p(A_omega) D^{-1} Gamma5 r
+  // mlmc_b1 = p_d(A_{m2,omega}) D_{m2}^{-1} Gamma_5 r
   apply_polyprec_residual_core_PRECISION( h->mlmc_b1, p->x, p, l, threading );
 
-  return global_inner_product_PRECISION( h->rademacher_vector, h->mlmc_b1,
-                                         p->v_start, p->v_end, l, threading );
+  aux = global_inner_product_PRECISION( h->rademacher_vector, h->mlmc_b1,
+                                        p->v_start, p->v_end, l, threading );
+
+  return aux;
 }
 
 
-complex_PRECISION polyprec_g5_hutchinson_driver_PRECISION( level_struct *l,
-                                                           struct Thread *threading )
+complex_PRECISION fs_second_polyprec_driver_PRECISION( level_struct *l,
+                                                       struct Thread *threading )
 {
   complex_PRECISION trace = 0.0;
   struct sample estimate;
   hutchinson_PRECISION_struct* h = &(l->h_PRECISION);
-
   gmres_PRECISION_struct* p = get_p_struct_PRECISION( l );
 
-  if ( !g.fine_polyprec_enabled )
-    error0("POLYPREC: finest-level polynomial estimator requires fine grid polyprec enabled\n");
+  complex_PRECISION m1 = (complex_PRECISION) l->dirac_shift;
+  complex_PRECISION m2 = m1 + g.delta_m_fs;
 
-  if ( p->polyprec_PRECISION.update_lejas == 1 )
-    error0("POLYPREC: finest-level polynomial has not been constructed\n");
+  int polyprec_status;
+
+  if ( !g.fine_polyprec_enabled )
+    error0("POLYPREC: FS heavy polynomial estimator requires fine grid polyprec enabled.\n");
 
   if ( g.my_rank == 0 ) {
-    printf("------ Jacobi polynomial Gamma5 trace ------ degree: %d  omega: %le\n",
+    printf("------ FS Heavy with Jacobi polynomial ------  degree: %d  omega: %le  shift: %e\n",
            p->polyprec_PRECISION.d_poly,
-           p->polyprec_PRECISION.omega);
+           (double)p->polyprec_PRECISION.omega,
+           g.delta_m_fs);
   }
 
-  h->hutch_compute_one_sample = hutchinson_polyprec_g5_trunc_PRECISION;
+  // The polynomial and both functions must use m2
+  if ( fabs(m2 - m1) > 1e-8 )
+    shift_update( m2, l, threading );
+
+  // Construct C_{m2}^{-1}D_{m2} polynomial at m2
+  polyprec_status = construct_fine_polyprec_PRECISION( p, l, threading );
+
+  if ( polyprec_status != 1 )
+    error0("POLYPREC: finest-level polynomial construction at the heavy mass failed.\n");
+
+  // Truncated part
+  h->hutch_compute_one_sample = hutchinson_fs_second_polyprec_trunc_PRECISION;
   estimate = hutchinson_blind_PRECISION( l, h, 0, threading );
   trace += estimate.acc_trace / estimate.sample_size;
 
-  h->hutch_compute_one_sample = hutchinson_polyprec_g5_remainder_PRECISION;
+  // Remainder part
+  h->hutch_compute_one_sample = hutchinson_fs_second_polyprec_remainder_PRECISION;
   estimate = hutchinson_blind_PRECISION( l, h, 0, threading );
   trace += estimate.acc_trace / estimate.sample_size;
+
+  // Restore to m1
+  if ( fabs(m2 - m1) > 1e-8 )
+    shift_update( m1, l, threading );
+
+  // Restore C_{m1}^{-1} factors
+  selfcoupling_setup_PRECISION( &g.op_double, l );
 
   return trace;
 }
