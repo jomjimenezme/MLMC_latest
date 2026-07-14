@@ -316,10 +316,10 @@ struct sample hutchinson_blind_PRECISION( level_struct *l, hutchinson_PRECISION_
       variance = 0.0;
       estimate.sample_size = i+1;
       trace = estimate.acc_trace/estimate.sample_size;
-      for( j=0; j<i; j++ ){
+      for( j=0; j<=i; j++ ){
         variance += conj(samples[j] - trace) * (samples[j] - trace);
       }
-      variance = variance / j;
+      variance = variance / i;
       START_MASTER(threading);
       if(g.my_rank==0) {
         printf("[%d, trace: %e %c i%e, variance: %e] ", 
@@ -386,7 +386,7 @@ struct sample sigma_hutchinson_blind_PRECISION( level_struct *l, hutchinson_PREC
 
     for(g.coloring_count = 0; g.coloring_count < g.num_colors[l->depth]; g.coloring_count++){
       for(g.dilution_count = 1; g.dilution_count < g.dilution[l->depth] + 1; g.dilution_count++){
-        if(g.my_rank == 0) printf("\nMultiplier-based probing iteration %d, Color n. %d, dof = %d\n", i, g.coloring_count+1, g.dilution_count);
+        if(g.my_rank == 0) printf("\nMultiplier-based probing iteration %d, color n. %d, dof = %d\n", i, g.coloring_count+1, g.dilution_count);
         probing_create_PRECISION( l, h, type, threading );
         hadamard_PRECISION_product( h->rademacher_vector, h->probing_vector, start, end, l );
         // 2. apply the operator to the Rademacher vector
@@ -441,7 +441,7 @@ struct sample sigma_hutchinson_blind_PRECISION( level_struct *l, hutchinson_PREC
     }
     free(traces);
   }
-
+  if(g.my_rank==0) g.variances[l->depth] += creal(variance);
   double t1 = MPI_Wtime();
   if(g.my_rank==0) {
     printf("\n");
@@ -536,7 +536,7 @@ struct sample hp_hutchinson_blind_PRECISION( level_struct *l, hutchinson_PRECISI
     }
     free(traces);
   }
-
+  if(g.my_rank==0) g.variances[l->depth] += creal(variance);
   double t1 = MPI_Wtime();
   if(g.my_rank==0) {
     printf("\n");
