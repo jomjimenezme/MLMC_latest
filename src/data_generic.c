@@ -332,6 +332,51 @@ void print_rademacher_PRECISION( vector_PRECISION phi, level_struct *l){
 
 }
 
+// Define a deterministic probing vector for the active color and dilution
+void vector_PRECISION_define_probing( vector_PRECISION phi, int start, int end, level_struct *l )
+{
+  int thread = omp_get_thread_num();
+
+  if(thread == 0 && start != end)
+    PROF_PRECISION_START( _SET );
+
+  if ( phi != NULL ) {
+
+    // Degrees of freedom per lattice site
+    int dof = l->num_lattice_site_var;
+
+    // Local lattice-site index.
+    int site = 0;
+
+    for ( int i=start; i<end; i++ ) {
+
+      // Move to the next lattice site after all site variables
+      if ( i%dof == 0 && i > 0 )
+        site++;
+
+      // Compute the active dilution index for this vector component
+      int dilution_idx = compute_dilution_idx_PRECISION( l, i, dof );
+
+      // Select entries belonging to the active color and dilution
+      if ( g.local_colors[l->depth][site] == g.coloring_count &&
+           dilution_idx == g.dilution_count )
+
+        // Put a DETERMINISTIC probing value on the selected entries
+        phi[i] = 1.0;
+
+      // Zero all entries outside the active color and dilution
+      else
+        phi[i] = 0.0;
+    }
+
+  } else {
+    error0("Error in \"vector_PRECISION_define_probing\": pointer is null\n");
+  }
+
+  if(thread == 0 && start != end)
+    PROF_PRECISION_STOP( _SET, 1 );
+}
+
 /*void vector_PRECISION_define_spin_color( vector_PRECISION phi, int start, int end, level_struct *l, struct Thread *threading) {
   
   int thread = omp_get_thread_num();
