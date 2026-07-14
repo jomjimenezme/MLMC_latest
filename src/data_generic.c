@@ -61,10 +61,10 @@ int compute_dilution_idx_PRECISION(level_struct *l, int global_idx, int dof){
   int dilution_idx = 1;
   int dilution_group = dof/g.dilution[l->depth];
 
-  if(g.dilution != 3 && l->depth == 0)
+  if(g.dilution[l->depth] != 3 && l->depth == 0)
     dilution_idx = (global_idx/dilution_group)%g.dilution[l->depth] + 1;
-  
-  if(g.dilution == 3 && l->depth == 0)
+
+  if(g.dilution[l->depth] == 3 && l->depth == 0)
     dilution_idx = global_idx%3 + 1;
 
   return dilution_idx;
