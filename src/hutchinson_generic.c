@@ -180,6 +180,15 @@ int apply_solver_PRECISION( level_struct* l, struct Thread *threading ){
 
   gmres_PRECISION_struct* p = get_p_struct_PRECISION( l );
 
+  // force a zero initial guess: prevents a previous (possibly bad) solution
+  // from contaminating this solve
+  {
+    int start0, end0;
+    compute_core_start_end( 0, l->inner_vector_size, &start0, &end0, l, threading );
+    vector_PRECISION_define( p->x, 0, start0, end0, l );
+    SYNC_CORES(threading)
+  }
+
   p->print_iters = 1;
 
   buff1 = p->tol;
@@ -377,7 +386,7 @@ struct sample sigma_hutchinson_blind_PRECISION( level_struct *l, hutchinson_PREC
 
     for(g.coloring_count = 0; g.coloring_count < g.num_colors[l->depth]; g.coloring_count++){
       for(g.dilution_count = 1; g.dilution_count < g.dilution[l->depth] + 1; g.dilution_count++){
-        if(g.my_rank == 0) printf("\nHierarchical probing iteration %d, Hadamard vector n. %d, dof = %d\n", i, g.coloring_count+1, g.dilution_count);
+        if(g.my_rank == 0) printf("\nMultiplier-based probing iteration %d, Color n. %d, dof = %d\n", i, g.coloring_count+1, g.dilution_count);
         probing_create_PRECISION( l, h, type, threading );
         hadamard_PRECISION_product( h->rademacher_vector, h->probing_vector, start, end, l );
         // 2. apply the operator to the Rademacher vector
@@ -691,11 +700,15 @@ complex_PRECISION gamma_3D_hutchinson_plain_PRECISION( int type_appl, level_stru
     compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
 
     if ( type_appl==-1 ) {
-      //vector_PRECISION_copy( h->mlmc_b1, h->rademacher_vector, start, end, l );
-      vector_PRECISION_ghg(  h->rademacher_vector, 0, l->inner_vector_size, l );
-      vector_PRECISION_copy( p->b,  h->rademacher_vector, start, end, l );
-      //vector_PRECISION_copy( p->b, h->rademacher_vector, start, end, l );
-    } else {
+      
+      SYNC_CORES(threading)
+      START_MASTER(threading)
+      vector_PRECISION_ghg( h->rademacher_vector, 0, l->inner_vector_size, l );
+      END_MASTER(threading)
+      SYNC_MASTER_TO_ALL(threading)
+      vector_PRECISION_copy( p->b, h->rademacher_vector, start, end, l );
+
+      } else {
       //vector_PRECISION_copy( p->b, l->powerit_PRECISION.vecs[type_appl], start, end, l );
     }
 
