@@ -3925,3 +3925,44 @@ complex_PRECISION fs_second_polyprec_driver_PRECISION( level_struct *l,
 }
 
 #endif
+
+
+// Compute a trace contribution using deterministic probing vectors
+complex_PRECISION hutchinson_probing_PRECISION( level_struct *l,
+                                                hutchinson_PRECISION_struct* h,
+                                                struct Thread *threading )
+{
+  // Accumulate the probed trace contribution
+  complex_PRECISION trace = 0.0;
+
+  // Save the active color and dilution index.
+  int coloring_count_b = g.coloring_count;
+  int dilution_count_b = g.dilution_count;
+
+  // Loop over all finest-level colors
+  for ( g.coloring_count = 1; g.coloring_count < g.num_colors[0] + 1; g.coloring_count++ ) {
+
+    // Loop over all requested dilution vectors
+    for ( g.dilution_count = 1; g.dilution_count < g.dilution + 1; g.dilution_count++ ) {
+
+      // Print the active probing vector
+      if ( g.my_rank == 0 )
+        printf("\nProbing color %d, dilution %d", g.coloring_count, g.dilution_count);
+
+      // Create the deterministic probing vector
+      START_MASTER(threading)
+      vector_PRECISION_define_probing( h->rademacher_vector, 0, l->inner_vector_size, l );
+      END_MASTER(threading)
+      SYNC_MASTER_TO_ALL(threading)
+
+      // Accumulate the trace contribution for this probing vector
+      trace += h->hutch_compute_one_sample( -1, l, h, threading );
+    }
+  }
+
+  // Restore color and dilution index
+  g.coloring_count = coloring_count_b;
+  g.dilution_count = dilution_count_b;
+
+  return trace;
+}
