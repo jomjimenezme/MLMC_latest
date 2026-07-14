@@ -466,7 +466,6 @@ void coloring_scheme(){
   if(g.my_rank==0){
 
     allocate_colors();
-    MALLOC(g.variances, double, g.num_levels);
 
     printf("\nProbing = %d - Classical probing\n", g.probing);
     printf("Coloring_distance = %d\n", g.coloring_distance);
@@ -587,7 +586,6 @@ int* find_indices(int *array, int size, int value, int *count){
 void graph_coloring(){
 
   get_coloring_dimension();
-  if(g.my_rank == 0) MALLOC(g.variances, double, g.num_levels);
   if(g.probing == 1) coloring_scheme();
 
  if(g.probing == 2){
