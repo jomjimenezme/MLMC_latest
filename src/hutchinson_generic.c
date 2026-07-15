@@ -3906,8 +3906,19 @@ complex_PRECISION fs_second_polyprec_driver_PRECISION( level_struct *l,
 
   // Truncated part
   h->hutch_compute_one_sample = hutchinson_fs_second_polyprec_trunc_PRECISION;
-  estimate = hutchinson_blind_PRECISION( l, h, 0, threading );
-  trace += estimate.acc_trace / estimate.sample_size;
+
+  // Use deterministic probing when probing is enabled
+  if ( g.probing ) {
+    // TODO: Require full spin-color dilution for exact probing
+    // TODO: Require a coloring that covers the degree of q
+    trace += hutchinson_probing_PRECISION( l, h, threading );
+
+  } else {
+    estimate = hutchinson_blind_PRECISION( l, h, 0, threading );
+
+    // Compute stochastically
+    trace += estimate.acc_trace / estimate.sample_size;
+  }
 
   // Remainder part
   h->hutch_compute_one_sample = hutchinson_fs_second_polyprec_remainder_PRECISION;
