@@ -1218,6 +1218,19 @@ void read_solver_parameters( FILE *in, level_struct *l ) {
   // Use the unrelaxed splitting by default
   save_pt = &(g.fine_polyprec_omega); g.fine_polyprec_omega = 1.0;
   read_parameter( &save_pt, "fine grid polyprec_omega:", "%lf", 1, in, _DEFAULT_SET );
+
+  // Validate probing requirements before setup starts
+  if ( g.fine_polyprec_enabled && g.probing ) {
+
+    // Require full spin-color dilution for exact probing of C^{-1}
+    if ( g.dilution != 12 )
+      error0("POLYPREC: exact probing requires full spin-color dilution.\n");
+
+    // Require a coloring that covers the degree of q
+    if ( g.coloring_distance < g.fine_polyprec_d-1 )
+     error0("POLYPREC: coloring distance must be at least fine_polyprec_d minus one.\n");
+  }
+
 #endif
 
 //#ifdef BLOCK_JACOBI

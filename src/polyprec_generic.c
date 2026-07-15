@@ -385,7 +385,14 @@ int construct_fine_polyprec_PRECISION( gmres_PRECISION_struct *p,
   SYNC_MASTER_TO_ALL(threading)
   SYNC_CORES(threading)
 
-  return update_lejas_PRECISION( p, l, threading );
+  // Construct the Leja roots for the assigned finest target operator
+  int polyprec_status = update_lejas_PRECISION( p, l, threading );
+  // Abort because the finest polynomial is required by the expansion!!
+  if ( polyprec_status != 1 )
+    error0("POLYPREC: finest-level polynomial construction failed.\n");
+
+  // Report SUCCESFUL polynomial construction
+  return polyprec_status;
 }
 
 void apply_polyprec_core_PRECISION( vector_PRECISION phi, vector_PRECISION eta,

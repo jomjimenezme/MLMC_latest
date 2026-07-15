@@ -3898,19 +3898,13 @@ complex_PRECISION fs_second_polyprec_driver_PRECISION( level_struct *l,
   if ( fabs(m2 - m1) > 1e-8 )
     shift_update( m2, l, threading );
 
-  // Construct C_{m2}^{-1}D_{m2} polynomial at m2
-  polyprec_status = construct_fine_polyprec_PRECISION( p, l, threading );
-
-  if ( polyprec_status != 1 )
-    error0("POLYPREC: finest-level polynomial construction at the heavy mass failed.\n");
+  construct_fine_polyprec_PRECISION( p, l, threading );
 
   // Truncated part
   h->hutch_compute_one_sample = hutchinson_fs_second_polyprec_trunc_PRECISION;
 
   // Use deterministic probing when probing is enabled
   if ( g.probing ) {
-    // TODO: Require full spin-color dilution for exact probing
-    // TODO: Require a coloring that covers the degree of q
     trace += hutchinson_probing_PRECISION( l, h, threading );
 
   } else {
