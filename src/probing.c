@@ -414,43 +414,43 @@ void graph_coloring() {
 */
 
 void get_sigma_4D(){
-  
+
   if(g.coloring_distance == 1){
     g.sigma[0] = 1;
     g.sigma[1] = 1;
     g.sigma[2] = 1;
     g.sigma[3] = 1;
-    
+
     g.nc = 2;
   }
-  
+
   if(g.coloring_distance == 2){
-    g.sigma[0] = 1;
-    g.sigma[1] = 2;
-    g.sigma[2] = 3;
-    g.sigma[3] = 4;
-    
-    g.nc = 10;
+    g.sigma[0] = 4;
+    g.sigma[1] = 1;
+    g.sigma[2] = 9;
+    g.sigma[3] = 10;
+
+    g.nc = 15;
   }
-  
+
   if(g.coloring_distance == 3){
-    g.sigma[0] = 1;
-    g.sigma[1] = 5;
-    g.sigma[2] = 55;
-    g.sigma[3] = 61;
-    
-    g.nc = 16;
+    g.sigma[0] = 19;
+    g.sigma[1] = 7;
+    g.sigma[2] = 21;
+    g.sigma[3] = 15;
+
+    g.nc = 24;
   }
-  
+
   if(g.coloring_distance == 4){
-    g.sigma[0] = 1;
-    g.sigma[1] = 8;
-    g.sigma[2] = 12;
-    g.sigma[3] = 18;
-    
-    g.nc = 64;
+    g.sigma[0] = 33;
+    g.sigma[1] = 45;
+    g.sigma[2] = 16;
+    g.sigma[3] = 7;
+
+    g.nc = 88;
   }
-  
+
 }
 
 void get_sigma_3D(){
