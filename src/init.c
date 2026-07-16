@@ -1065,6 +1065,17 @@ void read_geometry_data( FILE *in, int ls ) {
       g.hpe_order = 0;
       save_pt = &(g.hpe_order);
       read_parameter(&save_pt, "hpe order:", "%d", 1, in, _DEFAULT_SET);
+
+      // Validate exact HPE probing before setup starts
+      if ( g.probing && g.trace_op_type == 17 ) {
+      // Require full spin-color dilution for exact HPE probing
+      if ( g.dilution != 12 )
+        error0("HPE: exact probing requires full spin-color dilution.\n");
+
+      // Require the coloring distance to cover the truncated HPE order
+      if ( g.coloring_distance < g.hpe_order-1 )
+        error0("HPE: coloring distance must be at least hpe_order minus one.\n");
+    }
       
       // Turn Coarsest level improvements at method initialization
       g.cli_on = 1;
