@@ -3622,10 +3622,18 @@ complex_PRECISION hpe_g5_hutchinson_driver_PRECISION( level_struct *l, struct Th
   selfcoupling_setup_PRECISION(&g.op_double, l);
 
   lx = l;
+
+  // HPE truncated contribution
   h->hutch_compute_one_sample = hutchinson_hpe_g5_PRECISION;
 
-  estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
-  trace += estimate.acc_trace / estimate.sample_size;
+  // Use deterministic probing for the HPE truncated term
+  if ( g.probing )
+    trace += hutchinson_probing_PRECISION( lx, h, threading );
+  else {
+    // Estimate the HPE truncated term
+    estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
+    trace += estimate.acc_trace / estimate.sample_size;
+  }
 
   h->hutch_compute_one_sample = hutchinson_hpe_g5_remainder_PRECISION;
 
