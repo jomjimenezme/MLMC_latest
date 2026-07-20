@@ -134,36 +134,14 @@ void vector_PRECISION_hadamard( vector_PRECISION phi, int start, int end, level_
   if ( phi != NULL ) {
     int i;
 
-    // local sublattice sizes (T,Z,Y,X) and global sizes at this depth
-    int *ll = l->local_lattice;
-    int *gl = g.global_lattice[l->depth];
-
     for ( i=start; i<end; i++ ){
+      int site           = i / 12;
+      int site_inner_idx = i % 12;
 
-      int local_site     = i / 12;      // local lexicographic site index
-      int site_inner_idx = i % 12;      // spin-color dof within the site
-
-      // local coordinates: X fastest, T slowest (same convention as index_to_coord)
-      int lc[4];
-      lc[3] =  local_site % ll[3];
-      lc[2] = (local_site /  ll[3]) % ll[2];
-      lc[1] = (local_site / (ll[3]*ll[2])) % ll[1];
-      lc[0] =  local_site / (ll[3]*ll[2]*ll[1]);
-
-      // global coordinates via this rank's position in the process grid
-      int gc[4];
-      for (int mu = 0; mu < 4; mu++)
-        gc[mu] = g.my_coords[mu]*ll[mu] + lc[mu];
-
-      // global lexicographic index (T slowest, X fastest),
-      // consistent with index_to_coord() inside build_H
-      int global_lattice_idx = ((gc[0]*gl[1] + gc[1])*gl[2] + gc[2])*gl[3] + gc[3];
+      uint32_t loc = (g.probing_dimension == 4) ? g_hp_loc_4d[site] : g_hp_loc_3d[site];
+      int hij = (__builtin_popcount(loc & (uint32_t)g.coloring_count) & 1) ? -1 : +1;
 
       int e = get_dilution_value_PRECISION(site_inner_idx, l->depth);
-      int hij = 1;
-      if(g.probing_dimension == 4) hij = build_H(global_lattice_idx, g.coloring_count, l->depth);
-      if(g.probing_dimension == 3) hij = build_H_3d(global_lattice_idx, g.coloring_count, l->depth);
-
       phi[i] = (PRECISION)(hij*e);
     }
   } else {

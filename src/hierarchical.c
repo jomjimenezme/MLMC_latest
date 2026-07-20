@@ -19,6 +19,78 @@ static const unsigned int perm_4D[16] = {
      3, 11, 7,  15
 };
 
+uint32_t *g_hp_loc_4d = NULL;
+uint32_t *g_hp_loc_3d = NULL;
+
+// One-time precomputation of the hierarchical-probing bit string per local site.
+// Bit p of g_hp_loc_*[site] == pi[p] of build_H / build_H_3d.
+void hp_loc_setup( level_struct *l ){
+  int *ll = l->local_lattice;
+  int nsites = ll[0]*ll[1]*ll[2]*ll[3];
+  int k0=g.global_k[0][0], k1=g.global_k[0][1];
+
+  MALLOC( g_hp_loc_4d, uint32_t, nsites );
+  MALLOC( g_hp_loc_3d, uint32_t, nsites );
+
+  for( int s=0; s<nsites; s++ ){
+    int lc[4], gc[4];
+    lc[3] =  s % ll[3];
+    lc[2] = (s /  ll[3]) % ll[2];
+    lc[1] = (s / (ll[3]*ll[2])) % ll[1];
+    lc[0] =  s / (ll[3]*ll[2]*ll[1]);
+    for( int mu=0; mu<4; mu++ ) gc[mu] = g.my_coords[mu]*ll[mu] + lc[mu];
+
+    // ---- 4-D packing: same bit logic as build_H ----
+    uint32_t loc4 = 0; int c4 = 0;
+    for( int k=0; k<k0; k++ ){
+      if( k<k1 ){
+        int dec = 8*((gc[0]>>k)&1) + 4*((gc[1]>>k)&1) + 2*((gc[2]>>k)&1) + ((gc[3]>>k)&1);
+        dec = RB_4D[dec];
+        for( int f=3; f>=0; f-- ){ loc4 |= (uint32_t)((dec>>f)&1) << c4; c4++; }
+      } else {
+        loc4 |= (uint32_t)((gc[0]>>k)&1) << c4; c4++;
+      }
+    }
+    g_hp_loc_4d[s] = loc4;
+
+    // ---- 3-D packing: same bit logic as build_H_3d ----
+    uint32_t loc3 = 0; int c3 = 0;
+    for( int k=0; k<k1; k++ ){
+      int dec = 4*((gc[1]>>k)&1) + 2*((gc[2]>>k)&1) + ((gc[3]>>k)&1);
+      dec = RB_3D[dec];
+      for( int f=2; f>=0; f-- ){ loc3 |= (uint32_t)((dec>>f)&1) << c3; c3++; }
+    }
+    g_hp_loc_3d[s] = loc3;
+  }
+
+  #if 0  // one-time verification against reference implementation, remove after first successful run
+  int *gl = g.global_lattice[0];
+  for( int s=0; s<nsites; s++ ){
+    int lc[4], gc[4];
+    lc[3]=s%ll[3]; lc[2]=(s/ll[3])%ll[2]; lc[1]=(s/(ll[3]*ll[2]))%ll[1]; lc[0]=s/(ll[3]*ll[2]*ll[1]);
+    for(int mu=0;mu<4;mu++) gc[mu]=g.my_coords[mu]*ll[mu]+lc[mu];
+    int gidx = ((gc[0]*gl[1]+gc[1])*gl[2]+gc[2])*gl[3]+gc[3];
+    for( int m=0; m<64; m++ ){
+      int ref4 = build_H(gidx, m, 0);
+      int new4 = (__builtin_popcount(g_hp_loc_4d[s] & (uint32_t)m)&1) ? -1 : +1;
+      int ref3 = build_H_3d(gidx, m, 0);
+      int new3 = (__builtin_popcount(g_hp_loc_3d[s] & (uint32_t)m)&1) ? -1 : +1;
+      if( ref4!=new4 || ref3!=new3 )
+        error0("hp_loc mismatch at site %d, m %d\n", s, m);
+    }
+  }
+  printf0("hp_loc verification passed\n");
+#endif
+
+}
+
+void hp_loc_free( level_struct *l ){
+  int *ll = l->local_lattice;
+  int nsites = ll[0]*ll[1]*ll[2]*ll[3];
+  if(g_hp_loc_4d){ FREE( g_hp_loc_4d, uint32_t, nsites ); g_hp_loc_4d = NULL; }
+  if(g_hp_loc_3d){ FREE( g_hp_loc_3d, uint32_t, nsites ); g_hp_loc_3d = NULL; }
+}
+
 //result[0]      = LSB  (least significative bit)
 //result[bits-1] = MSB  (most significative bit)
 int *dec2Bin(long long n, int bits){
@@ -88,7 +160,7 @@ int build_H(int i, int j, int level){
   }
 
   int *pj = dec2Bin(j, total_bits);
-
+/*
   if(g.anisotropic[level]==1){
     int pj_bits[4];
     int lsb = (g.k[level]-1)*4;
@@ -112,7 +184,7 @@ int build_H(int i, int j, int level){
     int j_prime = bin2Dec(pj, total_bits);
     //if(g.my_rank==0) printf("\nOriginal j = %d -> permuted = %d", j, j_prime);
   }
-
+*/
   int popcount = 0;
   for(int p=0; p<total_bits; p++)
     if(pi[p] == 1 && pj[p] == 1)

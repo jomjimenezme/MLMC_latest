@@ -24,9 +24,7 @@
   #include <cuda_runtime.h>
 #endif
 
-#ifdef HALF_PREC_STORAGE
-  #include <stdint.h>
-#endif
+#include <stdint.h>
 
 #include <stdio.h>
 #include <malloc.h>

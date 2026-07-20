@@ -150,9 +150,12 @@ int main( int argc, char **argv ) {
       if(g.my_rank==0) printf("\n\n Timeslice %d\n\n",  g.time_slice);
 
       if(g.probing != 0 ){
-        if(coloring_flag == 0) 
-          graph_coloring();	
-       }else {
+        if(coloring_flag == 0){
+          graph_coloring();
+          if(g.probing == 2) hp_loc_setup( &l );   // needs g.global_k, set by graph_coloring
+          coloring_flag = 1;
+        }
+      }else {
          for(int i = 0; i<g.num_levels; i++){
             g.num_colors[i] = 1;
             dilution_check(i);

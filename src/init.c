@@ -548,7 +548,7 @@ void method_init( int *argc, char ***argv, level_struct *l ) {
 void method_finalize( level_struct *l ) {
   
   int ls = MAX(g.num_desired_levels,2);
-
+  if(g.probing == 2) hp_loc_free( l );
   if(g.probing == 1){
     int num_processes;
     MPI_Comm_size(MPI_COMM_WORLD, &num_processes);
