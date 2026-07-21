@@ -610,4 +610,17 @@ void graph_coloring(){
      }
    }
  }
+ 
+ if(g.probing == 0){
+   if(g.my_rank==0) printf("\nProbing = %d - Plain estimator\n", g.probing);
+      for(int level = 0; level<g.num_levels; level++){
+         g.global_k[level][0] = log2_int(g.global_lattice[level][0]);
+         g.global_k[level][1] = log2_int(g.global_lattice[level][1]);
+         g.global_k[level][2] = log2_int(g.global_lattice[level][2]);
+         g.global_k[level][3] = log2_int(g.global_lattice[level][3]);
+         dilution_check(level);
+         g.num_colors[level] = 1;
+   }
+   g.probing = 2;
+ }
 }

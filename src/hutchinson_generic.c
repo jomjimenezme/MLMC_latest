@@ -90,12 +90,6 @@ complex_PRECISION hutchinson_driver_PRECISION( level_struct *l, struct Thread *t
   if (g.probing == 1) {
     estimate = sigma_hutchinson_blind_PRECISION(lx, h, 0, threading);
     trace += estimate.acc_trace / estimate.sample_size;
-  } else if(g.probing == 0){
-    for(g.dilution_count = 1; g.dilution_count < g.dilution[0] + 1; g.dilution_count++){
-        if(g.my_rank == 0) printf("\nColor %d, dilution %d", g.coloring_count, g.dilution_count);
-        estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
-        trace += estimate.acc_trace / estimate.sample_size;
-      }
   } else if(g.probing == 2){
       estimate = hp_hutchinson_blind_PRECISION(lx, h, 0, threading);
       trace += estimate.acc_trace / estimate.sample_size;
@@ -480,8 +474,8 @@ struct sample hp_hutchinson_blind_PRECISION( level_struct *l, hutchinson_PRECISI
 
     for(g.coloring_count = 0; g.coloring_count < g.num_colors[l->depth]; g.coloring_count++){
       for(g.dilution_count = 1; g.dilution_count < g.dilution[l->depth] + 1; g.dilution_count++){
-	if(g.my_rank == 0) printf("\nHierarchical probing iteration %d, Hadamard vector n. %d, dof = %d\n", i, g.coloring_count+1, g.dilution_count);
-	hadamard_create_PRECISION( l, h, type, threading );
+	    if(g.my_rank == 0) printf("\nHierarchical probing iteration %d, Hadamard vector n. %d, dof = %d\n", i, g.coloring_count+1, g.dilution_count);
+	    hadamard_create_PRECISION( l, h, type, threading );
         hadamard_PRECISION_product( h->rademacher_vector, h->hadamard_vector, start, end, l );
         // 2. apply the operator to the Rademacher vector
         // 3. dot product
@@ -564,13 +558,7 @@ complex_PRECISION gamma_3D_hutchinson_driver_PRECISION( level_struct *l, struct 
     estimate = sigma_hutchinson_blind_PRECISION(lx, h, 0, threading);
     trace += estimate.acc_trace / estimate.sample_size;
   }
-   else if(g.probing == 0){
-      for(g.dilution_count = 1; g.dilution_count < g.dilution[0] + 1; g.dilution_count++){
-        if(g.my_rank == 0) printf("\nDilution %d", g.dilution_count);
-        estimate = hutchinson_blind_PRECISION(lx, h, 0, threading);
-        trace += estimate.acc_trace / estimate.sample_size;
-      }
-  } else if(g.probing == 2){
+  else if(g.probing == 2){
       estimate = hp_hutchinson_blind_PRECISION(lx, h, 0, threading);
       trace += estimate.acc_trace / estimate.sample_size;
   }
