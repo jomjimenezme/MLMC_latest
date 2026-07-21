@@ -87,13 +87,8 @@ complex_PRECISION hutchinson_driver_PRECISION( level_struct *l, struct Thread *t
   // set the pointer to the finest-level Hutchinson estimator
   h->hutch_compute_one_sample = hutchinson_plain_PRECISION;
 
-  if (g.probing == 1) {
-    estimate = sigma_hutchinson_blind_PRECISION(lx, h, 0, threading);
-    trace += estimate.acc_trace / estimate.sample_size;
-  } else if(g.probing == 2){
-      estimate = hp_hutchinson_blind_PRECISION(lx, h, 0, threading);
-      trace += estimate.acc_trace / estimate.sample_size;
-  }
+  estimate = hp_hutchinson_blind_PRECISION(lx, h, 0, threading);
+  trace += estimate.acc_trace / estimate.sample_size;
 
   return trace;
 }
@@ -474,9 +469,15 @@ struct sample hp_hutchinson_blind_PRECISION( level_struct *l, hutchinson_PRECISI
 
     for(g.coloring_count = 0; g.coloring_count < g.num_colors[l->depth]; g.coloring_count++){
       for(g.dilution_count = 1; g.dilution_count < g.dilution[l->depth] + 1; g.dilution_count++){
-	    if(g.my_rank == 0) printf("\nHierarchical probing iteration %d, Hadamard vector n. %d, dof = %d\n", i, g.coloring_count+1, g.dilution_count);
-	    hadamard_create_PRECISION( l, h, type, threading );
-        hadamard_PRECISION_product( h->rademacher_vector, h->hadamard_vector, start, end, l );
+          
+        if(g.my_rank == 0 && g.probing == 1) printf("\nMultiplier-based probing iteration %d, color n. %d, dof = %d\n", i, g.coloring_count+1, g.dilution_count);
+	    if(g.my_rank == 0 && g.probing == 2) printf("\nHierarchical probing iteration %d, Hadamard vector n. %d, dof = %d\n", i, g.coloring_count+1, g.dilution_count);
+        
+        if(g.probing == 1) probing_create_PRECISION( l, h, type, threading );
+	    if(g.probing == 2) hadamard_create_PRECISION( l, h, type, threading );
+        
+        if(g.probing == 1) hadamard_PRECISION_product( h->rademacher_vector, h->probing_vector, start, end, l );
+        if(g.probing == 2) hadamard_PRECISION_product( h->rademacher_vector, h->hadamard_vector, start, end, l );
         // 2. apply the operator to the Rademacher vector
         // 3. dot product
         one_sample = h->hutch_compute_one_sample( -1, l, h, threading );
@@ -510,7 +511,7 @@ struct sample hp_hutchinson_blind_PRECISION( level_struct *l, hutchinson_PRECISI
 
     for(j=0; j<g.num_colors[l->depth]; j++)
       samples[i] += traces[j];
-    samples[i] = samples[i]/g.num_colors[l->depth];
+    if(g.probing == 2) samples[i] = samples[i]/g.num_colors[l->depth];
 
     if(g.my_rank==0) printf("\n[Trace of it %d = %e %c i%e]\n", i, creal(samples[i]), (cimag(samples[i]) < 0) ? '-' : '+', fabs(cimag(samples[i])));
 
@@ -537,7 +538,8 @@ struct sample hp_hutchinson_blind_PRECISION( level_struct *l, hutchinson_PRECISI
     printf("Time for sample computation (Avg.): \t %f\n\n", (t1-t0)/h->max_iters[l->depth]);
   }
 
-  estimate.sample_size = i*g.num_colors[l->depth];
+  if(g.probing == 1) estimate.sample_size = i;
+  if(g.probing == 2) estimate.sample_size = i*g.num_colors[l->depth];
 
   free(samples);
 
@@ -554,14 +556,8 @@ complex_PRECISION gamma_3D_hutchinson_driver_PRECISION( level_struct *l, struct 
   // set the pointer to the finest-level Hutchinson estimator
   h->hutch_compute_one_sample = gamma_3D_hutchinson_plain_PRECISION;
 
-  if(g.probing == 1) {
-    estimate = sigma_hutchinson_blind_PRECISION(lx, h, 0, threading);
-    trace += estimate.acc_trace / estimate.sample_size;
-  }
-  else if(g.probing == 2){
-      estimate = hp_hutchinson_blind_PRECISION(lx, h, 0, threading);
-      trace += estimate.acc_trace / estimate.sample_size;
-  }
+  estimate = hp_hutchinson_blind_PRECISION(lx, h, 0, threading);
+  trace += estimate.acc_trace / estimate.sample_size;
 
   // if deflation vectors are available
   //if(g.trace_deflation_type[l->depth] != 0){
