@@ -1437,6 +1437,23 @@ void validate_parameters( int ls, level_struct *l ) {
   ASSERT( g.mixed_precision );
 //   ASSERT( DIVIDES( 4, g.num_eig_vect[0] ) );
 #endif
+
+if ( g.probing != 0 ) {
+  //for ( i=0; i<g.num_levels; i++ )
+  for ( i=0; i<1; i++ )
+    for ( mu=0; mu<4; mu++ ) {
+      int n = g.global_lattice[i][mu];
+      ASSERT( n > 0 );
+      int kk = __builtin_ctz( n ), odd = n >> kk;
+      if ( odd != 1 && odd != 3 ) {
+        if ( i == 0 ) error0("probing: extent %d = 2^%d * %d (dir %d): odd part must be 1 or 3\n", n, kk, odd, mu);
+      else warning0("probing invalid at depth %d, dir %d (extent %d)\n", i, mu, n);
+      }
+    }
+    ASSERT( __builtin_ctz(g.global_lattice[0][1]) == __builtin_ctz(g.global_lattice[0][2]) &&
+            __builtin_ctz(g.global_lattice[0][2]) == __builtin_ctz(g.global_lattice[0][3]) &&
+            __builtin_ctz(g.global_lattice[0][1]) <= __builtin_ctz(g.global_lattice[0][0]) );
+  }
 }
 
 void allocate_for_global_struct_after_read_global_info( int ls ) {

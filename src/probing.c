@@ -36,7 +36,7 @@ int pow_int(int base, int exp) {
     return res;
 }
 
-int log2_int(unsigned int x) {
+int pow2_valuation(unsigned int x) {
     return __builtin_ctz(x);
 }
 
@@ -593,12 +593,13 @@ void graph_coloring(){
    if(g.my_rank==0) printf("Applied to num levels = %d\n", g.colored_grids);
    if(g.my_rank==0) printf("Probing dimension = %d\n", g.probing_dimension);
    for(int level = 0; level<g.num_levels; level++){
-     g.global_k[level][0] = log2_int(g.global_lattice[level][0]);
-     g.global_k[level][1] = log2_int(g.global_lattice[level][1]);
-     g.global_k[level][2] = log2_int(g.global_lattice[level][2]);
-     g.global_k[level][3] = log2_int(g.global_lattice[level][3]);
+     g.global_k[level][0] = pow2_valuation(g.global_lattice[level][0]);
+     g.global_k[level][1] = pow2_valuation(g.global_lattice[level][1]);
+     g.global_k[level][2] = pow2_valuation(g.global_lattice[level][2]);
+     g.global_k[level][3] = pow2_valuation(g.global_lattice[level][3]);
      dilution_check(level);
      g.num_colors[level] = g.n_had[level];
+
      if(g.my_rank==0){
        printf("Number of Hadamard vectors at level %d = %d\n", level, g.num_colors[level]);
        printf("Global k_t at level %d = %d\n", level, g.global_k[level][0]);
@@ -609,15 +610,24 @@ void graph_coloring(){
        printf("Anisotropy at level %d = %d\n", level, g.anisotropic[level]);
      }
    }
+//MOVE THIS CHECK INSIDE THE PER-LEVEL LOOP WHEN DOING MGMLMC
+   int tb = (g.probing_dimension == 4)
+             ? g.global_k[0][0] + 3*g.global_k[0][1]
+             : 3*g.global_k[0][1];
+   long long limit = 3LL * (1LL << tb);
+   if( (long long)g.num_colors[0] > limit )
+     error0("HP: num_colors %d exceeds 3*2^%d = %lld (one three-coloring level past the bit levels); undefined beyond\n",
+             g.num_colors[0], tb, limit);
+
  }
  
  if(g.probing == 0){
    if(g.my_rank==0) printf("\nProbing = %d - Plain estimator\n", g.probing);
       for(int level = 0; level<g.num_levels; level++){
-         g.global_k[level][0] = log2_int(g.global_lattice[level][0]);
-         g.global_k[level][1] = log2_int(g.global_lattice[level][1]);
-         g.global_k[level][2] = log2_int(g.global_lattice[level][2]);
-         g.global_k[level][3] = log2_int(g.global_lattice[level][3]);
+         g.global_k[level][0] = pow2_valuation(g.global_lattice[level][0]);
+         g.global_k[level][1] = pow2_valuation(g.global_lattice[level][1]);
+         g.global_k[level][2] = pow2_valuation(g.global_lattice[level][2]);
+         g.global_k[level][3] = pow2_valuation(g.global_lattice[level][3]);
          dilution_check(level);
          g.num_colors[level] = 1;
    }

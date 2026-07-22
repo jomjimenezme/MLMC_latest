@@ -21,6 +21,10 @@ static const unsigned int perm_4D[16] = {
 
 uint32_t *g_hp_loc_4d = NULL;
 uint32_t *g_hp_loc_3d = NULL;
+uint8_t *g_hp_c3_4d = NULL;   // 3-coloring digit of the odd subtorus, incl. t
+uint8_t *g_hp_c3_3d = NULL;   // spatial-only version for 3-D probing
+int      g_hp_total_bits_4d = 0;
+int      g_hp_total_bits_3d = 0;
 
 // One-time precomputation of the hierarchical-probing bit string per local site.
 // Bit p of g_hp_loc_*[site] == pi[p] of build_H / build_H_3d.
@@ -31,6 +35,10 @@ void hp_loc_setup( level_struct *l ){
 
   MALLOC( g_hp_loc_4d, uint32_t, nsites );
   MALLOC( g_hp_loc_3d, uint32_t, nsites );
+  MALLOC( g_hp_c3_4d, uint8_t, nsites );
+  MALLOC( g_hp_c3_3d, uint8_t, nsites );
+  g_hp_total_bits_4d = k0 + 3*k1;
+  g_hp_total_bits_3d = 3*k1;
 
   for( int s=0; s<nsites; s++ ){
     int lc[4], gc[4];
@@ -61,6 +69,13 @@ void hp_loc_setup( level_struct *l ){
       for( int f=2; f>=0; f-- ){ loc3 |= (uint32_t)((dec>>f)&1) << c3; c3++; }
     }
     g_hp_loc_3d[s] = loc3;
+
+    // base-3 color of the odd 3^4 (resp. 3^3) subtorus: coordinates' high parts.
+    // Theorem 3.5 with odd part p = 3: the boundary correction delta vanishes.
+    // On power-of-two lattices all shifts are 0 and these tables are identically 0.
+    g_hp_c3_4d[s] = (uint8_t)(( (gc[0]>>k0) + (gc[1]>>k1)
+                              + (gc[2]>>k1) + (gc[3]>>k1) ) % 3);
+    g_hp_c3_3d[s] = (uint8_t)(( (gc[1]>>k1) + (gc[2]>>k1) + (gc[3]>>k1) ) % 3);
   }
 
   #if 0  // one-time verification against reference implementation, remove after first successful run
@@ -89,6 +104,8 @@ void hp_loc_free( level_struct *l ){
   int nsites = ll[0]*ll[1]*ll[2]*ll[3];
   if(g_hp_loc_4d){ FREE( g_hp_loc_4d, uint32_t, nsites ); g_hp_loc_4d = NULL; }
   if(g_hp_loc_3d){ FREE( g_hp_loc_3d, uint32_t, nsites ); g_hp_loc_3d = NULL; }
+  if(g_hp_c3_4d){ FREE( g_hp_c3_4d, uint8_t, nsites ); g_hp_c3_4d = NULL; }
+  if(g_hp_c3_3d){ FREE( g_hp_c3_3d, uint8_t, nsites ); g_hp_c3_3d = NULL; }
 }
 
 //result[0]      = LSB  (least significative bit)
