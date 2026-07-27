@@ -108,16 +108,16 @@ void vector_PRECISION_probing( vector_PRECISION phi, int start, int end, level_s
     PROF_PRECISION_START( _SET );
 
   if ( phi != NULL ) {
-    int i;
-    for ( i=start; i<end; i++ ){
-      int local_lattice_idx = i / 12;
-      int site_inner_idx    = i % 12;
+    int e_tab[12];
+    for( int k=0; k<12; k++ )
+      e_tab[k] = get_dilution_value_PRECISION( k, l->depth );
 
-      int pij = (g.local_colors[l->depth][local_lattice_idx] == g.coloring_count+1) ? 1 : 0;
-      int e   = get_dilution_value_PRECISION(site_inner_idx, l->depth);
+    int  mycol = g.coloring_count + 1;          // colors are stored 1-based
+    int *cols  = g.local_colors[l->depth];
 
-      phi[i] = (PRECISION)(pij*e);
-    }
+    for ( int i=start; i<end; i++ )
+      phi[i] = (PRECISION)( (cols[i/12] == mycol) ? e_tab[i%12] : 0 );
+
   } else {
     error0("Error in \"vector_PRECISION_probing\": pointer is null\n");
   }
@@ -132,33 +132,30 @@ void vector_PRECISION_hadamard( vector_PRECISION phi, int start, int end, level_
     PROF_PRECISION_START( _SET );
 
   if ( phi != NULL ) {
-    int i;
+    int e_tab[12];
+    for( int k=0; k<12; k++ )
+      e_tab[k] = get_dilution_value_PRECISION( k, l->depth );
 
-    for ( i=start; i<end; i++ ){
-      int site           = i / 12;
-      int site_inner_idx = i % 12;
+    const int       tb      = (g.probing_dimension == 4) ? g_hp_total_bits_4d : g_hp_total_bits_3d;
+    const long long m       = (long long)g.coloring_count;
+    const long long r       = m & ((1LL << tb) - 1);   // Hadamard column index (low bits)
+    const long long q       = m >> tb;                 // base-3 Fourier digit: 0, 1, or 2
+    const uint32_t *loc_tab = (g.probing_dimension == 4) ? g_hp_loc_4d : g_hp_loc_3d;
+    const uint8_t  *c3_tab  = (g.probing_dimension == 4) ? g_hp_c3_4d  : g_hp_c3_3d;
 
-      int e = get_dilution_value_PRECISION(site_inner_idx, l->depth);
-      uint32_t loc = (g.probing_dimension == 4) ? g_hp_loc_4d[site] : g_hp_loc_3d[site];
+    static const PRECISION re3[3] = { 1.0, -0.5, -0.5 };
+    static const PRECISION im3[3] = { 0.0,  0.8660254037844386, -0.8660254037844386 };
 
-      int       tb = (g.probing_dimension == 4) ? g_hp_total_bits_4d : g_hp_total_bits_3d;
-      long long m  = (long long)g.coloring_count;
-      long long r  = m & ((1LL << tb) - 1);   // Hadamard column index (low bits)
-      long long q  = m >> tb;                 // base-3 Fourier digit: 0, 1, or 2
+    for ( int i=start; i<end; i++ ){
+      int site = i / 12;
+      int hij  = (__builtin_popcount(loc_tab[site] & (uint32_t)r) & 1) ? -1 : +1;
 
-      int hij = (__builtin_popcount(loc & (uint32_t)r) & 1) ? -1 : +1;
-
-      complex_PRECISION val = (complex_PRECISION)(hij * e);
+      complex_PRECISION val = (complex_PRECISION)(hij * e_tab[i%12]);
       if( q != 0 ){
-        // odd-subtorus Fourier level: multiply by omega^(c3*q), omega = e^{2*pi*i/3}
-        int c3 = (g.probing_dimension == 4) ? g_hp_c3_4d[site] : g_hp_c3_3d[site];
-        int ph = (int)((c3 * q) % 3);
-        static const PRECISION re3[3] = { 1.0, -0.5, -0.5 };
-        static const PRECISION im3[3] = { 0.0,  0.8660254037844386, -0.8660254037844386 };
+        int ph = (int)((c3_tab[site] * q) % 3);
         val *= (re3[ph] + I*im3[ph]);
       }
       phi[i] = val;
-
     }
   } else {
     error0("Error in \"vector_PRECISION_hadamard\": pointer is null\n");

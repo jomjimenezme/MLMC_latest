@@ -109,24 +109,6 @@ void print_colors(){
   fclose(file); 
 }
 
-//PRINT COLORS OF ENTIRE LATTICE
-void print_global_colors(){
-  FILE *file = fopen("print_files/colors.txt", "w");
-  for(int i = 0; i < g.num_levels; i++){
-    fprintf(file, "\nColors at level %d\n [", i);
-    int T = g.global_lattice[i][0];
-    int Z = g.global_lattice[i][1];
-    int Y = g.global_lattice[i][2];
-    int X = g.global_lattice[i][3];
-    int size = T*Z*Y*X;
-    for(int j = 0; j < size; j++){
-      fprintf(file, " %d ", g.colors[i][j]);
-    }
-    fprintf(file, " ]\n");
-  }
-  fclose(file);  
-}
-
 void allocate_variances(){
 //If we are doing mlmc with connected operator we have g.num_levels^2 operators
    if(g.my_rank==0){
@@ -139,143 +121,6 @@ void allocate_variances(){
    }
 }
 
-void allocate_colors(){
-
-  g.colors = (int**)malloc(g.num_levels * sizeof(int*));
-
-  if (g.colors == NULL)
-    error0("Allocation error0\n");
-
-  for(int level = 0; level < g.num_levels; level++){
-    int T = g.global_lattice[level][0];
-    int Z = g.global_lattice[level][1];
-    int Y = g.global_lattice[level][2];
-    int X = g.global_lattice[level][3];
-
-    int total_points = T * Z * Y * X;
-
-    g.colors[level] = NULL;
-    MALLOC(g.colors[level], int, total_points);
-  }
-}
-
-void free_colors(){
-
-  for(int level = 0; level < g.num_levels; level++){
-    int T = g.global_lattice[level][0];
-    int Z = g.global_lattice[level][1];
-    int Y = g.global_lattice[level][2];
-    int X = g.global_lattice[level][3];
-
-    int total_points = T * Z * Y * X;
-    FREE(g.colors[level], int, total_points);
-  }
-
-}
-
-void setup_local_colors(){
-
-    int num_processes;
-    MPI_Comm_size(MPI_COMM_WORLD, &num_processes);
-
-    // Cartisian Topology variables TODO: dims should be read from l->global_splitting
-    int dims[4], periods[4], coords[4];
-    MPI_Cart_get(g.comm_cart, 4, dims, periods, coords);
-
-    g.local_colors = (int**)malloc(g.num_levels * sizeof(int*));
-
-    for(int level = 0; level < g.num_levels; level++){
-
-        // int size = T * Z * Y * X;
-        // int local_size = size/num_processes;
-        // int *current_level_colors;
-
-        //global and local sizes in terms of cartisian grid
-        int T = g.global_lattice[level][0];
-        int Z = g.global_lattice[level][1];
-        int Y = g.global_lattice[level][2];
-        int X = g.global_lattice[level][3];
-
-        int Nt_loc = T / dims[0];
-        int Nz_loc = Z / dims[1];
-        int Ny_loc = Y / dims[2];
-        int Nx_loc = X / dims[3];
-
-        const int global_size = T * Z * Y * X;
-        const int local_size  = Nt_loc * Nz_loc * Ny_loc * Nx_loc;
-
-        //if(g.my_rank == 0){
-        //    MALLOC(current_level_colors, int, size);
-        //    vector_copy(current_level_colors, g.colors[level], size);
-        //}
-
-        // buffer holding the FULL global colour array on every rank
-        int *global_colors = NULL;
-        if (g.my_rank == 0) {
-            global_colors = g.colors[level];       //already allocated
-        } else {
-            MALLOC(global_colors, int, global_size);
-        }
-
-        // broadcast the full colour array from rank 0
-        MPI_Bcast(global_colors, global_size, MPI_INT, 0, g.comm_cart);
-
-        // allocate and fill local colour array for this level
-        MALLOC(g.local_colors[level], int, local_size);
-
-        // Initial global coordinates based on cartesian coordinates
-        int t0 = coords[0] * Nt_loc;
-        int z0 = coords[1] * Nz_loc;
-        int y0 = coords[2] * Ny_loc;
-        int x0 = coords[3] * Nx_loc;
-
-        // loop over local linear index  idx
-        int idx = 0;
-        for (int lt = 0; lt < Nt_loc; lt++)
-            for (int lz = 0; lz < Nz_loc; lz++)
-                for (int ly = 0; ly < Ny_loc; ly++)
-                    for (int lx = 0; lx < Nx_loc; lx++, idx++)
-                    {
-                        // global coordinates
-                        int t = t0 + lt;
-                        int z = z0 + lz;
-                        int y = y0 + ly;
-                        int x = x0 + lx;
-
-                        // global site with t,z,y,x ordering TODO: use lex_index?
-                        int gsite = ((t * Z + z) * Y + y) * X + x;
-                        g.local_colors[level][idx] = global_colors[gsite];
-                    }
-
-    //ranks other than 0 allocated a temporary copy -> free it
-    if (g.my_rank != 0){
-        FREE(global_colors, int, global_size);
-    }
-        MPI_Barrier(g.comm_cart);
-
-    }
-
-
-
-    //if(g.my_rank==0){
-    //    for(int i = 0; i < g.num_levels; i++){
-	  //int T = g.global_lattice[i][0];
-	  //int Z = g.global_lattice[i][1];
-	  //int Y = g.global_lattice[i][2];
-	  //int X = g.global_lattice[i][3];
-    //      int size = T * Z * Y * X;
-    //      FREE(g.colors[i], int*, size );
-    //  }
-    //}
-
-    MPI_Barrier(MPI_COMM_WORLD);
-    //MPI_Bcast(g.num_colors, g.num_levels, MPI_INT, 0, MPI_COMM_WORLD);
-    MPI_Bcast(g.num_colors, g.num_levels, MPI_INT, 0, g.comm_cart);
-    MPI_Bcast(g.dilution, g.num_levels, MPI_INT, 0, g.comm_cart);
-    //print_colors();
-    MPI_Barrier(MPI_COMM_WORLD);
-
-}
 
 void get_coloring_dimension(){
 
@@ -284,6 +129,55 @@ void get_coloring_dimension(){
 
   if(g.trace_op_type == 9 || g.trace_op_type == 10 || g.trace_op_type == 11 || g.trace_op_type == 12)
     g.probing_dimension = 4;
+}
+
+void setup_local_colors_direct(){
+    int dims[4], periods[4], coords[4];
+    MPI_Cart_get(g.comm_cart, 4, dims, periods, coords);
+
+    g.local_colors = (int**)malloc(g.num_levels * sizeof(int*));
+
+    for(int level = 0; level < g.num_levels; level++){
+        int T = g.global_lattice[level][0];
+        int Z = g.global_lattice[level][1];
+        int Y = g.global_lattice[level][2];
+        int X = g.global_lattice[level][3];
+        int Nt_loc = T / dims[0];
+        int Nz_loc = Z / dims[1];
+        int Ny_loc = Y / dims[2];
+        int Nx_loc = X / dims[3];
+        const int local_size = Nt_loc * Nz_loc * Ny_loc * Nx_loc;
+
+        MALLOC(g.local_colors[level], int, local_size);
+
+        // global coordinate offsets of this rank's block
+        int t0 = coords[0] * Nt_loc;
+        int z0 = coords[1] * Nz_loc;
+        int y0 = coords[2] * Ny_loc;
+        int x0 = coords[3] * Nx_loc;
+
+        int idx = 0;
+        for (int lt = 0; lt < Nt_loc; lt++)
+            for (int lz = 0; lz < Nz_loc; lz++)
+                for (int ly = 0; ly < Ny_loc; ly++)
+                    for (int lx = 0; lx < Nx_loc; lx++, idx++)
+                    {
+                        if( level == 0 ){
+                            int t = t0 + lt;
+                            int z = z0 + lz;
+                            int y = y0 + ly;
+                            int x = x0 + lx;
+                            int col = ( g.sigma[0]*t + g.sigma[1]*z
+                                      + g.sigma[2]*y + g.sigma[3]*x ) % g.num_colors[0];
+                            // manual two-form override for d=7 would replace the line above:
+                            //   96^3: int col = 3*(( z + 2*y + 11*x ) % 48) + ( y % 3 );
+                            //   64^3: int col = 2*(( z + 3*y + 13*x ) % 64) + (( y + x ) % 2);
+                            g.local_colors[level][idx] = col + 1;   // 1-based
+                        } else {
+                            g.local_colors[level][idx] = 1;         // coarse levels: single color
+                        }
+                    }
+    }
 }
 
 void get_sigma_4D(){
@@ -462,105 +356,45 @@ void dilution_check(int level){
 }
 
 void coloring_scheme(){
+  // sigma / num_colors selection: pure table lookup, must now run on ALL ranks
+  // (previously rank-0 only; other ranks learned the coloring via the Bcast)
+  if(g.probing_dimension == 3)
+    get_sigma_3D();
+  else
+    get_sigma_4D();
+
+  // legacy safety Bcasts (harmless if already consistent on all ranks)
+  MPI_Bcast(g.num_colors, g.num_levels, MPI_INT, 0, g.comm_cart);
+  MPI_Bcast(g.dilution,   g.num_levels, MPI_INT, 0, g.comm_cart);
 
   if(g.my_rank==0){
-
-    allocate_colors();
-
     printf("\nProbing = %d - Classical probing\n", g.probing);
     printf("Coloring_distance = %d\n", g.coloring_distance);
     printf("Grids to be colored = %d\n", g.colored_grids);
     printf("Coloring dimension = %d\n", g.probing_dimension);
-
-    if(g.probing_dimension == 3)
-      get_sigma_3D();
-    else
-      get_sigma_4D();
-
     printf("sigma: %d %d %d %d\n", g.sigma[0], g.sigma[1], g.sigma[2], g.sigma[3]);
-
-    double time_taken;
-
-    double start_time = MPI_Wtime();
-
-    for(int level = 0; level < g.num_levels; level++){
-
-      dilution_check(level);
-
-      int T = g.global_lattice[level][0];
-      int Z = g.global_lattice[level][1];
-      int Y = g.global_lattice[level][2];
-      int X = g.global_lattice[level][3];
-
-      int total_points = T * Z * Y * X;
-
-      int size[4];
-
-      size[0] = T;
-      size[1] = Z;
-      size[2] = Y;
-      size[3] = X;
-
-      if(level == 0){
-
-        // Set all colors to -1 (not assigned)
-        for (int i = 0; i < total_points; i++) {
-          g.colors[level][i] = -1;
-        }
-
-        // Iterate over all lattice sites
-        for (int t = 0; t < T; t++) {
-          for (int z = 0; z < Z; z++) {
-            for (int y = 0; y < Y; y++) {
-              for (int x = 0; x < X; x++) {
-                int index = lex_index(t, z, y, x, size);
-
-                // Skip if the site has already been assigned a color
-                if (g.colors[level][index] != -1) {
-                  continue;
-                }
-
-                //c(x) = \sum_{i = 1}^d i*x_i mod g.nc  ---> lattice dimensions labeled from 1 to d
-                //int col = t + 2*z + 3*y + 4*x;
-		int col = g.sigma[0]*t + g.sigma[1]*z + g.sigma[2]*y + g.sigma[3]*x;
-
-                g.colors[level][index] = col%g.num_colors[0];
-
-              }
-            }
-          }
-        }
-
-        for (int i = 0; i < total_points; i++) {
-          g.colors[level][i]++;
-        }
-
-
-      }
-      else{
-        g.num_colors[level] = 1;
-
-        for(int i = 0; i < total_points; i++)
-          g.colors[level][i] = 1;
-      }
-    }
-
-    double end_time = MPI_Wtime();
-
-    time_taken = end_time - start_time;
-
-    printf("\nTime for coloring: %f seconds\n", time_taken);
-    for (int level = 0; level < g.num_levels; level++){
-       printf("\n Colors at depth %d : \t %d \n", level, g.num_colors[level]);
-    }
-
-    //print_global_colors();
-
   }
-    MPI_Barrier(MPI_COMM_WORLD);
-    setup_local_colors();
-    if(g.my_rank == 0) free_colors();
-    MPI_Barrier(MPI_COMM_WORLD);
+
+  // torus validity: sigma_mu * n_mu must vanish mod nc, otherwise the coloring
+  // silently violates its distance across the periodic boundary
+  for( int mu=0; mu<4; mu++ )
+    if( ( g.sigma[mu] * g.global_lattice[0][mu] ) % g.num_colors[0] != 0 )
+      error0("multiplier coloring INVALID on this torus: sigma[%d]=%d, n=%d, nc=%d\n",
+             mu, g.sigma[mu], g.global_lattice[0][mu], g.num_colors[0]);
+
+  for( int level = 1; level < g.num_levels; level++ )
+    g.num_colors[level] = 1;
+
+  for( int level = 0; level < g.num_levels; level++ )
+    dilution_check(level);
+
+  setup_local_colors_direct();
+
+  if(g.my_rank==0)
+    for( int level = 0; level < g.num_levels; level++ )
+      printf("\n Colors at depth %d : \t %d \n", level, g.num_colors[level]);
+
+  MPI_Barrier(MPI_COMM_WORLD);
 }
 
 int* find_indices(int *array, int size, int value, int *count){
