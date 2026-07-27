@@ -138,6 +138,7 @@ int main( int argc, char **argv ) {
     complex_double trace;
     int rnd_seed = 1234;
     srand( time( 0 ) + rnd_seed*g.my_rank );
+    
     {  
       hutchinson_diver_double_init( &l, &threading );  
       hutchinson_diver_double_alloc( &l, &threading ); 
@@ -149,14 +150,11 @@ int main( int argc, char **argv ) {
       
       if(g.my_rank==0) printf("\n\n Timeslice %d\n\n",  g.time_slice);
 
-      if(g.probing != 0 ){
-        if(coloring_flag == 0) 
-          graph_coloring();	
-       }else {
-         for(int i = 0; i<g.num_levels; i++){
-            g.num_colors[i] = 1;
-            dilution_check(i);
-         }
+      
+      if(coloring_flag == 0){
+        graph_coloring();
+        if(g.probing == 2) hp_loc_setup( &l );   // needs g.global_k, set by graph_coloring
+        coloring_flag = 1;
       }
       
       if(g.probing == 1 && g.probing_dimension == 4)
