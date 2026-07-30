@@ -3565,20 +3565,11 @@ complex_PRECISION hutchinson_hpe_g5_PRECISION( int type_appl, level_struct *l, h
     diag_sc_inv_PRECISION(h->mlmc_b1, h->mlmc_testing, sc, l, start, end);
 
     // Apply the truncated HPE series to the initial C inverse term
-    apply_hpe_series_core_PRECISION( h->mlmc_testing,
-                                     h->mlmc_b1,
-                                     h->mlmc_b2,
-                                     g.hpe_order,
-                                     l,
-                                     threading );
+    apply_hpe_series_core_PRECISION( h->mlmc_testing, h->mlmc_b1, h->mlmc_b2, g.hpe_order, l, threading );
 
     // Compute the trace sample
-    aux = global_inner_product_PRECISION( h->rademacher_vector,
-                                          h->mlmc_testing,
-                                          start,
-                                          end,
-                                          l,
-                                          threading );
+    aux = global_inner_product_PRECISION( h->rademacher_vector, h->mlmc_testing, start, end, l, threading );
+
     printf("\n");
 
     return aux;
@@ -3862,17 +3853,10 @@ complex_PRECISION hutchinson_fs_second_polyprec_trunc_PRECISION( int type_appl, 
   // mlmc_b1 = C_{m2}^{-1} Gamma_5 r
   diag_sc_inv_PRECISION( h->mlmc_b1, h->mlmc_testing, sc, l, start, end );
 
-  // mlmc_testing = q(A_{m2,omega}) C_{m2}^{-1} Gamma_5 r
-  apply_polyprec_core_PRECISION( h->mlmc_testing, h->mlmc_b1, p, l, threading );
+  // mlmc_testing = omega q(A_{m2,omega}) C_{m2}^{-1} Gamma_5 r
+  apply_polyprec_inverse_core_PRECISION( h->mlmc_testing, h->mlmc_b1, p, l, threading );
 
-  // D_{m2}^{-1} = omega q(A_{m2,omega}) C_{m2}^{-1} + ...
-  if ( p->polyprec_PRECISION.omega != 1.0 )
-    vector_PRECISION_scale( h->mlmc_testing, h->mlmc_testing,
-                            p->polyprec_PRECISION.omega,
-                            start, end, l );
-
-  aux = global_inner_product_PRECISION( h->rademacher_vector, h->mlmc_testing,
-                                        p->v_start, p->v_end, l, threading );
+  aux = global_inner_product_PRECISION( h->rademacher_vector, h->mlmc_testing, p->v_start, p->v_end, l, threading );
 
   return aux;
 }

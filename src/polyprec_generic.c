@@ -454,6 +454,22 @@ void apply_polyprec_core_PRECISION( vector_PRECISION phi, vector_PRECISION eta,
   SYNC_CORES(threading)
 }
 
+// Apply the complete inverse polynomial omega q_{d-1}(A_omega).
+void apply_polyprec_inverse_core_PRECISION( vector_PRECISION phi, vector_PRECISION eta,
+                                            gmres_PRECISION_struct *p, level_struct *l,
+                                            struct Thread *threading )
+{
+  int start, end;
+  compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
+
+  // Apply q_{d-1}(A_omega) to eta
+  apply_polyprec_core_PRECISION( phi, eta, p, l, threading );
+
+  // Apply the relaxation factor
+  if ( p->polyprec_PRECISION.omega != 1.0 )
+    vector_PRECISION_scale( phi, phi, p->polyprec_PRECISION.omega, start, end, l );
+}
+
 void apply_polyprec_residual_core_PRECISION( vector_PRECISION phi, vector_PRECISION eta,
                                              gmres_PRECISION_struct *p, level_struct *l,
                                              struct Thread *threading )
