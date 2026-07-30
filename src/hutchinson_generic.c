@@ -3513,6 +3513,40 @@ void fs_shitf_scan_driver_PRECISION( level_struct *l, struct Thread *threading )
 }
 
 
+// Apply the truncated Jacobi HPE series to the vector stored in term.
+static void apply_hpe_series_core_PRECISION( vector_PRECISION out,
+                                             vector_PRECISION term,
+                                             vector_PRECISION tmp,
+                                             int order,
+                                             level_struct *l,
+                                             struct Thread *threading )
+{
+  int start, end;
+  compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
+
+  // Current self-coupling factors
+  operator_PRECISION_struct *sc = &(l->sc_op_PRECISION);
+
+  // Initialize the truncated series with the zeroth-order term
+  vector_PRECISION_copy( out, term, start, end, l );
+
+  // Accumulate the remaining HPE terms
+  for ( int j = 1; j < order; j++ ) {
+
+    // Apply the hopping term to the current HPE term
+    hopping_only_PRECISION_cpu( tmp, term, &g.op_double, l, threading );
+
+    // Apply the inverse self-coupling term
+    diag_sc_inv_PRECISION( term, tmp, sc, l, start, end );
+
+    // Form the next power of minus C inverse K
+    vector_PRECISION_real_scale( term, term, -1.0, start, end, l );
+
+    // Add the current power to the truncated series
+    vector_PRECISION_plus( out, out, term, start, end, l );
+  }
+}
+
 complex_PRECISION hutchinson_hpe_g5_PRECISION( int type_appl, level_struct *l, hutchinson_PRECISION_struct* h, struct Thread *threading ){
 
   operator_PRECISION_struct *sc = &(l->sc_op_PRECISION);
@@ -3530,29 +3564,21 @@ complex_PRECISION hutchinson_hpe_g5_PRECISION( int type_appl, level_struct *l, h
     // --- v0 = C^{-1} x ---
     diag_sc_inv_PRECISION(h->mlmc_b1, h->mlmc_testing, sc, l, start, end);
 
-    // sum = v0  (include j=0 term)
-    vector_PRECISION_copy(h->mlmc_testing, h->mlmc_b1, start, end, l);
+    // Apply the truncated HPE series to the initial C inverse term
+    apply_hpe_series_core_PRECISION( h->mlmc_testing,
+                                     h->mlmc_b1,
+                                     h->mlmc_b2,
+                                     g.hpe_order,
+                                     l,
+                                     threading );
 
-    int m = g.hpe_order;
-
-    // --- iterate: v <- - C^{-1} K v, accumulate ---
-    for (int j = 1; j < m; j++) {
-
-      // --- apply K: b2 = K v ---
-      hopping_only_PRECISION_cpu(h->mlmc_b2, h->mlmc_b1, &g.op_double, l, threading);
-
-      // --- apply C^{-1}: v = C^{-1} (K v) ---
-      diag_sc_inv_PRECISION(h->mlmc_b1, h->mlmc_b2, sc, l, start, end);
-
-      // explicit minus to build (-C^{-1}K)^j
-      vector_PRECISION_real_scale(h->mlmc_b1, h->mlmc_b1, -1.0, start, end, l);
-
-      // accumulate
-      vector_PRECISION_plus(h->mlmc_testing, h->mlmc_testing, h->mlmc_b1, start, end, l);
-    }
-
-    aux = global_inner_product_PRECISION( h->rademacher_vector, h->mlmc_testing, start, end, l, threading );
-
+    // Compute the trace sample
+    aux = global_inner_product_PRECISION( h->rademacher_vector,
+                                          h->mlmc_testing,
+                                          start,
+                                          end,
+                                          l,
+                                          threading );
     printf("\n");
 
     return aux;
