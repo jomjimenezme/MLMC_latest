@@ -3832,6 +3832,108 @@ complex_PRECISION fs_mlmc_second_hpe_driver_PRECISION( level_struct *l, struct T
 
 #ifdef POLYPREC
 
+#ifdef POLYPREC_HPE_COMPARE
+
+// Compare HPE and the GMRES inverse polynomial on the construction vector
+static void compare_hpe_polyprec_construction_PRECISION( level_struct *l,
+                                                         hutchinson_PRECISION_struct *h,
+                                                         gmres_PRECISION_struct *p,
+                                                         struct Thread *threading )
+{
+  int start, end;
+
+  PRECISION norm_v;
+  PRECISION norm_poly;
+  PRECISION norm_hpe;
+  PRECISION norm_diff;
+  PRECISION rel_diff;
+  PRECISION rel_res_poly;
+  PRECISION rel_res_hpe;
+
+  vector_PRECISION v = p->polyprec_PRECISION.random_rhs;
+  vector_PRECISION y_poly = h->mlmc_testing;
+  vector_PRECISION y_hpe = h->mlmc_b1;
+  vector_PRECISION work = h->mlmc_b2;
+  vector_PRECISION diff = p->polyprec_PRECISION.xtmp;
+
+  compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
+
+  // Match omega q_{d-1}(A_omega) with sum_{j=0}^{d-1} H^j
+  if ( g.hpe_order != p->polyprec_PRECISION.d_poly )
+    error0("POLYPREC-HPE comparison requires hpe_order = fine_polyprec_d.\n");
+
+  // y_poly = omega q_{d-1}(A_omega) v
+  apply_polyprec_inverse_core_PRECISION( y_poly, v, p, l, threading );
+
+  // work = v
+  vector_PRECISION_copy( work, v, start, end, l );
+
+  // y_hpe = sum_{j=0}^{d-1} (-C^{-1}K)^j v
+  apply_hpe_series_core_PRECISION( y_hpe, work, diff,
+                                   g.hpe_order, l, threading );
+
+  // Norms of the input and both approximations
+  norm_v = global_norm_PRECISION( v, p->v_start, p->v_end,
+                                  l, threading );
+
+  norm_poly = global_norm_PRECISION( y_poly, p->v_start, p->v_end,
+                                     l, threading );
+
+  norm_hpe = global_norm_PRECISION( y_hpe, p->v_start, p->v_end,
+                                    l, threading );
+
+  // diff = y_poly - y_hpe
+  vector_PRECISION_minus( diff, y_poly, y_hpe, start, end, l );
+
+  // Symmetric relative difference between both approximations
+  norm_diff = global_norm_PRECISION( diff, p->v_start, p->v_end,
+                                     l, threading );
+
+  rel_diff = 2.0*norm_diff/(norm_poly + norm_hpe);
+
+  // work = A y_poly, with A = C^{-1}D
+  apply_polyprec_jacobi_PRECISION( work, y_poly,
+                                   p->polyprec_PRECISION.target_op,
+                                   l, threading );
+
+  // diff = v - A y_poly
+  vector_PRECISION_minus( diff, v, work, start, end, l );
+
+  // Relative residual of the GMRES inverse polynomial
+  rel_res_poly = global_norm_PRECISION( diff, p->v_start, p->v_end,
+                                        l, threading )/norm_v;
+
+  // work = A y_hpe, with A = C^{-1}D
+  apply_polyprec_jacobi_PRECISION( work, y_hpe,
+                                   p->polyprec_PRECISION.target_op,
+                                   l, threading );
+
+  // diff = v - A y_hpe
+  vector_PRECISION_minus( diff, v, work, start, end, l );
+
+  // Relative residual of the HPE approximation
+  rel_res_hpe = global_norm_PRECISION( diff, p->v_start, p->v_end,
+                                       l, threading )/norm_v;
+
+  START_MASTER(threading)
+
+  if ( g.my_rank == 0 ) {
+    printf("\nPOLYPREC-HPE comparison on construction vector\n");
+    printf("degree:                         %d\n",
+           p->polyprec_PRECISION.d_poly);
+    printf("norm input:                     %le\n", norm_v);
+    printf("norm polynomial result:         %le\n", norm_poly);
+    printf("norm HPE result:                %le\n", norm_hpe);
+    printf("symmetric relative difference:  %le\n", rel_diff);
+    printf("polynomial relative residual:   %le\n", rel_res_poly);
+    printf("HPE relative residual:          %le\n\n", rel_res_hpe);
+  }
+
+  END_MASTER(threading)
+}
+
+#endif
+
 complex_PRECISION hutchinson_fs_second_polyprec_trunc_PRECISION( int type_appl, level_struct *l,
                                                                  hutchinson_PRECISION_struct* h,
                                                                  struct Thread *threading )
@@ -3917,6 +4019,11 @@ complex_PRECISION fs_second_polyprec_driver_PRECISION( level_struct *l,
     shift_update( m2, l, threading );
 
   construct_fine_polyprec_PRECISION( p, l, threading );
+
+#ifdef POLYPREC_HPE_COMPARE
+  // Compare both approximations on the GMRES construction vector
+  compare_hpe_polyprec_construction_PRECISION( l, h, p, threading );
+#endif
 
   // Truncated part
   h->hutch_compute_one_sample = hutchinson_fs_second_polyprec_trunc_PRECISION;
