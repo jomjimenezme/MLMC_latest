@@ -214,6 +214,7 @@ struct sample hutchinson_blind_PRECISION( level_struct *l, hutchinson_PRECISION_
   memset( samples, 0.0, h->max_iters[l->depth]*sizeof(complex_PRECISION) );
 
   estimate.acc_trace = 0.0;
+  estimate.sample_size = 0;
   double t0 = MPI_Wtime();
 
   for( i=0; i<h->max_iters[l->depth];i++ ){
@@ -228,23 +229,23 @@ struct sample hutchinson_blind_PRECISION( level_struct *l, hutchinson_PRECISION_
 
     // 4. compute estimated trace and variance, print something?
     estimate.acc_trace += one_sample;
+    estimate.sample_size = i+1;
 
     if( i!=0 ){
       variance = 0.0;
-      estimate.sample_size = i+1;
       trace = estimate.acc_trace/estimate.sample_size;
-      for( j=0; j<i; j++ ){
+      for( j=0; j<estimate.sample_size; j++ ){
         variance += conj(samples[j] - trace) * (samples[j] - trace);
       }
-      variance = variance / j;
+      variance = variance / (estimate.sample_size-1);
       START_MASTER(threading);
       if(g.my_rank==0) {
-        printf("[%d, trace: %e %c i%e, variance: %e] ", 
-        i, creal(trace),
+        printf("[sample size: %d, trace: %e %c i%e, variance: %e] ",
+        estimate.sample_size, creal(trace),
         (cimag(trace) < 0) ? '-' : '+',
         fabs(cimag(trace)),
         creal(variance));
-        
+
         fflush(0);
 
         if(i == h->max_iters[l->depth] - 1 && g.trace_op_type != 7)
@@ -257,7 +258,7 @@ struct sample hutchinson_blind_PRECISION( level_struct *l, hutchinson_PRECISION_
         }
       }
       END_MASTER(threading);
-      RMSD = sqrt(creal(variance)/j);
+      RMSD = sqrt(creal(variance)/estimate.sample_size);
       if( i > h->min_iters[l->depth] && RMSD < cabs(trace) * h->trace_tol * h->tol_per_level[l->depth]) break;
     }
   }
