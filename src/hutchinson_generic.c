@@ -3834,11 +3834,13 @@ complex_PRECISION fs_mlmc_second_hpe_driver_PRECISION( level_struct *l, struct T
 
 #ifdef POLYPREC_HPE_COMPARE
 
-// Compare HPE and the GMRES inverse polynomial on the construction vector
-static void compare_hpe_polyprec_construction_PRECISION( level_struct *l,
-                                                         hutchinson_PRECISION_struct *h,
-                                                         gmres_PRECISION_struct *p,
-                                                         struct Thread *threading )
+// Compare HPE and the GMRES inverse polynomial on the given vector
+static void compare_hpe_polyprec_PRECISION( vector_PRECISION v,
+                                            const char *vector_name,
+                                            level_struct *l,
+                                            hutchinson_PRECISION_struct *h,
+                                            gmres_PRECISION_struct *p,
+                                            struct Thread *threading )
 {
   int start, end;
 
@@ -3850,7 +3852,7 @@ static void compare_hpe_polyprec_construction_PRECISION( level_struct *l,
   PRECISION rel_res_poly;
   PRECISION rel_res_hpe;
 
-  vector_PRECISION v = p->polyprec_PRECISION.random_rhs;
+  //vector_PRECISION v = p->polyprec_PRECISION.random_rhs;
   vector_PRECISION y_poly = h->mlmc_testing;
   vector_PRECISION y_hpe = h->mlmc_b1;
   vector_PRECISION work = h->mlmc_b2;
@@ -3918,7 +3920,7 @@ static void compare_hpe_polyprec_construction_PRECISION( level_struct *l,
   START_MASTER(threading)
 
   if ( g.my_rank == 0 ) {
-    printf("\nPOLYPREC-HPE comparison on construction vector\n");
+    printf("\nPOLYPREC-HPE comparison on %s\n", vector_name);
     printf("degree:                         %d\n",
            p->polyprec_PRECISION.d_poly);
     printf("norm input:                     %le\n", norm_v);
@@ -4022,7 +4024,17 @@ complex_PRECISION fs_second_polyprec_driver_PRECISION( level_struct *l,
 
 #ifdef POLYPREC_HPE_COMPARE
   // Compare both approximations on the GMRES construction vector
-  compare_hpe_polyprec_construction_PRECISION( l, h, p, threading );
+  compare_hpe_polyprec_PRECISION( p->polyprec_PRECISION.random_rhs, "construction vector", l, h, p, threading );
+
+  // Generate an independent vector after the polynomial construction
+  START_MASTER(threading)
+  vector_PRECISION_define_random( h->rademacher_vector, p->v_start, p->v_end, l );
+  END_MASTER(threading)
+  SYNC_MASTER_TO_ALL(threading)
+  SYNC_CORES(threading)
+
+  // Compare both approximations on the independent vector
+  compare_hpe_polyprec_PRECISION( h->rademacher_vector, "independent vector", l, h, p, threading );
 #endif
 
   // Truncated part
