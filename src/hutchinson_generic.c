@@ -3847,16 +3847,13 @@ static void compare_hpe_polyprec_PRECISION( vector_PRECISION v,
   PRECISION norm_v;
   PRECISION norm_poly;
   PRECISION norm_hpe;
-  PRECISION norm_diff;
-  PRECISION rel_diff;
   PRECISION rel_res_poly;
   PRECISION rel_res_hpe;
 
-  //vector_PRECISION v = p->polyprec_PRECISION.random_rhs;
   vector_PRECISION y_poly = h->mlmc_testing;
   vector_PRECISION y_hpe = h->mlmc_b1;
   vector_PRECISION work = h->mlmc_b2;
-  vector_PRECISION diff = p->polyprec_PRECISION.xtmp;
+  vector_PRECISION tmp = p->polyprec_PRECISION.xtmp;
 
   compute_core_start_end( 0, l->inner_vector_size, &start, &end, l, threading );
 
@@ -3871,10 +3868,10 @@ static void compare_hpe_polyprec_PRECISION( vector_PRECISION v,
   vector_PRECISION_copy( work, v, start, end, l );
 
   // y_hpe = sum_{j=0}^{d-1} (-C^{-1}K)^j v
-  apply_hpe_series_core_PRECISION( y_hpe, work, diff,
+  apply_hpe_series_core_PRECISION( y_hpe, work, tmp,
                                    g.hpe_order, l, threading );
 
-  // Norms of the input and both approximations
+  // Compute the norms of the input and both approximations
   norm_v = global_norm_PRECISION( v, p->v_start, p->v_end,
                                   l, threading );
 
@@ -3884,25 +3881,16 @@ static void compare_hpe_polyprec_PRECISION( vector_PRECISION v,
   norm_hpe = global_norm_PRECISION( y_hpe, p->v_start, p->v_end,
                                     l, threading );
 
-  // diff = y_poly - y_hpe
-  vector_PRECISION_minus( diff, y_poly, y_hpe, start, end, l );
-
-  // Symmetric relative difference between both approximations
-  norm_diff = global_norm_PRECISION( diff, p->v_start, p->v_end,
-                                     l, threading );
-
-  rel_diff = 2.0*norm_diff/(norm_poly + norm_hpe);
-
   // work = A y_poly, with A = C^{-1}D
   apply_polyprec_jacobi_PRECISION( work, y_poly,
                                    p->polyprec_PRECISION.target_op,
                                    l, threading );
 
-  // diff = v - A y_poly
-  vector_PRECISION_minus( diff, v, work, start, end, l );
+  // tmp = v - A y_poly
+  vector_PRECISION_minus( tmp, v, work, start, end, l );
 
-  // Relative residual of the GMRES inverse polynomial
-  rel_res_poly = global_norm_PRECISION( diff, p->v_start, p->v_end,
+  // Compute the relative residual of the GMRES inverse polynomial
+  rel_res_poly = global_norm_PRECISION( tmp, p->v_start, p->v_end,
                                         l, threading )/norm_v;
 
   // work = A y_hpe, with A = C^{-1}D
@@ -3910,25 +3898,22 @@ static void compare_hpe_polyprec_PRECISION( vector_PRECISION v,
                                    p->polyprec_PRECISION.target_op,
                                    l, threading );
 
-  // diff = v - A y_hpe
-  vector_PRECISION_minus( diff, v, work, start, end, l );
+  // tmp = v - A y_hpe
+  vector_PRECISION_minus( tmp, v, work, start, end, l );
 
-  // Relative residual of the HPE approximation
-  rel_res_hpe = global_norm_PRECISION( diff, p->v_start, p->v_end,
+  // Compute the relative residual of the HPE approximation
+  rel_res_hpe = global_norm_PRECISION( tmp, p->v_start, p->v_end,
                                        l, threading )/norm_v;
 
   START_MASTER(threading)
 
   if ( g.my_rank == 0 ) {
     printf("\nPOLYPREC-HPE comparison on %s\n", vector_name);
-    printf("degree:                         %d\n",
-           p->polyprec_PRECISION.d_poly);
-    printf("norm input:                     %le\n", norm_v);
-    printf("norm polynomial result:         %le\n", norm_poly);
-    printf("norm HPE result:                %le\n", norm_hpe);
-    printf("symmetric relative difference:  %le\n", rel_diff);
-    printf("polynomial relative residual:   %le\n", rel_res_poly);
-    printf("HPE relative residual:          %le\n\n", rel_res_hpe);
+    printf("norm input:                    %le\n", norm_v);
+    printf("norm polynomial result:        %le\n", norm_poly);
+    printf("norm HPE result:               %le\n", norm_hpe);
+    printf("polynomial relative residual:  %le\n", rel_res_poly);
+    printf("HPE relative residual:         %le\n\n", rel_res_hpe);
   }
 
   END_MASTER(threading)
