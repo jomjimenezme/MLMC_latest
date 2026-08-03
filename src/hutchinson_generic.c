@@ -206,6 +206,7 @@ int apply_solver_PRECISION( level_struct* l, struct Thread *threading ){
 struct sample hutchinson_blind_PRECISION( level_struct *l, hutchinson_PRECISION_struct* h, int type, struct Thread *threading ){
   int i, j;
   complex_PRECISION one_sample=0.0, variance=0.0, trace=0.0;
+  PRECISION variance_real=0.0, variance_imag=0.0;
   double RMSD;
   struct sample estimate;
 
@@ -233,17 +234,29 @@ struct sample hutchinson_blind_PRECISION( level_struct *l, hutchinson_PRECISION_
 
     if( i!=0 ){
       variance = 0.0;
+      variance_real = 0.0;
+      variance_imag = 0.0;
       trace = estimate.acc_trace/estimate.sample_size;
       for( j=0; j<estimate.sample_size; j++ ){
         variance += conj(samples[j] - trace) * (samples[j] - trace);
+        variance_real += creal(samples[j] - trace) * creal(samples[j] - trace);
+        variance_imag += cimag(samples[j] - trace) * cimag(samples[j] - trace);
       }
       variance = variance / (estimate.sample_size-1);
+      variance_real = variance_real / (estimate.sample_size-1);
+      variance_imag = variance_imag / (estimate.sample_size-1);
       START_MASTER(threading);
       if(g.my_rank==0) {
-        printf("[sample size: %d, trace: %e %c i%e, variance: %e] ",
-        estimate.sample_size, creal(trace),
+        printf("\n [tr_iter: %d, sample: %e %c i%e, trace: %.3e %c i%.3e, V_Re: %.2e, V_Im: %.2e, V: %.2e] \n",
+        estimate.sample_size,
+        creal(one_sample),
+        (cimag(one_sample) < 0) ? '-' : '+',
+        fabs(cimag(one_sample)),
+        creal(trace),
         (cimag(trace) < 0) ? '-' : '+',
         fabs(cimag(trace)),
+        variance_real,
+        variance_imag,
         creal(variance));
 
         fflush(0);
