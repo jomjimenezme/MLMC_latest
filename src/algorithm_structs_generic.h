@@ -155,7 +155,7 @@ struct Thread;
   } gcrodr_PRECISION_struct;
 #endif
 
-#ifdef POLYPREC
+#if defined(POLYPREC) || defined(GMRES_POLY_EXPANSION)
   typedef struct
   {
     int update_lejas;
@@ -273,7 +273,7 @@ typedef struct
     int was_there_stagnation;
     vector_PRECISION rhs_bk;
 #endif
-#ifdef POLYPREC
+#if defined(POLYPREC) || defined(GMRES_POLY_EXPANSION)
     polyprec_PRECISION_struct polyprec_PRECISION;
 #endif
 //#ifdef BLOCK_JACOBI
