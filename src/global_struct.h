@@ -114,7 +114,9 @@ typedef struct global_struct
 
 #ifdef POLYPREC
     int polyprec_d, polyprec_d_setup, polyprec_d_solve;
+#endif
 
+#if defined(POLYPREC) || defined(GMRES_POLY_EXPANSION)
     // Enable the finest-level polynomial expansion
     int fine_polyprec_enabled;
 

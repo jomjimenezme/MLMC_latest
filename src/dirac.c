@@ -685,7 +685,7 @@ void shift_update( complex_double shift, level_struct *l, struct Thread *threadi
   g.g5D_shift = shift;
   l->dirac_shift = shift;
 
-#ifdef POLYPREC
+#if defined(POLYPREC) || defined(GMRES_POLY_EXPANSION)
   if ( g.fine_polyprec_enabled )
     g.p.polyprec_double.update_lejas = 1;
 #endif

@@ -183,7 +183,7 @@ void method_setup( vector_double *V, level_struct *l, struct Thread *threading )
     fine_level_double_alloc( l );
   }
 
-#ifdef POLYPREC
+#if defined(POLYPREC) || defined(GMRES_POLY_EXPANSION)
   if ( g.fine_polyprec_enabled ) {
 
     // g.p does not contain a complete Arnoldi workspace in this mode
@@ -1213,7 +1213,9 @@ void read_solver_parameters( FILE *in, level_struct *l ) {
   save_pt = &(g.polyprec_d_solve); g.polyprec_d_solve = 5;
   read_parameter( &save_pt, "coarse grid polyprec_d_solve:", "%d", 1, in, _DEFAULT_SET );
   g.polyprec_d_solve++;
+#endif
 
+#if defined(POLYPREC) || defined(GMRES_POLY_EXPANSION)
   // Keep the finest-level polynomial disabled by default
   save_pt = &(g.fine_polyprec_enabled); g.fine_polyprec_enabled = 0;
   read_parameter( &save_pt, "fine grid polyprec enabled:", "%d", 1, in, _DEFAULT_SET );
