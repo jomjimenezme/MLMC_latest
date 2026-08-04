@@ -21,8 +21,7 @@
 
 #include "main.h"
 
-#if defined(GCRODR) || defined(POLYPREC)
-
+#if defined(GCRODR) || defined(POLYPREC) || defined(GMRES_POLY_EXPANSION)
 
 /*
 #ifdef GCRODR

@@ -23,7 +23,7 @@
 #include "proxies/dirac_proxy_PRECISION.h"
 #include "oddeven_PRECISION.h"
 
-#ifdef POLYPREC
+#ifdef POLYPREC || defined(GMRES_POLY_EXPANSION)
 
 /*-----------------------------------------------*/
 
@@ -350,6 +350,8 @@ int update_lejas_PRECISION( gmres_PRECISION_struct *p, level_struct *l, struct T
 
 
 
+#ifdef POLYPREC
+
 int re_construct_lejas_PRECISION( level_struct *l, struct Thread *threading ) {
 
   //printf0("UPDATED LEJAS\n");
@@ -357,6 +359,8 @@ int re_construct_lejas_PRECISION( level_struct *l, struct Thread *threading ) {
   return update_lejas_PRECISION(&(l->p_PRECISION), l, threading);
 
 }
+
+#endif
 
 int construct_fine_polyprec_PRECISION( gmres_PRECISION_struct *p,
                                        level_struct *l,
@@ -512,11 +516,15 @@ void apply_polyprec_residual_core_PRECISION( vector_PRECISION phi, vector_PRECIS
 }
 
 
+#ifdef POLYPREC
+
 void apply_polyprec_PRECISION( vector_PRECISION phi, vector_PRECISION Dphi, vector_PRECISION eta,
                                int res, level_struct *l, struct Thread *threading )
 {
   apply_polyprec_core_PRECISION( phi, eta, &(l->p_PRECISION), l, threading );
 }
+
+#endif
 
 #ifdef POLYPREC_CHECK
 PRECISION check_polyprec_identity_PRECISION( gmres_PRECISION_struct *p, level_struct *l,

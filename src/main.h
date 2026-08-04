@@ -231,7 +231,7 @@
   #include "local_polyprec_float.h"
 #endif
 
-#if defined(GCRODR) || defined(POLYPREC)
+#if defined(GCRODR) || defined(POLYPREC) || defined(GMRES_POLY_EXPANSION)
   #include <lapacke.h>
 #ifdef GCRODR
   ////#include <mkl_scalapack.h>
@@ -242,7 +242,7 @@
   #include "lapackwrap_float.h"
 #endif
 
-#ifdef POLYPREC
+#if defined(POLYPREC) || defined(GMRES_POLY_EXPANSION)
   #include "polyprec_double.h"
   #include "polyprec_float.h"
 #endif
