@@ -52,16 +52,16 @@ void cpu_fgmres_PRECISION_struct_init( gmres_PRECISION_struct *p ) {
 #endif
 
   // copy of Hesselnberg matrix
-#if defined(GCRODR) && defined(POLYPREC)
+#if defined(GCRODR) && (defined(POLYPREC) || defined(GMRES_POLY_EXPANSION))
   p->gcrodr_PRECISION.eigslvr.Hc = NULL;
   p->polyprec_PRECISION.eigslvr.Hc = NULL;
 #elif defined(GCRODR)
   p->gcrodr_PRECISION.eigslvr.Hc = NULL;
-#elif defined(POLYPREC)
+#elif defined(POLYPREC) || defined(GMRES_POLY_EXPANSION)
   p->polyprec_PRECISION.eigslvr.Hc = NULL;
 #endif
 
-#ifdef POLYPREC
+#if defined(POLYPREC) || defined(GMRES_POLY_EXPANSION)
   p->polyprec_PRECISION.capture_H = 0;
   p->polyprec_PRECISION.Hcc = NULL; 
   // No polynomial storage is present before allocation.
@@ -128,8 +128,8 @@ void cpu_fgmres_PRECISION_struct_init( gmres_PRECISION_struct *p ) {
   p->print_iters = 0;
 }
 
-//--- START polynomial expansion only ---
-#ifdef POLYPREC
+//--- START polynomial storage ---
+#if defined(POLYPREC) || defined(GMRES_POLY_EXPANSION)
 void polyprec_PRECISION_struct_alloc( int d_poly, int vl, gmres_PRECISION_struct *p )
 {
   int i;
@@ -263,7 +263,7 @@ void polyprec_PRECISION_struct_alloc( int d_poly, int vl, gmres_PRECISION_struct
 }
 #endif
 
-#ifdef POLYPREC
+#if defined(POLYPREC) || defined(GMRES_POLY_EXPANSION)
 void polyprec_PRECISION_struct_free( gmres_PRECISION_struct *p )
 {
   int m, d_poly, vl;
@@ -313,7 +313,7 @@ void polyprec_PRECISION_struct_free( gmres_PRECISION_struct *p )
   p->polyprec_PRECISION.allocated = 0;
 }
 #endif
-//--- END polynomial expansion only ---
+//--- END polynomial storage ---
 
 void cpu_fgmres_PRECISION_struct_alloc( int m, int n, int vl, PRECISION tol, const int type, const int prec_kind,
                                     void (*precond)(), void (*eval_op)(), gmres_PRECISION_struct *p, level_struct *l ) {
@@ -486,8 +486,8 @@ void cpu_fgmres_PRECISION_struct_alloc( int m, int n, int vl, PRECISION tol, con
     p->gcrodr_PRECISION.eigslvr.Hc[i] =
       p->gcrodr_PRECISION.eigslvr.Hc[0] + i*(m+1);
 
-#ifdef POLYPREC
-  // POLYPREC shares the copied Hessenberg matrix owned by GCRO-DR
+#if defined(POLYPREC) || defined(GMRES_POLY_EXPANSION)
+  // The polynomial storage shares the copied Hessenberg matrix owned by GCRO-DR
   p->polyprec_PRECISION.eigslvr.Hc = p->gcrodr_PRECISION.eigslvr.Hc;
 #endif
 #endif
@@ -628,7 +628,7 @@ void cpu_fgmres_PRECISION_struct_free( gmres_PRECISION_struct *p, level_struct *
   p->D = NULL;
   p->clover = NULL;
 
-#ifdef POLYPREC
+#ifdef POLYPREC || defined(GMRES_POLY_EXPANSION)
   // Free polynomial storage when it was allocated for this workspace p
   polyprec_PRECISION_struct_free( p );
 #endif
@@ -1696,7 +1696,7 @@ int arnoldi_step_PRECISION( vector_PRECISION *V, vector_PRECISION *Z, vector_PRE
 
   START_MASTER(threading)
 
-#if defined(GCRODR) || defined(POLYPREC)
+#if defined(GCRODR) || defined(POLYPREC) || defined(GMRES_POLY_EXPANSION)
 //#if defined(POLYPREC)
 #if defined(SINGLE_ALLREDUCE_ARNOLDI) && defined(PIPELINED_ARNOLDI)
 
@@ -1735,7 +1735,7 @@ int arnoldi_step_PRECISION( vector_PRECISION *V, vector_PRECISION *Z, vector_PRE
   }
 #endif
 
-#ifdef POLYPREC
+#if defined(POLYPREC) || defined(GMRES_POLY_EXPANSION)
   if (p->polyprec_PRECISION.capture_H==1)
   {
     memcpy( p->polyprec_PRECISION.eigslvr.Hc[jx], H[jx], sizeof(complex_PRECISION)*(jx+2) );
