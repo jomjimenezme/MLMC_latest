@@ -89,8 +89,8 @@
 #define abs_float fabs
 #define abs_double abs
 
-#if defined(GCRODR) || defined(POLYPREC)
-  #define geev_double LAPACKE_zgeev 
+#if defined(GCRODR) || defined(POLYPREC) || defined(GMRES_POLY_EXPANSION)
+  #define geev_double LAPACKE_zgeev
   #define geev_float LAPACKE_cgeev 
   #define ggev_double LAPACKE_zggev
   #define ggev_float LAPACKE_cggev
