@@ -23,7 +23,7 @@
 #include "proxies/dirac_proxy_PRECISION.h"
 #include "oddeven_PRECISION.h"
 
-#ifdef POLYPREC || defined(GMRES_POLY_EXPANSION)
+#if defined(POLYPREC) || defined(GMRES_POLY_EXPANSION)
 
 /*-----------------------------------------------*/
 

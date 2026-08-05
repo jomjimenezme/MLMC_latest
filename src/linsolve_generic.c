@@ -628,7 +628,7 @@ void cpu_fgmres_PRECISION_struct_free( gmres_PRECISION_struct *p, level_struct *
   p->D = NULL;
   p->clover = NULL;
 
-#ifdef POLYPREC || defined(GMRES_POLY_EXPANSION)
+#if defined(POLYPREC) || defined(GMRES_POLY_EXPANSION)
   // Free polynomial storage when it was allocated for this workspace p
   polyprec_PRECISION_struct_free( p );
 #endif

@@ -98,8 +98,8 @@ typedef struct
 struct level_struct;
 struct Thread;
 
-#if defined(POLYPREC) || defined(GCRODR)
-  typedef struct
+#if defined(POLYPREC) || defined(GMRES_POLY_EXPANSION) || defined(GCRODR)
+typedef struct
   {
     int N, nrhs, lda, ldb, info;
 
@@ -112,7 +112,7 @@ struct Thread;
   } dirctslvr_PRECISION_struct;
 #endif
 
-#if defined(GCRODR) || defined(POLYPREC)
+#if defined(GCRODR) || defined(POLYPREC) || defined(GMRES_POLY_EXPANSION)
   // this is both eigensolver and generalized eigensolver
   typedef struct {
     char jobvl, jobvr;
