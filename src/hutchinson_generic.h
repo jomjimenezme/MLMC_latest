@@ -51,7 +51,7 @@
   struct sample hutchinson_blind_g5_PRECISION( level_struct *l, int depth, hutchinson_PRECISION_struct* h, int type, struct Thread *threading );
 
 
-#ifdef POLYPREC
+#ifdef GMRES_POLY_EXPANSION
 
   complex_PRECISION hutchinson_fs_second_polyprec_trunc_PRECISION( int type_appl, level_struct *l,
                                                                    hutchinson_PRECISION_struct* h,

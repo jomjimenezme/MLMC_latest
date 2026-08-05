@@ -31,6 +31,8 @@
 
 #endif
 
+#ifdef GMRES_POLY_EXPANSION
+
   void apply_polyprec_jacobi_PRECISION( vector_PRECISION eta, vector_PRECISION phi,
                                         operator_PRECISION_struct *op, level_struct *l,
                                         struct Thread *threading );
@@ -40,6 +42,8 @@
   int construct_fine_polyprec_PRECISION( gmres_PRECISION_struct *p,
                                          level_struct *l,
                                          struct Thread *threading );
+
+#endif
 
   void apply_polyprec_residual_core_PRECISION( vector_PRECISION phi, vector_PRECISION eta,
                                                gmres_PRECISION_struct *p, level_struct *l,

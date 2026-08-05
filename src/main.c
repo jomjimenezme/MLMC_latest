@@ -170,7 +170,7 @@ int main( int argc, char **argv ) {
 
       set_probing_variances_to_zero();
 
-#ifdef POLYPREC
+#ifdef GMRES_POLY_EXPANSION
       if( g.trace_op_type == 19 ){
         START_MASTER(threadingx)
         if(g.my_rank==0) printf("Calling Jacobi polynomial for FS Heavy Finest term - 3D trace\n");

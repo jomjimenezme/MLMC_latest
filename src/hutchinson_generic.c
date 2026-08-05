@@ -3844,7 +3844,7 @@ complex_PRECISION fs_mlmc_second_hpe_driver_PRECISION( level_struct *l, struct T
 }
 
 
-#ifdef POLYPREC
+#ifdef GMRES_POLY_EXPANSION
 
 #ifdef POLYPREC_HPE_COMPARE
 

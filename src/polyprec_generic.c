@@ -64,6 +64,7 @@ void print_vector_PRECISION( char* desc, vector_PRECISION w, int n)
   printf0( "\n" );
 }
 
+#ifdef GMRES_POLY_EXPANSION
 void apply_polyprec_jacobi_PRECISION( vector_PRECISION eta, vector_PRECISION phi,
                                       operator_PRECISION_struct *op, level_struct *l,
                                       struct Thread *threading )
@@ -78,6 +79,7 @@ void apply_polyprec_jacobi_PRECISION( vector_PRECISION eta, vector_PRECISION phi
   // Apply the inverse self-coupling term: eta = C^{-1} eta = C^{-1} D phi
   diag_sc_inv_PRECISION( eta, eta, &(l->sc_op_PRECISION), l, start, end );
 }
+#endif
 
 static void apply_polyprec_operator_PRECISION( vector_PRECISION output,
                                                vector_PRECISION input,
@@ -362,6 +364,7 @@ int re_construct_lejas_PRECISION( level_struct *l, struct Thread *threading ) {
 
 #endif
 
+#ifdef GMRES_POLY_EXPANSION
 int construct_fine_polyprec_PRECISION( gmres_PRECISION_struct *p,
                                        level_struct *l,
                                        struct Thread *threading )
@@ -398,6 +401,7 @@ int construct_fine_polyprec_PRECISION( gmres_PRECISION_struct *p,
   // Report SUCCESFUL polynomial construction
   return polyprec_status;
 }
+#endif
 
 void apply_polyprec_core_PRECISION( vector_PRECISION phi, vector_PRECISION eta,
                                     gmres_PRECISION_struct *p, level_struct *l,
