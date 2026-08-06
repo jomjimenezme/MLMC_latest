@@ -454,43 +454,457 @@ void get_sigma_4D(){
 }
 
 void get_sigma_3D(){
-  
+
   if(g.coloring_distance == 1){
     g.sigma[0] = 0;
     g.sigma[1] = 1;
     g.sigma[2] = 1;
     g.sigma[3] = 1;
-    
+
     g.nc = 2;
   }
-  
+
   if(g.coloring_distance == 2){
     g.sigma[0] = 0;
     g.sigma[1] = 1;
     g.sigma[2] = 2;
     g.sigma[3] = 3;
-    
+
     g.nc = 8;
   }
-  
+
   if(g.coloring_distance == 3){
     g.sigma[0] = 0;
     g.sigma[1] = 1;
     g.sigma[2] = 3;
     g.sigma[3] = 5;
-    
+
     g.nc = 16;
   }
-  
+
   if(g.coloring_distance == 4){
     g.sigma[0] = 0;
     g.sigma[1] = 1;
-    g.sigma[2] = 6;
-    g.sigma[3] = 9;
-    
+    g.sigma[2] = 4;
+    g.sigma[3] = 10;
+
     g.nc = 32;
   }
-  
+
+  if(g.coloring_distance == 5){
+    g.sigma[0] = 0;
+    g.sigma[1] = 1;
+    g.sigma[2] = 5;
+    g.sigma[3] = 13;
+
+    g.nc = 64;
+  }
+
+  if(g.coloring_distance == 6){
+    g.sigma[0] = 0;
+    g.sigma[1] = 1;
+    g.sigma[2] = 6;
+    g.sigma[3] = 26;
+
+    g.nc = 128;
+  }
+
+  if(g.coloring_distance == 7){
+    g.sigma[0] = 0;
+    g.sigma[1] = 1;
+    g.sigma[2] = 7;
+    g.sigma[3] = 57;
+
+    g.nc = 152;
+  }
+
+  if(g.coloring_distance == 8){
+    g.sigma[0] = 0;
+    g.sigma[1] = 1;
+    g.sigma[2] = 36;
+    g.sigma[3] = 52;
+
+    g.nc = 256;
+  }
+
+  if(g.coloring_distance == 9){
+    g.sigma[0] = 0;
+    g.sigma[1] = 4;
+    g.sigma[2] = 30;
+    g.sigma[3] = 35;
+
+    g.nc = 320;
+  }
+
+  if(g.coloring_distance == 10){
+    g.sigma[0] = 0;
+    g.sigma[1] = 8;
+    g.sigma[2] = 31;
+    g.sigma[3] = 60;
+
+    g.nc = 481;
+  }
+
+  if(g.coloring_distance == 11){
+    g.sigma[0] = 0;
+    g.sigma[1] = 159;
+    g.sigma[2] = 179;
+    g.sigma[3] = 534;
+
+    g.nc = 545;
+  }
+
+  if(g.coloring_distance == 12){
+    g.sigma[0] = 0;
+    g.sigma[1] = 10;
+    g.sigma[2] = 54;
+    g.sigma[3] = 55;
+
+    g.nc = 704;
+  }
+
+  if(g.coloring_distance == 13){
+    g.sigma[0] = 0;
+    g.sigma[1] = 351;
+    g.sigma[2] = 81;
+    g.sigma[3] = 159;
+
+    g.nc = 832;
+  }
+
+  if(g.coloring_distance == 14){
+    g.sigma[0] = 0;
+    g.sigma[1] = 443;
+    g.sigma[2] = 363;
+    g.sigma[3] = 325;
+
+    g.nc = 1040;
+  }
+
+  if(g.coloring_distance == 15){
+    g.sigma[0] = 0;
+    g.sigma[1] = 585;
+    g.sigma[2] = 359;
+    g.sigma[3] = 759;
+
+    g.nc = 1040;
+  }
+
+  if(g.coloring_distance == 16){
+    g.sigma[0] = 0;
+    g.sigma[1] = 1230;
+    g.sigma[2] = 794;
+    g.sigma[3] = 1730;
+
+    g.nc = 1773;
+  }
+
+  if(g.coloring_distance == 17){
+    g.sigma[0] = 0;
+    g.sigma[1] = 64;
+    g.sigma[2] = 413;
+    g.sigma[3] = 65;
+
+    g.nc = 2048;
+  }
+
+  if(g.coloring_distance == 18){
+    g.sigma[0] = 0;
+    g.sigma[1] = 2390;
+    g.sigma[2] = 507;
+    g.sigma[3] = 246;
+
+    g.nc = 2624;
+  }
+
+  if(g.coloring_distance == 19){
+    g.sigma[0] = 0;
+    g.sigma[1] = 132;
+    g.sigma[2] = 29;
+    g.sigma[3] = 126;
+
+    g.nc = 2774;
+  }
+
+  if(g.coloring_distance == 20){
+    g.sigma[0] = 0;
+    g.sigma[1] = 136;
+    g.sigma[2] = 50;
+    g.sigma[3] = 199;
+
+    g.nc = 3200;
+  }
+
+  if(g.coloring_distance == 21){
+    g.sigma[0] = 0;
+    g.sigma[1] = 402;
+    g.sigma[2] = 3905;
+    g.sigma[3] = 64;
+
+    g.nc = 4096;
+  }
+
+  if(g.coloring_distance == 22){
+    g.sigma[0] = 0;
+    g.sigma[1] = 64;
+    g.sigma[2] = 364;
+    g.sigma[3] = 1;
+
+    g.nc = 4096;
+  }
+
+  if(g.coloring_distance == 23){
+    g.sigma[0] = 0;
+    g.sigma[1] = 3040;
+    g.sigma[2] = 575;
+    g.sigma[3] = 508;
+
+    g.nc = 5120;
+  }
+
+  if(g.coloring_distance == 24){
+    g.sigma[0] = 0;
+    g.sigma[1] = 576;
+    g.sigma[2] = 5506;
+    g.sigma[3] = 1947;
+
+    g.nc = 6144;
+  }
+
+  if(g.coloring_distance == 25){
+    g.sigma[0] = 0;
+    g.sigma[1] = 1237;
+    g.sigma[2] = 477;
+    g.sigma[3] = 1448;
+
+    g.nc = 6356;
+  }
+
+  if(g.coloring_distance == 26){
+    g.sigma[0] = 0;
+    g.sigma[1] = 2144;
+    g.sigma[2] = 2035;
+    g.sigma[3] = 4048;
+
+    g.nc = 7634;
+  }
+
+  if(g.coloring_distance == 27){
+    g.sigma[0] = 0;
+    g.sigma[1] = 92;
+    g.sigma[2] = 2039;
+    g.sigma[3] = 2564;
+
+    g.nc = 8452;
+  }
+
+  if(g.coloring_distance == 28){
+    g.sigma[0] = 0;
+    g.sigma[1] = 271;
+    g.sigma[2] = 418;
+    g.sigma[3] = 30;
+
+    g.nc = 8896;
+  }
+
+  if(g.coloring_distance == 29){
+    g.sigma[0] = 0;
+    g.sigma[1] = 455;
+    g.sigma[2] = 134;
+    g.sigma[3] = 21;
+
+    g.nc = 9817;
+  }
+
+  if(g.coloring_distance == 30){
+    g.sigma[0] = 0;
+    g.sigma[1] = 4487;
+    g.sigma[2] = 5327;
+    g.sigma[3] = 1337;
+
+    g.nc = 9941;
+  }
+
+  if(g.coloring_distance == 31){
+    g.sigma[0] = 0;
+    g.sigma[1] = 5219;
+    g.sigma[2] = 1496;
+    g.sigma[3] = 5805;
+
+    g.nc = 13533;
+  }
+
+  if(g.coloring_distance == 32){
+    g.sigma[0] = 0;
+    g.sigma[1] = 5219;
+    g.sigma[2] = 1496;
+    g.sigma[3] = 5805;
+
+    g.nc = 13533;
+  }
+
+  if(g.coloring_distance == 33){
+    g.sigma[0] = 0;
+    g.sigma[1] = 5219;
+    g.sigma[2] = 1496;
+    g.sigma[3] = 5805;
+
+    g.nc = 13533;
+  }
+
+  if(g.coloring_distance == 34){
+    g.sigma[0] = 0;
+    g.sigma[1] = 269;
+    g.sigma[2] = 302;
+    g.sigma[3] = 608;
+
+    g.nc = 19003;
+  }
+
+  if(g.coloring_distance == 35){
+    g.sigma[0] = 0;
+    g.sigma[1] = 835;
+    g.sigma[2] = 4603;
+    g.sigma[3] = 4704;
+
+    g.nc = 22450;
+  }
+
+  if(g.coloring_distance == 36){
+    g.sigma[0] = 0;
+    g.sigma[1] = 835;
+    g.sigma[2] = 4603;
+    g.sigma[3] = 4704;
+
+    g.nc = 22450;
+  }
+
+  if(g.coloring_distance == 37){
+    g.sigma[0] = 0;
+    g.sigma[1] = 835;
+    g.sigma[2] = 4603;
+    g.sigma[3] = 4704;
+
+    g.nc = 22450;
+  }
+
+  if(g.coloring_distance == 38){
+    g.sigma[0] = 0;
+    g.sigma[1] = 2210;
+    g.sigma[2] = 2244;
+    g.sigma[3] = 98;
+
+    g.nc = 25009;
+  }
+
+  if(g.coloring_distance == 39){
+    g.sigma[0] = 0;
+    g.sigma[1] = 2571;
+    g.sigma[2] = 360;
+    g.sigma[3] = 888;
+
+    g.nc = 27632;
+  }
+
+  if(g.coloring_distance == 40){
+    g.sigma[0] = 0;
+    g.sigma[1] = 1154;
+    g.sigma[2] = 1427;
+    g.sigma[3] = 1023;
+
+    g.nc = 31553;
+  }
+
+  if(g.coloring_distance == 41){
+    g.sigma[0] = 0;
+    g.sigma[1] = 6060;
+    g.sigma[2] = 255;
+    g.sigma[3] = 5234;
+
+    g.nc = 33835;
+  }
+
+  if(g.coloring_distance == 42){
+    g.sigma[0] = 0;
+    g.sigma[1] = 3589;
+    g.sigma[2] = 950;
+    g.sigma[3] = 2125;
+
+    g.nc = 34207;
+  }
+
+  if(g.coloring_distance == 43){
+    g.sigma[0] = 0;
+    g.sigma[1] = 1286;
+    g.sigma[2] = 39;
+    g.sigma[3] = 811;
+
+    g.nc = 42466;
+  }
+
+  if(g.coloring_distance == 44){
+    g.sigma[0] = 0;
+    g.sigma[1] = 2615;
+    g.sigma[2] = 659;
+    g.sigma[3] = 2729;
+
+    g.nc = 40993;
+  }
+
+  if(g.coloring_distance == 45){
+    g.sigma[0] = 0;
+    g.sigma[1] = 5321;
+    g.sigma[2] = 5833;
+    g.sigma[3] = 3641;
+
+    g.nc = 44038;
+  }
+
+  if(g.coloring_distance == 46){
+    g.sigma[0] = 0;
+    g.sigma[1] = 5503;
+    g.sigma[2] = 3367;
+    g.sigma[3] = 1825;
+
+    g.nc = 57332;
+  }
+
+  if(g.coloring_distance == 47){
+    g.sigma[0] = 0;
+    g.sigma[1] = 5503;
+    g.sigma[2] = 3367;
+    g.sigma[3] = 1825;
+
+    g.nc = 57332;
+  }
+
+  if(g.coloring_distance == 48){
+    g.sigma[0] = 0;
+    g.sigma[1] = 1000;
+    g.sigma[2] = 1759;
+    g.sigma[3] = 68;
+
+    g.nc = 61414;
+  }
+
+  if(g.coloring_distance == 49){
+    g.sigma[0] = 0;
+    g.sigma[1] = 3601;
+    g.sigma[2] = 720;
+    g.sigma[3] = 297;
+
+    g.nc = 63283;
+  }
+
+  if(g.coloring_distance == 50){
+    g.sigma[0] = 0;
+    g.sigma[1] = 5857;
+    g.sigma[2] = 1678;
+    g.sigma[3] = 6073;
+
+    g.nc = 70291;
+  }
+
 }
 
 void dilution_check(){

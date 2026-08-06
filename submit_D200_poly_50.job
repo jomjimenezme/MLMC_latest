@@ -1,0 +1,17 @@
+#!/bin/bash
+#SBATCH --job-name=D200-poly-50
+#SBATCH --nodes=16
+#SBATCH --ntasks-per-node=128
+#SBATCH --cpus-per-task=1
+#SBATCH --output=result-D200-poly-50
+#SBATCH --error=err-D200-poly-50
+#SBATCH --time=10:00:00
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=mariopapacee@gmail.com
+
+export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK}
+export LD_LIBRARY_PATH=/home/users/e75014/lib:$LD_LIBRARY_PATH
+export SRUN_EXPORT_ENV=ALL
+
+. run -i "D200_poly_50.ini"
+date
