@@ -54,7 +54,7 @@ endif
 COMMON_COMPILE_FLAGS += -DTM_COARSEST
 
 # LAPACK is needed for coarsest-level improvements
-LAPACK_DIR = dependencies/lapack-3.9.0
+LAPACK_DIR = dependencies/lapack-3.10.0
 LAPACKE_DIR = $(LAPACK_DIR)/LAPACKE
 LAPACKE_INCLUDE = $(LAPACKE_DIR)/include
 BLASLIB      = $(LAPACK_DIR)/librefblas.a
@@ -86,6 +86,7 @@ ifeq ($(CUDA_ENABLER),yes)
 endif
 
 COMPILE_FLAGS = $(COMMON_COMPILE_FLAGS) -DPARAMOUTPUT -DTRACK_RES -DFGMRES_RESTEST
+COMPILE_FLAGS += -Wno-incompatible-pointer-types
 
 ifeq ($(CUDA_ENABLER),yes)
 COMPILE_FLAGS += -fopenmp -DOPENMP
