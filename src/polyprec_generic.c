@@ -199,11 +199,27 @@ void leja_ordering_PRECISION( gmres_PRECISION_struct *p )
   memcpy( p->polyprec_PRECISION.lejas, p->polyprec_PRECISION.L[d_poly], sizeof(complex_PRECISION)*(d_poly) );
 }
 
+static void finalize_polyprec_roots_PRECISION( gmres_PRECISION_struct *p )
+{
+  int i;
 
+  // Compute the harmonic Ritz values from the Arnoldi Hessenberg matrix
+  harmonic_ritz_PRECISION( p );
+
+  // Scale the harmonic Ritz values for the relaxed operator omega*A
+  if ( p->polyprec_PRECISION.omega != 1.0 ) {
+    for ( i=0; i<p->polyprec_PRECISION.d_poly; i++ )
+      p->polyprec_PRECISION.h_ritz[i] *=
+        p->polyprec_PRECISION.omega;
+  }
+
+  // Order the roots
+  leja_ordering_PRECISION( p );
+}
 
 int update_lejas_PRECISION( gmres_PRECISION_struct *p, level_struct *l, struct Thread *threading )
 {
-  int i, start, end;
+  int start, end;
   compute_core_start_end(p->v_start, p->v_end, &start, &end, l, threading);
 
   vector_PRECISION random_rhs, buff0;
@@ -323,16 +339,7 @@ int update_lejas_PRECISION( gmres_PRECISION_struct *p, level_struct *l, struct T
   } else { return -1; }
 
   START_MASTER(threading)
-  harmonic_ritz_PRECISION(p);
-
-  // The harmonic Ritz values of omega*A are simplyomega times those of A
-  if ( p->polyprec_PRECISION.omega != 1.0 ) {
-    for ( i=0; i<p->polyprec_PRECISION.d_poly; i++ )
-      p->polyprec_PRECISION.h_ritz[i] *=
-        p->polyprec_PRECISION.omega;
-  }
-
-  leja_ordering_PRECISION(p);
+  finalize_polyprec_roots_PRECISION( p );
   END_MASTER(threading)
 
   SYNC_MASTER_TO_ALL(threading)
