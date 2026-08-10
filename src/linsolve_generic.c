@@ -91,6 +91,14 @@ void cpu_fgmres_PRECISION_struct_init( gmres_PRECISION_struct *p ) {
   // Use one right-hand side for polynomial construction by default
   p->polyprec_PRECISION.construction_nrhs = 1;
 
+#ifdef GMRES_POLY_EXPANSION
+  // No global Arnoldi storage is present before polynomial construction
+  p->polyprec_PRECISION.global_arnoldi_allocated = 0;
+  p->polyprec_PRECISION.global_rhs = NULL;
+  p->polyprec_PRECISION.global_V = NULL;
+  p->polyprec_PRECISION.global_w = NULL;
+#endif
+
   // No Jacobi or Gauss-Seidel splitting is assigned initially
   p->polyprec_PRECISION.splitting = _POLYPREC_NONE;
   // Use the unrelaxed value
@@ -133,6 +141,66 @@ void cpu_fgmres_PRECISION_struct_init( gmres_PRECISION_struct *p ) {
 
 //--- START polynomial storage ---
 #if defined(POLYPREC) || defined(GMRES_POLY_EXPANSION)
+#ifdef GMRES_POLY_EXPANSION
+void polyprec_global_arnoldi_PRECISION_struct_alloc( gmres_PRECISION_struct *p )
+{
+  int i;
+  int d_poly = p->polyprec_PRECISION.d_poly;
+  int nrhs = p->polyprec_PRECISION.construction_nrhs;
+  int vl = p->polyprec_PRECISION.syst_size;
+  long int block_size = (long int)nrhs*vl;
+
+  // Allocate the random block right-hand side B
+  MALLOC( p->polyprec_PRECISION.global_rhs, complex_PRECISION, block_size );
+
+  // Allocate the global Arnoldi basis V_0,...,V_d
+  MALLOC( p->polyprec_PRECISION.global_V, vector_PRECISION, d_poly+1 );
+
+  p->polyprec_PRECISION.global_V[0] = NULL;
+  MALLOC( p->polyprec_PRECISION.global_V[0], complex_PRECISION, (d_poly+1)*block_size );
+
+  // Point each basis entry to one contiguous block vector!!
+  for ( i=1; i<d_poly+1; i++ )
+    p->polyprec_PRECISION.global_V[i] =
+      p->polyprec_PRECISION.global_V[0] + i*block_size;
+
+  // Allocate the work block used by the Arnoldi iteration
+  MALLOC( p->polyprec_PRECISION.global_w, complex_PRECISION, block_size );
+
+  // Mark the temporary global Arnoldi storage as allocated
+  p->polyprec_PRECISION.global_arnoldi_allocated = 1;
+}
+#endif
+
+#ifdef GMRES_POLY_EXPANSION
+void polyprec_global_arnoldi_PRECISION_struct_free( gmres_PRECISION_struct *p )
+{
+  int d_poly;
+  int nrhs;
+  int vl;
+  long int block_size;
+
+  d_poly = p->polyprec_PRECISION.d_poly;
+  nrhs = p->polyprec_PRECISION.construction_nrhs;
+  vl = p->polyprec_PRECISION.syst_size;
+  block_size = (long int)nrhs*vl;
+
+  // Free the random block right-hand side
+  FREE( p->polyprec_PRECISION.global_rhs, complex_PRECISION, block_size );
+
+  // Free the contiguous global Arnoldi basis
+  FREE( p->polyprec_PRECISION.global_V[0], complex_PRECISION, (d_poly+1)*block_size );
+
+  FREE( p->polyprec_PRECISION.global_V, vector_PRECISION, d_poly+1 );
+
+  // Free the Arnoldi work block
+  FREE( p->polyprec_PRECISION.global_w, complex_PRECISION, block_size );
+
+  // The temporary global Arnoldi storage is no longer allocated
+  p->polyprec_PRECISION.global_arnoldi_allocated = 0;
+}
+#endif
+
 void polyprec_PRECISION_struct_alloc( int d_poly, int vl, gmres_PRECISION_struct *p )
 {
   int i;

@@ -59,6 +59,11 @@
   void polyprec_PRECISION_struct_alloc( int d_poly, int vl, gmres_PRECISION_struct *p );
   void polyprec_PRECISION_struct_free( gmres_PRECISION_struct *p );
 #endif
+
+#ifdef GMRES_POLY_EXPANSION
+  void polyprec_global_arnoldi_PRECISION_struct_alloc( gmres_PRECISION_struct *p );
+  void polyprec_global_arnoldi_PRECISION_struct_free( gmres_PRECISION_struct *p );
+#endif
   //--- END polynomial storage ---
   
 #endif

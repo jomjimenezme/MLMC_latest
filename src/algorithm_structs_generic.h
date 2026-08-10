@@ -181,6 +181,14 @@ typedef struct
     // Number of right-hand sides used for polynomial construction
     int construction_nrhs;
 
+#ifdef GMRES_POLY_EXPANSION
+    // Temporary storage used during global Arnoldi construction
+    int global_arnoldi_allocated;
+    vector_PRECISION global_rhs;
+    vector_PRECISION *global_V;
+    vector_PRECISION global_w;
+#endif
+
     // Splitting for which the polynomial is constructed
     int splitting;
 
