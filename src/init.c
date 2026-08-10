@@ -209,6 +209,9 @@ void method_setup( vector_double *V, level_struct *l, struct Thread *threading )
     // Store the omega associated with this polynomial
     g.p.polyprec_double.omega = g.fine_polyprec_omega;
 
+    // Store the number of right-hand sides used for polynomial construction
+    g.p.polyprec_double.construction_nrhs = g.fine_polyprec_nrhs;
+
     // We need to construct a new polynomial for the fine operator
     g.p.polyprec_double.update_lejas = 1;
     g.p.polyprec_double.preconditioner = NULL;
@@ -1223,6 +1226,14 @@ void read_solver_parameters( FILE *in, level_struct *l ) {
   // Store d directly as the number of Arnoldi steps and polynomial factors
   save_pt = &(g.fine_polyprec_d); g.fine_polyprec_d = 5;
   read_parameter( &save_pt, "fine grid polyprec_d:", "%d", 1, in, _DEFAULT_SET );
+
+  // Use one right-hand side for polynomial construction by default
+  save_pt = &(g.fine_polyprec_nrhs); g.fine_polyprec_nrhs = 1;
+  read_parameter( &save_pt, "fine grid polyprec_nrhs:", "%d", 1, in, _DEFAULT_SET );
+
+  // Require at least one right-hand side when the expansion is enabled
+  if ( g.fine_polyprec_enabled && g.fine_polyprec_nrhs < 1 )
+    error0("POLYPREC: fine grid polyprec_nrhs must be at least one.\n");
 
   // Use Jacobi unless Gauss-Seidel is explicitly requested
   save_pt = &(g.fine_polyprec_splitting); g.fine_polyprec_splitting = _POLYPREC_JACOBI;

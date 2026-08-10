@@ -88,6 +88,9 @@ void cpu_fgmres_PRECISION_struct_init( gmres_PRECISION_struct *p ) {
   // No polynomial Hessenberg storage is owned before allocation
   p->polyprec_PRECISION.owns_Hc = 0;
 
+  // Use one right-hand side for polynomial construction by default
+  p->polyprec_PRECISION.construction_nrhs = 1;
+
   // No Jacobi or Gauss-Seidel splitting is assigned initially
   p->polyprec_PRECISION.splitting = _POLYPREC_NONE;
   // Use the unrelaxed value

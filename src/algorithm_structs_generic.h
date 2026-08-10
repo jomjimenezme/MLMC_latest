@@ -178,6 +178,9 @@ typedef struct
 
     // For polynomial expansion only
 
+    // Number of right-hand sides used for polynomial construction
+    int construction_nrhs;
+
     // Splitting for which the polynomial is constructed
     int splitting;
 

@@ -123,6 +123,9 @@ typedef struct global_struct
     // Number of Arnoldi steps and residual-polynomial factors
     int fine_polyprec_d;
 
+    // Number of right-hand sides used for polynomial construction (Global gmres)
+    int fine_polyprec_nrhs;
+
     // Jacobi or Gauss-Seidel splitting
     int fine_polyprec_splitting;
 
