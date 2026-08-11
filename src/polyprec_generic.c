@@ -111,6 +111,103 @@ static void apply_polyprec_operator_PRECISION( vector_PRECISION output,
   }
 }
 
+#ifdef GMRES_POLY_EXPANSION
+
+static void polyprec_global_block_define_random_PRECISION( vector_PRECISION block, gmres_PRECISION_struct *p, level_struct *l )
+{
+  int rhs;
+  int nrhs = p->polyprec_PRECISION.construction_nrhs;
+  int vl = p->polyprec_PRECISION.syst_size;
+
+  // Generate one random vector for every right-hand side
+  for ( rhs=0; rhs<nrhs; rhs++ )
+    vector_PRECISION_define_random( block + rhs*vl, p->v_start, p->v_end, l );
+}
+
+
+static void polyprec_global_block_scale_PRECISION( vector_PRECISION output, vector_PRECISION input, complex_PRECISION alpha, gmres_PRECISION_struct *p, level_struct *l, struct Thread *threading )
+{
+  int rhs, start, end;
+  int nrhs = p->polyprec_PRECISION.construction_nrhs;
+  int vl = p->polyprec_PRECISION.syst_size;
+
+  compute_core_start_end_custom( p->v_start, p->v_end, &start, &end, l, threading, l->num_lattice_site_var );
+
+  // Scale every vector in the block
+  for ( rhs=0; rhs<nrhs; rhs++ )
+    vector_PRECISION_scale( output + rhs*vl, input + rhs*vl, alpha, start, end, l );
+}
+
+
+static void polyprec_global_block_saxpy_PRECISION( vector_PRECISION output, vector_PRECISION input, vector_PRECISION update, complex_PRECISION alpha, gmres_PRECISION_struct *p, level_struct *l, struct Thread *threading )
+{
+  int rhs, start, end;
+  int nrhs = p->polyprec_PRECISION.construction_nrhs;
+  int vl = p->polyprec_PRECISION.syst_size;
+
+  compute_core_start_end_custom( p->v_start, p->v_end, &start, &end, l, threading, l->num_lattice_site_var );
+
+  // Apply the same scalar update to every vector in the block
+  for ( rhs=0; rhs<nrhs; rhs++ )
+    vector_PRECISION_saxpy( output + rhs*vl, input + rhs*vl, update + rhs*vl, alpha, start, end, l );
+}
+
+
+//TODO: Implement threaded version if needed
+static complex_PRECISION polyprec_global_block_inner_product_PRECISION( vector_PRECISION x, vector_PRECISION y, gmres_PRECISION_struct *p, level_struct *l,struct Thread *threading )
+{
+  int i, rhs;
+  int nrhs = p->polyprec_PRECISION.construction_nrhs;
+  int vl = p->polyprec_PRECISION.syst_size;
+
+  complex_PRECISION local_inner_product = 0.0;
+  complex_PRECISION global_inner_product = 0.0;
+
+  // <X,Y>_F = sum_rhs (x_rhs)^H y_rhs
+  for ( rhs=0; rhs<nrhs; rhs++ ) {
+
+    // get start of the vectors
+    vector_PRECISION x_rhs = x + rhs*vl;
+    vector_PRECISION y_rhs = y + rhs*vl;
+
+    // (x_rhs)^H y_rhs = sum_i conj(x_rhs[i]) y_rhs[i]
+    for ( i=p->v_start; i<p->v_end; i++ )
+      local_inner_product += conj_PRECISION( x_rhs[i] ) * y_rhs[i];
+  }
+
+  // Sum the local Frobenius inner products over all MPI processes
+    MPI_Allreduce( &local_inner_product, &global_inner_product, 1, MPI_COMPLEX_PRECISION, MPI_SUM,
+                   (l->depth==0) ? g.comm_cart : l->gs_PRECISION.level_comm );
+
+  return global_inner_product;
+}
+
+
+static PRECISION polyprec_global_block_norm_PRECISION( vector_PRECISION x, gmres_PRECISION_struct *p, level_struct *l, struct Thread *threading )
+{
+  complex_PRECISION norm_squared;
+
+  // Compute the SQUARED Frobenius norm of the block
+  norm_squared = polyprec_global_block_inner_product_PRECISION( x, x, p, l, threading );
+
+  // Return the Frobenius norm
+  return (PRECISION)sqrt( creal_PRECISION(norm_squared) );
+}
+
+
+static void polyprec_global_block_apply_operator_PRECISION( vector_PRECISION output, vector_PRECISION input, gmres_PRECISION_struct *p, level_struct *l, struct Thread *threading )
+{
+  int rhs;
+  int nrhs = p->polyprec_PRECISION.construction_nrhs;
+  int vl = p->polyprec_PRECISION.syst_size;
+
+  // Apply the unrelaxed target operator to every right-hand side
+  for ( rhs=0; rhs<nrhs; rhs++ )
+    p->polyprec_PRECISION.eval_target_operator( output + rhs*vl,input + rhs*vl, p->polyprec_PRECISION.target_op, l, threading );
+}
+
+#endif
+
 void harmonic_ritz_PRECISION( gmres_PRECISION_struct *p )
 {
   int i, j, d;
