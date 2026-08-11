@@ -153,33 +153,34 @@ static void polyprec_global_block_saxpy_PRECISION( vector_PRECISION output, vect
 }
 
 
-//TODO: Implement threaded version if needed
-static complex_PRECISION polyprec_global_block_inner_product_PRECISION( vector_PRECISION x, vector_PRECISION y, gmres_PRECISION_struct *p, level_struct *l,struct Thread *threading )
+// Based on process_inner_product_PRECISION
+static complex_PRECISION polyprec_global_block_inner_product_PRECISION( vector_PRECISION x, vector_PRECISION y, gmres_PRECISION_struct *p, level_struct *l, struct Thread *threading )
 {
-  int i, rhs;
+  int rhs;
   int nrhs = p->polyprec_PRECISION.construction_nrhs;
   int vl = p->polyprec_PRECISION.syst_size;
 
   complex_PRECISION local_inner_product = 0.0;
-  complex_PRECISION global_inner_product = 0.0;
 
   // <X,Y>_F = sum_rhs (x_rhs)^H y_rhs
   for ( rhs=0; rhs<nrhs; rhs++ ) {
 
-    // get start of the vectors
+    // Get the start of the vectors
     vector_PRECISION x_rhs = x + rhs*vl;
     vector_PRECISION y_rhs = y + rhs*vl;
 
-    // (x_rhs)^H y_rhs = sum_i conj(x_rhs[i]) y_rhs[i]
-    for ( i=p->v_start; i<p->v_end; i++ )
-      local_inner_product += conj_PRECISION( x_rhs[i] ) * y_rhs[i];
+    // Add the threaded inner product (x_rhs)^H y_rhs on this MPI process
+    local_inner_product += process_inner_product_PRECISION( x_rhs, y_rhs,  p->v_start, p->v_end, l, threading );
   }
 
   // Sum the local Frobenius inner products over all MPI processes
-    MPI_Allreduce( &local_inner_product, &global_inner_product, 1, MPI_COMPLEX_PRECISION, MPI_SUM,
-                   (l->depth==0) ? g.comm_cart : l->gs_PRECISION.level_comm );
+  START_MASTER(threading)
+  MPI_Allreduce( &local_inner_product, &((complex_PRECISION *)threading->workspace)[0], 1, MPI_COMPLEX_PRECISION, MPI_SUM, (l->depth==0) ? g.comm_cart : l->gs_PRECISION.level_comm );
+  END_MASTER(threading)
 
-  return global_inner_product;
+  SYNC_MASTER_TO_ALL(threading)
+
+  return ((complex_PRECISION *)threading->workspace)[0];
 }
 
 
@@ -204,6 +205,65 @@ static void polyprec_global_block_apply_operator_PRECISION( vector_PRECISION out
   // Apply the unrelaxed target operator to every right-hand side
   for ( rhs=0; rhs<nrhs; rhs++ )
     p->polyprec_PRECISION.eval_target_operator( output + rhs*vl,input + rhs*vl, p->polyprec_PRECISION.target_op, l, threading );
+}
+
+
+
+
+static int polyprec_global_arnoldi_PRECISION( gmres_PRECISION_struct *p, level_struct *l, struct Thread *threading )
+{
+  int i, j;
+  PRECISION norm;
+  complex_PRECISION hij;
+
+  vector_PRECISION rhs = p->polyprec_PRECISION.global_rhs;
+  vector_PRECISION *V = p->polyprec_PRECISION.global_V;
+  vector_PRECISION w = p->polyprec_PRECISION.global_w;
+  complex_PRECISION **H = p->polyprec_PRECISION.Hc;
+
+  // Compute ||B||_F
+  norm = polyprec_global_block_norm_PRECISION( rhs, p, l, threading );
+
+  // V_0 = B / ||B||_F
+  polyprec_global_block_scale_PRECISION( V[0], rhs, 1.0/norm, p, l, threading );
+
+  for ( j=0; j<p->polyprec_PRECISION.d_poly; j++ ) {
+
+    // W = Ahat V_j
+    polyprec_global_block_apply_operator_PRECISION( w, V[j], p, l, threading );
+
+    // Orthogonalize W against V_0,...,V_j
+    for ( i=0; i<=j; i++ ) {
+
+      // h_{i,j} = <V_i,W>_F
+      hij = polyprec_global_block_inner_product_PRECISION( V[i], w, p, l, threading );
+
+      // Store the Arnoldi coefficient
+      START_MASTER(threading)
+      H[j][i] = hij;
+      END_MASTER(threading)
+
+      SYNC_MASTER_TO_ALL(threading)
+
+      // W = W - h_{i,j} V_i
+      polyprec_global_block_saxpy_PRECISION( w, w, V[i], -H[j][i], p, l, threading );
+    }
+
+    // h_{j+1,j} = ||W||_F
+    norm = polyprec_global_block_norm_PRECISION( w, p, l, threading );
+
+    // Store the norm of the new Arnoldi vector
+    START_MASTER(threading)
+    H[j][j+1] = norm;
+    END_MASTER(threading)
+
+    SYNC_MASTER_TO_ALL(threading)
+
+    // V_{j+1} = W / h_{j+1,j}
+    polyprec_global_block_scale_PRECISION( V[j+1], w, 1.0/H[j][j+1], p, l, threading );
+  }
+
+  return 0;
 }
 
 #endif
