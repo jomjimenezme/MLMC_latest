@@ -210,7 +210,7 @@ static void polyprec_global_block_apply_operator_PRECISION( vector_PRECISION out
 
 
 
-static int polyprec_global_arnoldi_PRECISION( gmres_PRECISION_struct *p, level_struct *l, struct Thread *threading )
+static void polyprec_global_arnoldi_PRECISION( gmres_PRECISION_struct *p, level_struct *l, struct Thread *threading )
 {
   int i, j;
   PRECISION norm;
@@ -223,6 +223,13 @@ static int polyprec_global_arnoldi_PRECISION( gmres_PRECISION_struct *p, level_s
 
   // Compute ||B||_F
   norm = polyprec_global_block_norm_PRECISION( rhs, p, l, threading );
+
+    // The initial block must be non-zero
+  if ( norm == 0.0 ) {
+    START_MASTER(threading)
+    error0("POLYPREC: global Arnoldi initial block has zero norm.\n");
+    END_MASTER(threading)
+  }
 
   // V_0 = B / ||B||_F
   polyprec_global_block_scale_PRECISION( V[0], rhs, 1.0/norm, p, l, threading );
@@ -252,6 +259,13 @@ static int polyprec_global_arnoldi_PRECISION( gmres_PRECISION_struct *p, level_s
     // h_{j+1,j} = ||W||_F
     norm = polyprec_global_block_norm_PRECISION( w, p, l, threading );
 
+    // Arnoldi must generate a new Krylov direction
+    if ( norm == 0.0 ) {
+      START_MASTER(threading)
+      error0("POLYPREC: global Arnoldi breakdown.\n");
+      END_MASTER(threading)
+    }
+
     // Store the norm of the new Arnoldi vector
     START_MASTER(threading)
     H[j][j+1] = norm;
@@ -263,7 +277,6 @@ static int polyprec_global_arnoldi_PRECISION( gmres_PRECISION_struct *p, level_s
     polyprec_global_block_scale_PRECISION( V[j+1], w, 1.0/H[j][j+1], p, l, threading );
   }
 
-  return 0;
 }
 
 #endif
@@ -515,6 +528,69 @@ int update_lejas_PRECISION( gmres_PRECISION_struct *p, level_struct *l, struct T
 }
 
 
+#ifdef GMRES_POLY_EXPANSION
+
+static int update_global_lejas_PRECISION( gmres_PRECISION_struct *p, level_struct *l, struct Thread *threading )
+{
+  int start, end;
+
+  compute_core_start_end( p->v_start, p->v_end, &start, &end, l, threading );
+
+  // Hc was allocated using the GMRES restart length
+  if ( p->polyprec_PRECISION.d_poly > p->restart_length ) {
+    START_MASTER(threading)
+    error0("POLYPREC: polynomial degree %d exceeds the GMRES restart length %d used to allocate the Arnoldi workspace.\n", p->polyprec_PRECISION.d_poly, p->restart_length );
+    END_MASTER(threading)
+  }
+
+  // Allocate the temporary block vectors and generate B
+  START_LOCKED_MASTER(threading)
+  polyprec_global_arnoldi_PRECISION_struct_alloc( p );
+  polyprec_global_block_define_random_PRECISION( p->polyprec_PRECISION.global_rhs, p, l );
+  END_LOCKED_MASTER(threading)
+
+  SYNC_MASTER_TO_ALL(threading)
+  SYNC_CORES(threading)
+
+  // Keep the first construction vector for the polynomial checks
+  vector_PRECISION_copy( p->polyprec_PRECISION.random_rhs, p->polyprec_PRECISION.global_rhs, start, end, l );
+
+  // Construct the global Arnoldi Hessenberg matrix
+  polyprec_global_arnoldi_PRECISION( p, l, threading );
+
+  // Construct and order the roots from the global Hessenberg matrix
+  START_MASTER(threading)
+  finalize_polyprec_roots_PRECISION( p );
+
+  // The polynomial is now valid for the current operator
+  p->polyprec_PRECISION.update_lejas = 0;
+  END_MASTER(threading)
+
+  SYNC_MASTER_TO_ALL(threading)
+  SYNC_CORES(threading)
+
+  // The global Arnoldi vectors are no longer needed
+  START_LOCKED_MASTER(threading)
+  polyprec_global_arnoldi_PRECISION_struct_free( p );
+  END_LOCKED_MASTER(threading)
+
+  SYNC_MASTER_TO_ALL(threading)
+  SYNC_CORES(threading)
+
+#ifdef POLYPREC_CHECK
+  PRECISION polyprec_error = check_polyprec_identity_PRECISION( p, l, threading );
+
+  START_MASTER(threading)
+  printf0("POLYPREC: polynomial identity error, p_d(A) eta = eta - A q_{d-1}(A) eta. Error: %le\n", polyprec_error);
+  END_MASTER(threading)
+#endif
+
+  return 1;
+}
+
+#endif
+
+
 
 #ifdef POLYPREC
 
@@ -533,6 +609,9 @@ int construct_fine_polyprec_PRECISION( gmres_PRECISION_struct *p,
                                        level_struct *l,
                                        struct Thread *threading )
 {
+  {
+  int polyprec_status;
+
   // Only the Jacobi splitting is implemented so far
   if ( p->polyprec_PRECISION.splitting != _POLYPREC_JACOBI )
     error0("POLYPREC: the selected finest-level splitting is not implemented yet.\n");
@@ -556,8 +635,14 @@ int construct_fine_polyprec_PRECISION( gmres_PRECISION_struct *p,
   SYNC_MASTER_TO_ALL(threading)
   SYNC_CORES(threading)
 
-  // Construct the Leja roots for the assigned finest target operator
-  int polyprec_status = update_lejas_PRECISION( p, l, threading );
+  // Use the original GMRES construction for one right-hand side
+  if ( p->polyprec_PRECISION.construction_nrhs == 1 )
+    polyprec_status = update_lejas_PRECISION( p, l, threading );
+
+  // Use global GMRES construction for multiple right-hand sides
+  else
+    polyprec_status = update_global_lejas_PRECISION( p, l, threading );
+
   // Abort because the finest polynomial is required by the expansion!!
   if ( polyprec_status != 1 )
     error0("POLYPREC: finest-level polynomial construction failed.\n");
