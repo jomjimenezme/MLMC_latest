@@ -633,13 +633,8 @@ int construct_fine_polyprec_PRECISION( gmres_PRECISION_struct *p,
   SYNC_MASTER_TO_ALL(threading)
   SYNC_CORES(threading)
 
-  // Use the original GMRES construction for one right-hand side
-  if ( p->polyprec_PRECISION.construction_nrhs == 1 )
-    polyprec_status = update_lejas_PRECISION( p, l, threading );
-
-  // Use global GMRES construction for multiple right-hand sides
-  else
-    polyprec_status = update_global_lejas_PRECISION( p, l, threading );
+  // Construct the finest polynomial with global Arnoldi
+  polyprec_status = update_global_lejas_PRECISION( p, l, threading );
 
   // Abort because the finest polynomial is required by the expansion!!
   if ( polyprec_status != 1 )
