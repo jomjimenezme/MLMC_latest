@@ -163,8 +163,12 @@ typedef struct
      * Hc = 1 means, polyprec allocates and frees H */
     int capture_H; // Capture H for GMRES polynomial
     int allocated; // Polynomial storage has been allocated?
-    int owns_Hc;   
+    int owns_Hc;
     int d_poly;
+
+    // Maximum polynomial degree used by the allocated storage
+    int d_poly_alloc;
+
     int syst_size;
 
     complex_PRECISION **Hc;

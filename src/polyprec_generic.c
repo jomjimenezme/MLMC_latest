@@ -287,6 +287,12 @@ void harmonic_ritz_PRECISION( gmres_PRECISION_struct *p )
   complex_PRECISION h_dd;
 
   d = p->polyprec_PRECISION.d_poly;
+  // Use the active polynomial degree for the harmonic Ritz problems
+  p->polyprec_PRECISION.dirctslvr.N = d;
+  p->polyprec_PRECISION.dirctslvr.lda = d;
+  p->polyprec_PRECISION.dirctslvr.ldb = d;
+  p->polyprec_PRECISION.eigslvr.N = d;
+
   h_dd = p->polyprec_PRECISION.Hc[d-1][d];
   memset(p->polyprec_PRECISION.dirctslvr.b, 0.0, sizeof(complex_PRECISION)*(d-1));
   p->polyprec_PRECISION.dirctslvr.b[d-1] = 1.;
@@ -536,13 +542,6 @@ static int update_global_lejas_PRECISION( gmres_PRECISION_struct *p, level_struc
 
   compute_core_start_end( p->v_start, p->v_end, &start, &end, l, threading );
 
-  // Hc was allocated using the GMRES restart length
-  if ( p->polyprec_PRECISION.d_poly > p->restart_length ) {
-    START_MASTER(threading)
-    error0("POLYPREC: polynomial degree %d exceeds the GMRES restart length %d used to allocate the Arnoldi workspace.\n", p->polyprec_PRECISION.d_poly, p->restart_length );
-    END_MASTER(threading)
-  }
-
   // Allocate the temporary block vectors and generate B
   START_LOCKED_MASTER(threading)
   polyprec_global_arnoldi_PRECISION_struct_alloc( p );
@@ -609,7 +608,6 @@ int construct_fine_polyprec_PRECISION( gmres_PRECISION_struct *p,
                                        level_struct *l,
                                        struct Thread *threading )
 {
-  {
   int polyprec_status;
 
   // Only the Jacobi splitting is implemented so far
