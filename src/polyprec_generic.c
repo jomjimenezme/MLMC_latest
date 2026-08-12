@@ -209,7 +209,6 @@ static void polyprec_global_block_apply_operator_PRECISION( vector_PRECISION out
 
 
 
-
 static void polyprec_global_arnoldi_PRECISION( gmres_PRECISION_struct *p, level_struct *l, struct Thread *threading )
 {
   int i, j;
@@ -278,6 +277,81 @@ static void polyprec_global_arnoldi_PRECISION( gmres_PRECISION_struct *p, level_
   }
 
 }
+
+
+#ifdef POLYPREC_CHECK
+static void check_polyprec_global_arnoldi_PRECISION( gmres_PRECISION_struct *p,
+                                                      level_struct *l,
+                                                      struct Thread *threading )
+{
+  int i, j;
+  int d = p->polyprec_PRECISION.d_poly;
+
+  PRECISION error;
+  PRECISION norm_operator;
+  PRECISION norm_residual;
+  PRECISION max_orthogonality_error = 0.0;
+  PRECISION max_arnoldi_error = 0.0;
+
+  complex_PRECISION inner_product;
+
+  vector_PRECISION *V = p->polyprec_PRECISION.global_V;
+  vector_PRECISION w = p->polyprec_PRECISION.global_w;
+  complex_PRECISION **H = p->polyprec_PRECISION.Hc;
+
+  // Check <V_i,V_j>_F = delta_ij
+  for ( j=0; j<=d; j++ ) {
+    for ( i=0; i<=j; i++ ) {
+
+      // Compute <V_i,V_j>_F
+      inner_product = polyprec_global_block_inner_product_PRECISION( V[i], V[j], p, l, threading );
+
+      // Subtract the expected diagonal value
+      if ( i == j )
+        inner_product -= 1.0;
+
+      // Keep the largest deviation from orthonormality
+      error = cabs_PRECISION( inner_product );
+
+      if ( error > max_orthogonality_error )
+        max_orthogonality_error = error;
+    }
+  }
+
+  // Check Ahat V_j = sum_i h_{i,j} V_i
+  for ( j=0; j<d; j++ ) {
+
+    // W = Ahat V_j
+    polyprec_global_block_apply_operator_PRECISION( w, V[j], p, l, threading );
+
+    // Store ||Ahat V_j||_F for the relative error
+    norm_operator = polyprec_global_block_norm_PRECISION( w, p, l, threading );
+
+    // W = Ahat V_j - sum_i h_{i,j} V_i
+    for ( i=0; i<=j+1; i++ )
+      polyprec_global_block_saxpy_PRECISION( w, w, V[i], -H[j][i], p, l, threading );
+
+    // Compute the Arnoldi relation residual
+    norm_residual = polyprec_global_block_norm_PRECISION( w, p, l, threading );
+
+    // Normalize the Arnoldi relation residual
+    if ( norm_operator > 0.0 )
+      error = norm_residual/norm_operator;
+    else
+      error = norm_residual;
+
+    // Keep the largest relative Arnoldi relation error
+    if ( error > max_arnoldi_error )
+      max_arnoldi_error = error;
+  }
+
+  // Report the global Arnoldi construction errors
+  START_MASTER(threading)
+  printf0("POLYPREC: global Arnoldi orthogonality error: %le\n", max_orthogonality_error);
+  printf0("POLYPREC: global Arnoldi relation error: %le\n", max_arnoldi_error);
+  END_MASTER(threading)
+}
+#endif
 
 #endif
 
@@ -567,6 +641,11 @@ static int update_global_lejas_PRECISION( gmres_PRECISION_struct *p, level_struc
 
   // Construct the global Arnoldi Hessenberg matrix
   polyprec_global_arnoldi_PRECISION( p, l, threading );
+
+#ifdef POLYPREC_CHECK
+  // Check the global Arnoldi basis and Hessenberg relation
+  check_polyprec_global_arnoldi_PRECISION( p, l, threading );
+#endif
 
   // Construct and order the roots from the global Hessenberg matrix
   START_MASTER(threading)
