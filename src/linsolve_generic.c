@@ -62,7 +62,10 @@ void cpu_fgmres_PRECISION_struct_init( gmres_PRECISION_struct *p ) {
 #endif
 
 #if defined(POLYPREC) || defined(GMRES_POLY_EXPANSION)
+#ifdef POLYPREC
+  // Do not capture an FGMRES Hessenberg matrix initially
   p->polyprec_PRECISION.capture_H = 0;
+#endif
   p->polyprec_PRECISION.Hcc = NULL; 
   // No polynomial storage is present before allocation.
   p->polyprec_PRECISION.allocated = 0;
@@ -89,19 +92,20 @@ void cpu_fgmres_PRECISION_struct_init( gmres_PRECISION_struct *p ) {
   // No polynomial Hessenberg storage is owned before allocation
   p->polyprec_PRECISION.owns_Hc = 0;
 
+#ifdef GMRES_POLY_EXPANSION
   // Use one right-hand side for polynomial construction by default
   p->polyprec_PRECISION.construction_nrhs = 1;
 
-#ifdef GMRES_POLY_EXPANSION
   // No global Arnoldi storage is present before polynomial construction
   p->polyprec_PRECISION.global_arnoldi_allocated = 0;
   p->polyprec_PRECISION.global_rhs = NULL;
   p->polyprec_PRECISION.global_V = NULL;
   p->polyprec_PRECISION.global_w = NULL;
-#endif
 
   // No Jacobi or Gauss-Seidel splitting is assigned initially
   p->polyprec_PRECISION.splitting = _POLYPREC_NONE;
+#endif
+
   // Use the unrelaxed value
   p->polyprec_PRECISION.omega = 1.0;
   //--- End polynomial expansion only  ---
@@ -1784,11 +1788,12 @@ int arnoldi_step_PRECISION( vector_PRECISION *V, vector_PRECISION *Z, vector_PRE
   }
 #endif
 
-#if defined(POLYPREC) || defined(GMRES_POLY_EXPANSION)
-  if (p->polyprec_PRECISION.capture_H==1)
+#ifdef POLYPREC
+  if ( p->polyprec_PRECISION.capture_H == 1 )
   {
     memcpy( p->polyprec_PRECISION.eigslvr.Hc[jx], H[jx], sizeof(complex_PRECISION)*(jx+2) );
-    memset( p->polyprec_PRECISION.eigslvr.Hc[jx]+jx+2, 0.0, sizeof(complex_PRECISION)*(p->restart_length + 1 - (jx+2)) );
+
+    memset( p->polyprec_PRECISION.eigslvr.Hc[jx]+jx+2, 0.0, sizeof(complex_PRECISION)* (p->restart_length + 1 - (jx+2)) );
   }
 #endif
 

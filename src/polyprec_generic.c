@@ -393,6 +393,7 @@ static void finalize_polyprec_roots_PRECISION( gmres_PRECISION_struct *p )
   leja_ordering_PRECISION( p );
 }
 
+#ifdef POLYPREC
 int update_lejas_PRECISION( gmres_PRECISION_struct *p, level_struct *l, struct Thread *threading )
 {
   int start, end;
@@ -533,6 +534,16 @@ int update_lejas_PRECISION( gmres_PRECISION_struct *p, level_struct *l, struct T
   return 1;
 }
 
+int re_construct_lejas_PRECISION( level_struct *l, struct Thread *threading ) {
+
+  //printf0("UPDATED LEJAS\n");
+
+  return update_lejas_PRECISION(&(l->p_PRECISION), l, threading);
+
+}
+
+#endif
+
 
 #ifdef GMRES_POLY_EXPANSION
 
@@ -590,18 +601,6 @@ static int update_global_lejas_PRECISION( gmres_PRECISION_struct *p, level_struc
 #endif
 
 
-
-#ifdef POLYPREC
-
-int re_construct_lejas_PRECISION( level_struct *l, struct Thread *threading ) {
-
-  //printf0("UPDATED LEJAS\n");
-
-  return update_lejas_PRECISION(&(l->p_PRECISION), l, threading);
-
-}
-
-#endif
 
 #ifdef GMRES_POLY_EXPANSION
 int construct_fine_polyprec_PRECISION( gmres_PRECISION_struct *p,

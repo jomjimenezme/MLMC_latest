@@ -159,10 +159,13 @@ typedef struct
   typedef struct
   {
     int update_lejas;
-    /* Hc can be allocated by p->gcrodr or p->polyprec
-     * Hc = 1 means, polyprec allocates and frees H */
-    int capture_H; // Capture H for GMRES polynomial
-    int allocated; // Polynomial storage has been allocated?
+
+#ifdef POLYPREC
+    // Capture the Hessenberg matrix from the FGMRES construction
+    int capture_H;
+#endif
+
+    int allocated;
     int owns_Hc;
     int d_poly;
 
@@ -182,21 +185,21 @@ typedef struct
 
     // For polynomial expansion only
 
+#ifdef GMRES_POLY_EXPANSION
     // Number of right-hand sides used for polynomial construction
     int construction_nrhs;
 
-#ifdef GMRES_POLY_EXPANSION
     // Temporary storage used during global Arnoldi construction
     int global_arnoldi_allocated;
     vector_PRECISION global_rhs;
     vector_PRECISION *global_V;
     vector_PRECISION global_w;
-#endif
 
     // Splitting for which the polynomial is constructed
     int splitting;
+#endif
 
-    // Relaxation parameter used by the splitting
+    // Relaxation parameter used by the polynomial
     PRECISION omega;
 
     operator_PRECISION_struct *target_op;
@@ -204,8 +207,11 @@ typedef struct
                                  operator_PRECISION_struct *op,
                                  struct level_struct *l, struct Thread *threading);
 
+#ifdef POLYPREC
+    // Polynomial preconditioner used by the coarsest solver
     void (*preconditioner)();
     void (*preconditioner_bare)();
+#endif
 
     eigslvr_PRECISION_struct eigslvr;
     dirctslvr_PRECISION_struct dirctslvr;
