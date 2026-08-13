@@ -353,6 +353,33 @@ static void check_polyprec_global_arnoldi_PRECISION( gmres_PRECISION_struct *p,
 }
 #endif
 
+
+#ifdef POLYPREC_CHECK
+static PRECISION check_polyprec_global_residual_PRECISION( vector_PRECISION block_rhs, gmres_PRECISION_struct *p, level_struct *l, struct Thread *threading )
+{
+  int rhs;
+  int nrhs = p->polyprec_PRECISION.construction_nrhs;
+  int vl = p->polyprec_PRECISION.syst_size;
+
+  PRECISION norm_rhs;
+  PRECISION norm_residual;
+
+  vector_PRECISION block_residual = p->polyprec_PRECISION.global_w;
+
+  // Apply p_d(A_omega) to every construction right-hand side
+  for ( rhs=0; rhs<nrhs; rhs++ ) apply_polyprec_residual_core_PRECISION( block_residual + rhs*vl, block_rhs + rhs*vl, p, l, threading );
+
+  // Compute ||B||_F
+  norm_rhs = polyprec_global_block_norm_PRECISION( block_rhs, p, l, threading );
+
+  // Compute ||p_d(A_omega) B||_F
+  norm_residual = polyprec_global_block_norm_PRECISION( block_residual, p, l, threading );
+
+  // Return ||p_d(A_omega) B||_F / ||B||_F
+  return norm_residual/norm_rhs;
+}
+#endif
+
 #endif
 
 void harmonic_ritz_PRECISION( gmres_PRECISION_struct *p )
@@ -657,6 +684,31 @@ static int update_global_lejas_PRECISION( gmres_PRECISION_struct *p, level_struc
 
   SYNC_MASTER_TO_ALL(threading)
   SYNC_CORES(threading)
+
+#ifdef POLYPREC_CHECK
+  PRECISION global_residual = check_polyprec_global_residual_PRECISION( p->polyprec_PRECISION.global_rhs, p, l, threading );
+
+  // Report the residual over the complete construction block
+  START_MASTER(threading)
+  printf0("POLYPREC: global construction residual: %le\n", global_residual);
+  END_MASTER(threading)
+
+  // Reuse V_0 for an independent block after the Arnoldi checks are complete
+  START_LOCKED_MASTER(threading)
+  polyprec_global_block_define_random_PRECISION( p->polyprec_PRECISION.global_V[0], p, l );
+  END_LOCKED_MASTER(threading)
+
+  SYNC_MASTER_TO_ALL(threading)
+  SYNC_CORES(threading)
+
+  // Evaluate the polynomial on the independent block
+  PRECISION independent_residual = check_polyprec_global_residual_PRECISION( p->polyprec_PRECISION.global_V[0], p, l, threading );
+
+  // Report the residual over the independent block
+  START_MASTER(threading)
+  printf0("POLYPREC: global independent residual: %le\n", independent_residual);
+  END_MASTER(threading)
+#endif
 
   // The global Arnoldi vectors are no longer needed
   START_LOCKED_MASTER(threading)

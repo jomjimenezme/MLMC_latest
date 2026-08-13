@@ -454,43 +454,61 @@ void get_sigma_4D(){
 }
 
 void get_sigma_3D(){
-  
+
   if(g.coloring_distance == 1){
     g.sigma[0] = 0;
     g.sigma[1] = 1;
     g.sigma[2] = 1;
     g.sigma[3] = 1;
-    
+
     g.nc = 2;
   }
-  
+
   if(g.coloring_distance == 2){
     g.sigma[0] = 0;
     g.sigma[1] = 1;
     g.sigma[2] = 2;
     g.sigma[3] = 3;
-    
+
     g.nc = 8;
   }
-  
+
   if(g.coloring_distance == 3){
     g.sigma[0] = 0;
-    g.sigma[1] = 1;
-    g.sigma[2] = 3;
-    g.sigma[3] = 5;
-    
-    g.nc = 16;
+    g.sigma[1] = 3;
+    g.sigma[2] = 5;
+    g.sigma[3] = 7;
+
+    g.nc = 20;
   }
-  
+
   if(g.coloring_distance == 4){
     g.sigma[0] = 0;
-    g.sigma[1] = 1;
-    g.sigma[2] = 6;
-    g.sigma[3] = 9;
-    
-    g.nc = 32;
+    g.sigma[1] = 53;
+    g.sigma[2] = 34;
+    g.sigma[3] = 40;
+
+    g.nc = 63;
   }
-  
+
+  if(g.coloring_distance == 5){
+    g.sigma[0] = 0;
+    g.sigma[1] = 91;
+    g.sigma[2] = 84;
+    g.sigma[3] = 89;
+
+    g.nc = 104;
+  }
+
+  if(g.coloring_distance == 6){
+    g.sigma[0] = 0;
+    g.sigma[1] = 105;
+    g.sigma[2] = 4;
+    g.sigma[3] = 80;
+
+    g.nc = 128;
+  }
+
 }
 
 void dilution_check(){
