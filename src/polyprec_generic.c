@@ -268,9 +268,15 @@ static void polyprec_global_arnoldi_PRECISION( gmres_PRECISION_struct *p, level_
     // Store the norm of the new Arnoldi vector
     START_MASTER(threading)
     H[j][j+1] = norm;
+
+    // Set the structural zeros below the Hessenberg band
+    memset( H[j]+j+2, 0.0, sizeof(complex_PRECISION)*
+            (p->polyprec_PRECISION.d_poly + 1 - (j+2)) );
     END_MASTER(threading)
 
     SYNC_MASTER_TO_ALL(threading)
+
+
 
     // V_{j+1} = W / h_{j+1,j}
     polyprec_global_block_scale_PRECISION( V[j+1], w, 1.0/H[j][j+1], p, l, threading );

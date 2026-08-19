@@ -4105,5 +4105,11 @@ complex_PRECISION hutchinson_probing_PRECISION( level_struct *l,
   g.coloring_count = coloring_count_b;
   g.dilution_count = dilution_count_b;
 
+
+  // Report the truncated polynomial trace
+  if ( g.my_rank == 0 )
+    printf("\nTruncated trace = %.15e+i%.15e\n", CSPLIT(trace));
+
+  // Remainder part
   return trace;
 }
