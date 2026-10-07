@@ -1,6 +1,7 @@
 void allocate_variances();
 void mlmc_connected_print_variances();
 void set_probing_variances_to_zero();
+void setup_local_colors_direct();
 void dilution_check(int level);
 #ifndef PROBING_HEADER
   #define PROBING_HEADER
