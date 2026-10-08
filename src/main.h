@@ -176,6 +176,7 @@
 #include "hutchinson_double.h"
 #include "probing.h"
 #include "hierarchical.h"
+#include "sigma.h"
 
 #ifdef HAVE_LIME
 #include <lime.h>

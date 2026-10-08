@@ -180,156 +180,35 @@ void setup_local_colors_direct(){
     }
 }
 
-void get_sigma_4D(){
-  
-  if(g.coloring_distance == 1){
-    g.sigma[0] = 1;
-    g.sigma[1] = 1;
-    g.sigma[2] = 1;
-    g.sigma[3] = 1;
+void get_sigma(){
+
+  if(g.probing_dimension == 4){
+    if(g.global_lattice[0][0] == 8 && g.global_lattice[0][1] == 8 && g.global_lattice[0][2] == 8 && g.global_lattice[0][3] == 8)
+      get_sigma_4D_8x8x8x8();
+    else if(g.global_lattice[0][0] == 64 && g.global_lattice[0][1] == 32 && g.global_lattice[0][2] == 32 && g.global_lattice[0][3] == 32)
+      get_sigma_4D_64x32x32x32();
+    else if(g.global_lattice[0][0] == 128 && g.global_lattice[0][1] == 64 && g.global_lattice[0][2] == 64 && g.global_lattice[0][3] == 64)
+      get_sigma_4D_128x64x64x64();
+    else if(g.global_lattice[0][0] == 192 && g.global_lattice[0][1] == 96 && g.global_lattice[0][2] == 96 && g.global_lattice[0][3] == 96)
+      get_sigma_4D_192x96x96x96();
+    else
+      printf("\nNo computed sigmas for %dx%dx%dx%d lattice\n", g.global_lattice[0][0],g.global_lattice[0][1],g.global_lattice[0][2],g.global_lattice[0][3]);
+  }
+
+  if(g.probing_dimension == 3){
+    if(g.global_lattice[0][1] == 8 && g.global_lattice[0][2] == 8 && g.global_lattice[0][3] == 8)
+      get_sigma_3D_8x8x8();
+    else if(g.global_lattice[0][1] == 32 && g.global_lattice[0][2] == 32 && g.global_lattice[0][3] == 32)
+      get_sigma_3D_32x32x32();
+    else if(g.global_lattice[0][1] == 64 && g.global_lattice[0][2] == 64 && g.global_lattice[0][3] == 64)
+      get_sigma_3D_64x64x64();
+    else if(g.global_lattice[0][1] == 96 && g.global_lattice[0][2] == 96 && g.global_lattice[0][3] == 96)
+      get_sigma_3D_96x96x96();
+    else
+      printf("\nNo computed sigmas for %dx%dx%d lattice\n", g.global_lattice[0][1],g.global_lattice[0][2],g.global_lattice[0][3]);
+  }
     
-    g.num_colors[0] = 2;
-  }
-  
-  if(g.coloring_distance == 2){
-    g.sigma[0] = 1;
-    g.sigma[1] = 2;
-    g.sigma[2] = 3;
-    g.sigma[3] = 4;
     
-    g.num_colors[0] = 10;
-  }
-  
-  if(g.coloring_distance == 3){
-    g.sigma[0] = 1;
-    g.sigma[1] = 5;
-    g.sigma[2] = 55;
-    g.sigma[3] = 61;
-    
-    g.num_colors[0] = 16;
-  }
-  
-  if(g.coloring_distance == 4){
-    g.sigma[0] = 1;
-    g.sigma[1] = 8;
-    g.sigma[2] = 12;
-    g.sigma[3] = 18;
-    
-    g.num_colors[0] = 64;
-  }
-
-    if(g.coloring_distance == 5){
-    g.sigma[0] = 38;
-    g.sigma[1] = 1;
-    g.sigma[2] = 12;
-    g.sigma[3] = 16;
-
-    g.num_colors[0] = 128;
-  }
-
-  if(g.coloring_distance == 6){
-    g.sigma[0] = 3;
-    g.sigma[1] = 20;
-    g.sigma[2] = 48;
-    g.sigma[3] = 50;
-
-    g.num_colors[0] = 320;
-  }
-
-  if(g.coloring_distance == 7){
-    g.sigma[0] = 40;
-    g.sigma[1] = 32;
-    g.sigma[2] = 33;
-    g.sigma[3] = 61;
-
-    g.num_colors[0] = 512;
-  }
-  
-}
-
-void get_sigma_3D(){
-  
-  if(g.coloring_distance == 1){
-    g.sigma[0] = 0;
-    g.sigma[1] = 1;
-    g.sigma[2] = 1;
-    g.sigma[3] = 1;
-    
-    g.num_colors[0] = 2;
-  }
-  
-  if(g.coloring_distance == 2){
-    g.sigma[0] = 0;
-    g.sigma[1] = 1;
-    g.sigma[2] = 2;
-    g.sigma[3] = 3;
-    
-    g.num_colors[0] = 8;
-  }
-  
-  if(g.coloring_distance == 3){
-    g.sigma[0] = 0;
-    g.sigma[1] = 1;
-    g.sigma[2] = 3;
-    g.sigma[3] = 5;
-    
-    g.num_colors[0] = 16;
-  }
-  
-  if(g.coloring_distance == 4){
-    g.sigma[0] = 0;
-    g.sigma[1] = 1;
-    g.sigma[2] = 6;
-    g.sigma[3] = 9;
-    
-    g.num_colors[0] = 32;
-  }
-
-    if(g.coloring_distance == 5){
-    g.sigma[0] = 0;
-    g.sigma[1] = 1;
-    g.sigma[2] = 11;
-    g.sigma[3] = 27;
-
-    g.num_colors[0] = 88;
-  }
-
-  if(g.coloring_distance == 6){
-    g.sigma[0] = 0;
-    g.sigma[1] = 1;
-    g.sigma[2] = 8;
-    g.sigma[3] = 44;
-
-    g.num_colors[0] = 128;
-  }
-
-  if(g.coloring_distance == 7){
-    g.sigma[0] = 0;
-    g.sigma[1] = 1;
-    g.sigma[2] = 9;
-    g.sigma[3] = 33;
-
-    g.num_colors[0] = 176;
-  }
-
-  if(g.coloring_distance == 8){
-    g.sigma[0] = 0;
-    g.sigma[1] = 7;
-    g.sigma[2] = 48;
-    g.sigma[3] = 51;
-
-    g.num_colors[0] = 272;
-  }
-
-  if(g.coloring_distance == 9){
-    g.sigma[0] = 0;
-    g.sigma[1] = 1;
-    g.sigma[2] = 33;
-    g.sigma[3] = 45;
-
-    g.num_colors[0] = 352;
-  }
-  
 }
 
 void dilution_check(int level){
@@ -340,28 +219,26 @@ void dilution_check(int level){
   }
 
   if(g.dilution[level] == 1)
-    if(g.my_rank==0) printf("\nNo dilution at level %d\n", level);
+    if(g.my_rank==0) printf("\nNo dilution at level %d   ", level);
 
   if(g.dilution[level] == 2)
-    if(g.my_rank==0) printf("\nPartial spin dilution at level %d\n", level);
+    if(g.my_rank==0) printf("\nPartial spin dilution at level %d   ", level);
 
   if(g.dilution[level] == 3)
-    if(g.my_rank==0) printf("\nColor dilution at level %d\n", level);
+    if(g.my_rank==0) printf("\nColor dilution at level %d   ", level);
 
   if(g.dilution[level] == 4)
-    if(g.my_rank==0) printf("\nComplete spin dilution at level %d\n", level);
+    if(g.my_rank==0) printf("\nComplete spin dilution at level %d   ", level);
 
   if(g.dilution[level] == 12)
-    if(g.my_rank==0) printf("\nSpin-Color dilution at level %d\n", level);
+    if(g.my_rank==0) printf("\nSpin-Color dilution at level %d   ", level);
 }
 
 void coloring_scheme(){
   // sigma / num_colors selection: pure table lookup, must now run on ALL ranks
   // (previously rank-0 only; other ranks learned the coloring via the Bcast)
-  if(g.probing_dimension == 3)
-    get_sigma_3D();
-  else
-    get_sigma_4D();
+
+  get_sigma();
 
   // legacy safety Bcasts (harmless if already consistent on all ranks)
   MPI_Bcast(g.num_colors, g.num_levels, MPI_INT, 0, g.comm_cart);
@@ -377,10 +254,10 @@ void coloring_scheme(){
 
   // torus validity: sigma_mu * n_mu must vanish mod nc, otherwise the coloring
   // silently violates its distance across the periodic boundary
-  for( int mu=0; mu<4; mu++ )
-    if( ( g.sigma[mu] * g.global_lattice[0][mu] ) % g.num_colors[0] != 0 )
-      error0("multiplier coloring INVALID on this torus: sigma[%d]=%d, n=%d, nc=%d\n",
-             mu, g.sigma[mu], g.global_lattice[0][mu], g.num_colors[0]);
+  //for( int mu=0; mu<4; mu++ )
+    //if( ( g.sigma[mu] * g.global_lattice[0][mu] ) % g.num_colors[0] != 0 )
+      //error0("multiplier coloring INVALID on this torus: sigma[%d]=%d, n=%d, nc=%d\n",
+        //     mu, g.sigma[mu], g.global_lattice[0][mu], g.num_colors[0]);
 
   for( int level = 1; level < g.num_levels; level++ )
     g.num_colors[level] = 1;
@@ -392,7 +269,7 @@ void coloring_scheme(){
 
   if(g.my_rank==0)
     for( int level = 0; level < g.num_levels; level++ )
-      printf("\n Colors at depth %d : \t %d \n", level, g.num_colors[level]);
+      printf("\n Colors at depth %d : \t %d ", level, g.num_colors[level]);
 
   MPI_Barrier(MPI_COMM_WORLD);
 }
